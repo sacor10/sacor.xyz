@@ -43,16 +43,16 @@ export default function Layout({ mainContent, rightSidebar }) {
                   align="right"
                 />
                 <h1 className="glow">
-                  <blink>WELCOME TO Sacor&rsquo;S GEOCITIES BLOG!!!</blink>
+                  <blink>SACOR&rsquo;S SPACE</blink>
                 </h1>
                 <font face="Comic Sans MS" size="4" color="#00FFFF">
-                  ~*~ Green Hill Zone ~*~ Where the 90s Never Die!!! ~*~
+                  ~*~ DO WHAT YOU CAN, WITH WHAT YOU HAVE, WHERE YOU ARE ~*~ WE HAVE FALLEN HEIRS TO THE MOST GLORIOUS HERITAGE A PEOPLE EVER RECEIVED ~*~
                 </font>
                 <br />
                 <br />
                 <marquee behavior="scroll" direction="left" scrollAmount="6" bgColor="#FFFF00" width="90%">
                   <font face="Impact" size="4" color="#FF00FF">
-                    &#9733; Under Construction Since 1998... Just Kidding, It&rsquo;s 90s Forever!!! &#9733;
+                    &#9733; Since 1776 &#9733;
                     &nbsp;&nbsp;&nbsp; SIGN MY GUESTBOOK!!! &nbsp;&nbsp;&nbsp;
                     &#9829; THANKS FOR VISITING!!! &#9829;
                   </font>
