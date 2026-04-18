@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import Layout from '../Layout'
+import HitCounter from '../components/HitCounter'
 import { posts, getPostHref } from '../data/posts'
 
 const rightSidebar = (
@@ -41,48 +42,7 @@ const rightSidebar = (
     <br />
 
     {/* HIT COUNTER */}
-    <table
-      width="100%"
-      cellPadding="8"
-      cellSpacing="0"
-      border="0"
-      className="bevelbox"
-      bgColor="#000000"
-    >
-      <tbody>
-        <tr>
-          <td align="center" bgColor="#00FF00" className="section-bar-sm">
-            <font face="Impact" size="4" color="#000000">
-              ~ HIT COUNTER ~
-            </font>
-          </td>
-        </tr>
-        <tr>
-          <td align="center" bgColor="#000000">
-            <font face="Courier New" size="3" color="#00FF00">
-              You are visitor #
-            </font>
-            <br />
-            <img
-              src="/placeholders/counter.svg"
-              alt="00004269"
-              width="140"
-              height="30"
-              border="2"
-              className="inset-yellow"
-            />
-            <br />
-            <font face="Courier New" size="2" color="#FFFF00">
-              00004269
-            </font>
-            <br />
-            <font face="Comic Sans MS" size="1" color="#FFFFFF">
-              since July 4, 1776
-            </font>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <HitCounter />
 
     <br />
 
@@ -146,7 +106,7 @@ const rightSidebar = (
               <ul className="favlinks">
                 <li><a href="#blog-posts">Ye Olde Blog Archive</a></li>
                 <li><Link to="/ytmp4">Downloadable EXEs</Link></li>
-                <li><a href="https://github.com/sacor10/sacor.xyz" target="_blank" rel="noopener noreferrer">My GitHub Dungeon</a></li>
+                <li><a href="https://github.com/sacor10/" target="_blank" rel="noopener noreferrer">My GitHub Dungeon</a></li>
                 <li><Link to="/webring">90s Webring &#9733;</Link></li>
                 <li><a href="https://sonicretro.org" target="_blank" rel="noopener noreferrer">Sonic Fan Pages</a></li>
                 <li><a href="https://web.archive.org/web/19961220021530/http://home.netscape.com/" target="_blank" rel="noopener noreferrer">Netscape Now!</a></li>

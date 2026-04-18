@@ -5,6 +5,11 @@
 [build.environment]
   NODE_VERSION = "20"
 
+[[redirects]]
+  from = "/api/hit"
+  to = "/.netlify/functions/hit"
+  status = 200
+
 # SPA fallback (safe even without a router)
 [[redirects]]
   from = "/*"
