@@ -1,6 +1,6 @@
 import { getStore } from '@netlify/blobs'
 
-const SEED = 4269
+const SEED = 0
 const KEY = 'count'
 
 const json = (count) =>
@@ -13,6 +13,12 @@ const json = (count) =>
 
 export default async (req) => {
   const store = getStore('hits')
+
+  if (req.method === 'DELETE') {
+    await store.delete(KEY)
+    return json(SEED)
+  }
+
   const current = Number((await store.get(KEY)) ?? SEED)
 
   if (req.method === 'POST') {

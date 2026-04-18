@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
 const STORAGE_KEY = 'sacor-hit-date'
-const FALLBACK = 4269
+const FALLBACK = 0
 
 const todayUTC = () => new Date().toISOString().slice(0, 10)
 
