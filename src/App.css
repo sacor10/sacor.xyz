@@ -1,0 +1,155 @@
+/* === Geocities-style overrides for the whole app === */
+
+/* <<< SWAP TILED BG IMAGE HERE >>> */
+.geocities {
+  background-image: url('https://i.imgur.com/PLACEHOLDER_BG.gif');
+  background-repeat: repeat;
+  background-color: #4B0082;
+  color: #FFFF00;
+  font-family: "Comic Sans MS", "Arial", sans-serif;
+  min-height: 100vh;
+  padding: 0;
+  cursor: crosshair;
+}
+
+.geocities td {
+  font-family: "Comic Sans MS", Arial, sans-serif;
+  color: #FFFFFF;
+}
+
+.geocities a {
+  color: #00FFFF;
+  text-decoration: underline;
+  font-weight: bold;
+}
+.geocities a:hover {
+  color: #FFFF00;
+  background-color: #FF00FF;
+}
+
+.geocities h1.glow {
+  font-family: "Impact", "Arial Black", sans-serif;
+  color: #FFFF00;
+  filter: drop-shadow(0 0 6px #FF00FF) drop-shadow(0 0 12px #00FFFF);
+  letter-spacing: 2px;
+}
+
+.geocities .header-table {
+  border-style: ridge;
+  border-color: #FF00FF;
+  margin-top: 10px;
+}
+
+/* ---- Left nav ---- */
+.geocities .left-sidebar {
+  border: 5px ridge #00FFFF;
+  padding: 8px;
+}
+
+.geocities .navbtn {
+  background: #C0C0C0;
+  border-top: 4px solid #FFFFFF;
+  border-left: 4px solid #FFFFFF;
+  border-right: 4px solid #404040;
+  border-bottom: 4px solid #404040;
+  font-family: "Arial Black", Impact, sans-serif;
+  font-size: 14px;
+  padding: 8px;
+  text-align: center;
+}
+.geocities .navbtn a {
+  color: #000080;
+  text-decoration: none;
+  display: block;
+}
+.geocities .navbtn:hover {
+  background: #FF00FF;
+  border-top-color: #404040;
+  border-left-color: #404040;
+  border-right-color: #FFFFFF;
+  border-bottom-color: #FFFFFF;
+}
+.geocities .navbtn:hover a {
+  color: #FFFF00;
+}
+
+/* ---- Main content ---- */
+.geocities .main-content {
+  border: 5px ridge #FFFF00;
+  padding: 12px;
+}
+
+.geocities .hero-glow {
+  filter: drop-shadow(0 0 6px #FF00FF);
+}
+
+.geocities .section-bar {
+  border: 4px ridge #FFFF00;
+}
+
+.geocities .section-bar-sm {
+  border: 3px ridge #FFFF00;
+}
+
+/* ---- Right sidebar bevel boxes ---- */
+.geocities .bevelbox {
+  background: #000080;
+  border: 6px ridge #FF00FF;
+  padding: 8px;
+  color: #FFFFFF;
+}
+
+/* ---- Posts ---- */
+.geocities .postbox {
+  background: #000000;
+  border: 5px outset #00FF00;
+  padding: 6px;
+  color: #FFFFFF;
+}
+
+.geocities .posttitle {
+  font-family: "Impact", "Arial Black", sans-serif;
+  color: #00FFFF;
+  font-size: 18px;
+  filter: drop-shadow(0 0 3px #FF00FF);
+}
+
+/* ---- Footer ---- */
+.geocities .footer {
+  background: #000000;
+  border-top: 6px ridge #FFFF00;
+  color: #00FF00;
+  font-family: "Courier New", monospace;
+  padding: 10px;
+  text-align: center;
+}
+
+/* ---- Utility classes ---- */
+.geocities .hotpink { color: #FF00FF; }
+.geocities .lime    { color: #00FF00; }
+.geocities .cyan    { color: #00FFFF; }
+.geocities .yellow  { color: #FFFF00; }
+
+.geocities .yellow-link { color: #FFFF00; }
+.geocities .cyan-link   { color: #00FFFF; }
+
+.geocities .ridge-pink {
+  border-style: ridge;
+  border-color: #FF00FF;
+}
+.geocities .ridge-cyan {
+  border-style: ridge;
+  border-color: #00FFFF;
+}
+.geocities .inset-yellow {
+  border-style: inset;
+  border-color: #FFFF00;
+}
+
+.geocities .favlinks {
+  padding-left: 20px;
+  margin: 6px;
+}
+.geocities .favlinks a {
+  color: #0000EE;
+}
