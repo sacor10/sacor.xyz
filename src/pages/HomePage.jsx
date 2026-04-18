@@ -6,7 +6,7 @@ const posts = [
     title: 'I Built a youtube link to mp4 downloader EXE and You Should Try It!!!',
     date: 'Posted April 14, 2026 by Sacor',
     excerpt:
-      'So I made this little tray app that just reminds you to drink water, but it yells at you in Comic Sans. Download it below and let me know how many hydration crimes it catches you committing!!! Haha jk, you should steal uncopyrighted from the internet with this, though.',
+      'So I made this little tray app that just reminds you to drink water, but it yells at you in Comic Sans. Download it below and let me know how many hydration crimes it catches you committing!!! Haha jk, you should steal uncopyrighted music and videos and music videos from the internet with this, though.',
     thumbBorder: '#FF00FF',
     link: '/ytmp4',
   },
