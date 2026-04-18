@@ -122,8 +122,8 @@ const mainContent = (
               convert YouTube videos with a billion popup ads!!! This is a{' '}
               <b className="lime">real Windows app</b> that runs on your computer, grabs
               the <b className="yellow">best quality video + audio</b>, smashes them together
-              with FFmpeg, and spits out a clean MP4!!! And I boosted the audio{' '}
-              <b className="hotpink">2x</b> because YouTube videos are always too quiet!!!
+              with FFmpeg, and spits out a clean MP4 with{' '}
+              <b className="hotpink">pristine original audio</b> — no re-encoding, no clipping!!!
               <br />
               <br />
               It&rsquo;s powered under the hood by{' '}
@@ -160,7 +160,7 @@ const mainContent = (
         {[
           ['#FF00FF', 'Best available quality video + audio, merged into one MP4'],
           ['#00FF00', '16 parallel download fragments = BLAZING FAST speeds!!!'],
-          ['#FFFF00', 'Audio boosted 2x so you can actually HEAR the video!!!'],
+          ['#FFFF00', 'Original audio preserved bit-for-bit — zero quality loss!!!'],
           ['#00FFFF', 'Real-time progress bar with live download speed readout'],
           ['#FF00FF', 'Cancel anytime without leaving junk files behind'],
           ['#00FF00', 'No .NET runtime needed — fully self-contained!!!'],
@@ -188,7 +188,7 @@ const mainContent = (
             <td className="dl-btn-wrap">
               {/* UPDATE THIS HREF when you upload the zip */}
               <a href="https://github.com/sacor10/ytmp4/releases/latest/download/ytmp4.zip" className="dl-btn" download>
-                &#11015; DOWNLOAD YTMP4 v1.1 &#11015;
+                &#11015; DOWNLOAD YTMP4 v1.2 &#11015;
               </a>
             </td>
           </tr>
