@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">
+  <rect width="80" height="80" fill="#000"/>
+  <g>
+    <polygon points="40,8 76,70 4,70" fill="#FFCC00" stroke="#000" stroke-width="3"/>
+    <polygon points="40,14 70,66 10,66" fill="#FFCC00" stroke="#FF0000" stroke-width="1.5"/>
+    <rect x="37" y="28" width="6" height="22" fill="#000"/>
+    <rect x="37" y="54" width="6" height="6" fill="#000"/>
+  </g>
+  <g font-family="Impact, Arial Black" font-weight="bold" text-anchor="middle">
+    <text x="40" y="78" font-size="9" fill="#FF0000">STOP IT NOW!!</text>
+  </g>
+  <g fill="#FFFF00">
+    <polygon points="8,14 9,17 12,17 10,19 11,22 8,20 5,22 6,19 4,17 7,17"/>
+    <polygon points="72,14 73,17 76,17 74,19 75,22 72,20 69,22 70,19 68,17 71,17"/>
+  </g>
+</svg>

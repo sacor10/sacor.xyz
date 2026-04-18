@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="140" height="30" viewBox="0 0 140 30">
+  <rect width="140" height="30" fill="#000"/>
+  <rect x="2" y="2" width="136" height="26" fill="#001100" stroke="#00FF00" stroke-width="1"/>
+  <g font-family="Courier New, monospace" font-size="20" font-weight="bold" text-anchor="middle">
+    <text x="14" y="22" fill="#003300">8</text>
+    <text x="14" y="22" fill="#00FF00">0</text>
+    <text x="30" y="22" fill="#003300">8</text>
+    <text x="30" y="22" fill="#00FF00">0</text>
+    <text x="46" y="22" fill="#003300">8</text>
+    <text x="46" y="22" fill="#00FF00">0</text>
+    <text x="62" y="22" fill="#003300">8</text>
+    <text x="62" y="22" fill="#00FF00">0</text>
+    <text x="78" y="22" fill="#003300">8</text>
+    <text x="78" y="22" fill="#00FF00">4</text>
+    <text x="94" y="22" fill="#003300">8</text>
+    <text x="94" y="22" fill="#00FF00">2</text>
+    <text x="110" y="22" fill="#003300">8</text>
+    <text x="110" y="22" fill="#00FF00">6</text>
+    <text x="126" y="22" fill="#003300">8</text>
+    <text x="126" y="22" fill="#00FF00">9</text>
+  </g>
+</svg>

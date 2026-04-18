@@ -1,8 +1,7 @@
 /* === Geocities-style overrides for the whole app === */
 
-/* <<< SWAP TILED BG IMAGE HERE >>> */
 .geocities {
-  background-image: url('https://i.imgur.com/PLACEHOLDER_BG.gif');
+  background-image: url('/placeholders/bg.svg');
   background-repeat: repeat;
   background-color: #4B0082;
   color: #FFFF00;

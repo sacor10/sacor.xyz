@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" shape-rendering="crispEdges">
+  <rect width="100" height="100" fill="#00FFFF"/>
+  <g>
+    <rect x="30" y="18" width="40" height="10" fill="#3B1F00"/>
+    <rect x="26" y="28" width="48" height="8" fill="#3B1F00"/>
+    <rect x="26" y="36" width="48" height="28" fill="#F2C79E"/>
+    <rect x="22" y="44" width="4" height="14" fill="#F2C79E"/>
+    <rect x="74" y="44" width="4" height="14" fill="#F2C79E"/>
+    <rect x="26" y="36" width="48" height="4" fill="#3B1F00" opacity="0.3"/>
+    <rect x="32" y="46" width="10" height="6" fill="#000"/>
+    <rect x="58" y="46" width="10" height="6" fill="#000"/>
+    <rect x="42" y="48" width="16" height="2" fill="#000"/>
+    <rect x="34" y="48" width="6" height="2" fill="#FFF"/>
+    <rect x="60" y="48" width="6" height="2" fill="#FFF"/>
+    <rect x="46" y="54" width="8" height="4" fill="#D49A6A"/>
+    <rect x="40" y="60" width="20" height="2" fill="#B22222"/>
+    <rect x="20" y="64" width="60" height="28" fill="#FF00FF"/>
+    <rect x="20" y="64" width="60" height="4" fill="#FFFF00"/>
+    <text x="50" y="82" text-anchor="middle" font-family="Impact, Arial Black" font-size="10" fill="#FFFF00" font-weight="bold">SACOR</text>
+  </g>
+  <rect x="0" y="0" width="100" height="100" fill="none" stroke="#000" stroke-width="2"/>
+</svg>

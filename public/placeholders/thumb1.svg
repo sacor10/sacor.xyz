@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">
+  <rect width="80" height="80" fill="#CC0000"/>
+  <rect x="2" y="2" width="76" height="76" fill="#FFFFFF"/>
+  <rect x="14" y="10" width="52" height="36" fill="#000"/>
+  <rect x="16" y="12" width="48" height="32" fill="#4B0082"/>
+  <polygon points="34,20 34,36 50,28" fill="#FFFF00"/>
+  <rect x="18" y="46" width="44" height="4" fill="#999"/>
+  <rect x="30" y="50" width="20" height="4" fill="#999"/>
+  <g font-family="Impact, Arial Black" font-weight="bold" text-anchor="middle">
+    <text x="40" y="66" font-size="12" fill="#CC0000">YT&#8594;MP4</text>
+    <text x="40" y="76" font-size="8" fill="#000">FREE EXE!!</text>
+  </g>
+</svg>

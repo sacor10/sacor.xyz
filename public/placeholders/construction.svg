@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 90 90">
+  <defs>
+    <pattern id="stripes" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="12" height="12" fill="#FFCC00"/>
+      <rect width="6" height="12" fill="#000000"/>
+    </pattern>
+  </defs>
+  <rect x="2" y="2" width="86" height="86" fill="url(#stripes)" stroke="#000" stroke-width="2"/>
+  <rect x="10" y="28" width="70" height="34" fill="#FFCC00" stroke="#000" stroke-width="2"/>
+  <g transform="translate(45,34)">
+    <ellipse cx="0" cy="12" rx="14" ry="6" fill="#FF8800" stroke="#000" stroke-width="1.5"/>
+    <path d="M-14,12 Q-14,2 0,2 Q14,2 14,12 Z" fill="#FFCC00" stroke="#000" stroke-width="1.5"/>
+    <rect x="-2" y="-2" width="4" height="4" fill="#CC0000"/>
+  </g>
+  <text x="45" y="58" text-anchor="middle" font-family="Impact, Arial Black" font-size="9" fill="#000" font-weight="bold">UNDER CONSTRUCTION</text>
+  <circle cx="16" cy="16" r="3" fill="#FF0000"/>
+  <circle cx="74" cy="16" r="3" fill="#FF0000"/>
+  <circle cx="16" cy="74" r="3" fill="#FF0000"/>
+  <circle cx="74" cy="74" r="3" fill="#FF0000"/>
+</svg>

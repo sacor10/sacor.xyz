@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">
+  <rect width="80" height="80" fill="#FFCC00"/>
+  <rect x="6" y="10" width="68" height="60" fill="#FF3300" stroke="#000" stroke-width="2"/>
+  <rect x="10" y="14" width="60" height="18" fill="#FFFFFF"/>
+  <g font-family="Impact, Arial Black" font-weight="bold" text-anchor="middle">
+    <text x="40" y="26" font-size="11" fill="#FF3300">DUNKS!</text>
+  </g>
+  <g transform="translate(20,40)">
+    <circle cx="0" cy="0" r="6" fill="#F4C28C" stroke="#000" stroke-width="1"/>
+    <circle cx="-2" cy="-1" r="1" fill="#8B4513"/>
+    <circle cx="2" cy="1" r="1" fill="#8B4513"/>
+    <circle cx="0" cy="2" r="1" fill="#8B4513"/>
+  </g>
+  <g transform="translate(40,44)">
+    <circle cx="0" cy="0" r="7" fill="#F4C28C" stroke="#000" stroke-width="1"/>
+    <circle cx="-2" cy="-2" r="1" fill="#8B4513"/>
+    <circle cx="3" cy="0" r="1" fill="#8B4513"/>
+    <circle cx="-1" cy="3" r="1" fill="#8B4513"/>
+  </g>
+  <g transform="translate(60,40)">
+    <circle cx="0" cy="0" r="6" fill="#F4C28C" stroke="#000" stroke-width="1"/>
+    <circle cx="1" cy="-2" r="1" fill="#8B4513"/>
+    <circle cx="-2" cy="1" r="1" fill="#8B4513"/>
+  </g>
+  <rect x="14" y="54" width="52" height="12" fill="#FFFFFF"/>
+  <g font-family="Arial Black" font-weight="bold" text-anchor="middle">
+    <text x="40" y="63" font-size="8" fill="#000">90s SNAX!!!</text>
+  </g>
+</svg>

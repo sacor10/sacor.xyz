@@ -6,8 +6,8 @@ const navLinks = [
   { label: 'ABOUT ME',   to: '/#about-me' },
   { label: 'BLOG POSTS', to: '/#blog-posts' },
   { label: 'DOWNLOADS',  to: '/ytmp4' },
-  { label: 'GUESTBOOK',  to: '/#guestbook' },
-  { label: 'CONTACT',    to: '/#contact' },
+  { label: 'GUESTBOOK',  to: '/guestbook' },
+  { label: 'CONTACT',    to: '/contact' },
 ]
 
 export default function Layout({ mainContent, rightSidebar }) {
@@ -26,9 +26,8 @@ export default function Layout({ mainContent, rightSidebar }) {
           <tbody>
             <tr>
               <td align="center" bgColor="#4B0082">
-                {/* <<< SWAP HEADER ANIMATED GIF HERE >>> */}
                 <img
-                  src="https://i.imgur.com/PLACEHOLDER_HEADER.gif"
+                  src="/placeholders/globe.svg"
                   alt="spinning globe"
                   width="64"
                   height="64"
@@ -36,7 +35,7 @@ export default function Layout({ mainContent, rightSidebar }) {
                   align="left"
                 />
                 <img
-                  src="https://i.imgur.com/PLACEHOLDER_HEADER.gif"
+                  src="/placeholders/globe.svg"
                   alt="spinning globe"
                   width="64"
                   height="64"
@@ -79,9 +78,8 @@ export default function Layout({ mainContent, rightSidebar }) {
                   </font>
                   <br />
                   <br />
-                  {/* <<< SWAP SIDEBAR ANIMATED GIF HERE >>> */}
                   <img
-                    src="https://i.imgur.com/PLACEHOLDER_SIDEBAR.gif"
+                    src="/placeholders/construction.svg"
                     alt="construction worker"
                     width="90"
                     height="90"
@@ -144,10 +142,10 @@ export default function Layout({ mainContent, rightSidebar }) {
                 <br />
                 <font face="Comic Sans MS" size="1" color="#FFFFFF">
                   This page is a member of the <b className="hotpink">Green Hill Zone Webring</b> &#9733;{' '}
-                  <a href="#" className="cyan-link">[Prev]</a>{' '}
-                  <a href="#" className="cyan-link">[Next]</a>{' '}
-                  <a href="#" className="cyan-link">[Random]</a>{' '}
-                  <a href="#" className="cyan-link">[List Sites]</a>
+                  <Link to="/webring" className="cyan-link">[Prev]</Link>{' '}
+                  <Link to="/webring" className="cyan-link">[Next]</Link>{' '}
+                  <Link to="/webring" className="cyan-link">[Random]</Link>{' '}
+                  <Link to="/webring" className="cyan-link">[List Sites]</Link>
                 </font>
               </td>
             </tr>

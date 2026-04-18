@@ -1,45 +1,11 @@
 import { Link } from 'react-router-dom'
 import Layout from '../Layout'
-
-const posts = [
-  {
-    title: 'I Built a youtube link to mp4 downloader EXE and You Should Try It!!!',
-    date: 'Posted April 14, 2026 by Sacor',
-    excerpt:
-      'So I made this little tray app that just reminds you to drink water, but it yells at you in Comic Sans. Download it below and let me know how many hydration crimes it catches you committing!!! Haha jk, you should steal uncopyrighted music and videos and music videos from the internet with this, though.',
-    thumbBorder: '#FF00FF',
-    link: '/ytmp4',
-  },
-  {
-    title: 'Why Salt Lake City Is Basically a Giant LAN Party in the Mountains',
-    date: 'Posted April 2, 2026 by Sacor',
-    excerpt:
-      'A love letter to SLC gay bars, cold winters, and the people who keep nerding out with me about Theodore Roosevelt on the weekends. Also: I tried to LARP as a Utah College Republican. Results were mixed.',
-    thumbBorder: '#00FFFF',
-    link: '#',
-  },
-  {
-    title: 'Ranking Every 90s Snack I Can Still Actually Find',
-    date: 'Posted March 21, 2026 by Sacor',
-    excerpt:
-      'Dunkaroos are BACK, Fruit Gushers never left, and I have STRONG opinions about Bagel Bites. Come fight me in the comments (that I haven\u2019t implemented yet).',
-    thumbBorder: '#00FF00',
-    link: '#',
-  },
-  {
-    title: 'Somebody needs to stop it now!!!',
-    date: 'Posted March 8, 2026 by Sacor',
-    excerpt:
-      'Was it a good idea? Absolutely not. Did I learn a lot? Kind of. Did I? You bet I did!!! Link inside.',
-    thumbBorder: '#FFFF00',
-    link: '#',
-  },
-]
+import { posts, getPostHref } from '../data/posts'
 
 const rightSidebar = (
   <>
     {/* ABOUT BOX */}
-    <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox">
+    <table id="about-me" width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox">
       <tbody>
         <tr>
           <td align="center" bgColor="#FF00FF" className="section-bar-sm">
@@ -50,9 +16,8 @@ const rightSidebar = (
         </tr>
         <tr>
           <td align="center">
-            {/* <<< SWAP ABOUT PHOTO/GIF HERE >>> */}
             <img
-              src="https://i.imgur.com/PLACEHOLDER_ME.gif"
+              src="/placeholders/me.svg"
               alt="me"
               width="100"
               height="100"
@@ -98,9 +63,8 @@ const rightSidebar = (
               You are visitor #
             </font>
             <br />
-            {/* <<< SWAP HIT COUNTER GIF HERE >>> */}
             <img
-              src="https://i.imgur.com/PLACEHOLDER_COUNTER.gif"
+              src="/placeholders/counter.svg"
               alt="00004269"
               width="140"
               height="30"
@@ -180,12 +144,12 @@ const rightSidebar = (
           <td bgColor="#FFFFFF">
             <font face="Times New Roman" size="3" color="#000000">
               <ul className="favlinks">
-                <li><a href="#">Ye Olde Blog Archive</a></li>
+                <li><a href="#blog-posts">Ye Olde Blog Archive</a></li>
                 <li><Link to="/ytmp4">Downloadable EXEs</Link></li>
-                <li><a href="#">My GitHub Dungeon</a></li>
-                <li><a href="#">90s Webring &#9733;</a></li>
-                <li><a href="#">Sonic Fan Pages</a></li>
-                <li><a href="#">Netscape Now!</a></li>
+                <li><a href="https://github.com/sacor10/sacor.xyz" target="_blank" rel="noopener noreferrer">My GitHub Dungeon</a></li>
+                <li><Link to="/webring">90s Webring &#9733;</Link></li>
+                <li><a href="https://sonicretro.org" target="_blank" rel="noopener noreferrer">Sonic Fan Pages</a></li>
+                <li><a href="https://web.archive.org/web/19961220021530/http://home.netscape.com/" target="_blank" rel="noopener noreferrer">Netscape Now!</a></li>
               </ul>
             </font>
           </td>
@@ -196,9 +160,8 @@ const rightSidebar = (
     <br />
 
     <center>
-      {/* <<< SWAP NETSCAPE BADGE GIF HERE >>> */}
       <img
-        src="https://i.imgur.com/PLACEHOLDER_BADGE.gif"
+        src="/placeholders/netscape.svg"
         alt="Netscape Now"
         width="88"
         height="31"
@@ -240,7 +203,7 @@ const mainContent = (
     <br />
 
     {/* ====== LATEST RAMBLINGS ====== */}
-    <center>
+    <center id="blog-posts">
       <table width="100%" cellPadding="0" cellSpacing="0" border="0">
         <tbody>
           <tr>
@@ -256,47 +219,45 @@ const mainContent = (
 
     <br />
 
-    {posts.map((post, i) => (
-      <div key={post.title}>
-        <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="postbox">
-          <tbody>
-            <tr valign="top">
-              <td width="90">
-                {/* <<< SWAP POST THUMBNAIL HERE >>> */}
-                <img
-                  src={`https://i.imgur.com/PLACEHOLDER_THUMB${i + 1}.gif`}
-                  alt="thumb"
-                  width="80"
-                  height="80"
-                  border="3"
-                  style={{ borderStyle: 'ridge', borderColor: post.thumbBorder }}
-                />
-              </td>
-              <td>
-                <span className="posttitle">{post.title}</span>
-                <br />
-                <font face="Arial" size="2" color="#FFFF00">
-                  {post.date}
-                </font>
-                <br />
-                <br />
-                <font face="Comic Sans MS" size="3" color="#FFFFFF">
-                  {post.excerpt}
-                </font>
-                <br />
-                <br />
-                {post.link.startsWith('/') ? (
-                  <Link to={post.link}>Read More &rarr;</Link>
-                ) : (
-                  <a href={post.link}>Read More &rarr;</a>
-                )}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <br />
-      </div>
-    ))}
+    {posts.map((post) => {
+      const href = getPostHref(post)
+      return (
+        <div key={post.slug}>
+          <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="postbox">
+            <tbody>
+              <tr valign="top">
+                <td width="90">
+                  <img
+                    src={post.thumb}
+                    alt="thumb"
+                    width="80"
+                    height="80"
+                    border="3"
+                    style={{ borderStyle: 'ridge', borderColor: post.thumbBorder }}
+                  />
+                </td>
+                <td>
+                  <span className="posttitle">{post.title}</span>
+                  <br />
+                  <font face="Arial" size="2" color="#FFFF00">
+                    {post.date}
+                  </font>
+                  <br />
+                  <br />
+                  <font face="Comic Sans MS" size="3" color="#FFFFFF">
+                    {post.excerpt}
+                  </font>
+                  <br />
+                  <br />
+                  <Link to={href}>Read More &rarr;</Link>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <br />
+        </div>
+      )
+    })}
   </>
 )
 

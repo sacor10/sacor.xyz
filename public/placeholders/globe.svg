@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="g" cx="40%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#66CCFF"/>
+      <stop offset="70%" stop-color="#0066CC"/>
+      <stop offset="100%" stop-color="#001F66"/>
+    </radialGradient>
+    <clipPath id="clip"><circle cx="32" cy="32" r="28"/></clipPath>
+  </defs>
+  <circle cx="32" cy="32" r="28" fill="url(#g)" stroke="#000" stroke-width="2"/>
+  <g clip-path="url(#clip)">
+    <g>
+      <g fill="#00CC33" stroke="#004400" stroke-width="0.5">
+        <path d="M8,28 Q14,22 20,26 Q26,30 22,36 Q16,38 10,34 Z"/>
+        <path d="M30,14 Q40,12 44,20 Q42,28 34,26 Q28,22 30,14 Z"/>
+        <path d="M38,40 Q48,38 52,44 Q48,52 40,50 Q34,46 38,40 Z"/>
+        <path d="M56,24 Q62,22 64,28 Q62,34 56,32 Z"/>
+      </g>
+      <g stroke="#FFFFFF" stroke-width="0.5" fill="none" opacity="0.6">
+        <ellipse cx="32" cy="32" rx="28" ry="10"/>
+        <ellipse cx="32" cy="32" rx="18" ry="28"/>
+        <ellipse cx="32" cy="32" rx="8" ry="28"/>
+        <line x1="4" y1="32" x2="60" y2="32"/>
+      </g>
+      <animateTransform attributeName="transform" type="translate" from="0 0" to="-56 0" dur="2s" repeatCount="indefinite"/>
+    </g>
+  </g>
+  <circle cx="32" cy="32" r="28" fill="none" stroke="#FFFF00" stroke-width="1.5"/>
+</svg>

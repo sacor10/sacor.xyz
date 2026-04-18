@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="88" height="31" viewBox="0 0 88 31">
+  <rect width="88" height="31" fill="#000"/>
+  <rect x="1" y="1" width="86" height="29" fill="#000" stroke="#888" stroke-width="1"/>
+  <rect x="2" y="2" width="28" height="27" fill="#00226B"/>
+  <g font-family="Impact, Arial Black" font-weight="bold" text-anchor="middle">
+    <text x="16" y="14" font-size="10" fill="#FFFFFF">NOW</text>
+    <text x="16" y="24" font-size="10" fill="#FFFFFF">3.0</text>
+  </g>
+  <rect x="30" y="2" width="56" height="27" fill="#C0C0C0"/>
+  <g font-family="Impact, Arial Black" font-weight="bold">
+    <text x="58" y="14" text-anchor="middle" font-size="10" fill="#000">Netscape</text>
+    <text x="58" y="24" text-anchor="middle" font-size="9" fill="#CC0000">NOW!</text>
+  </g>
+  <path d="M4,26 L12,4 L16,4 L24,22 L28,4" stroke="#FF9900" stroke-width="1.5" fill="none" opacity="0.6"/>
+</svg>
