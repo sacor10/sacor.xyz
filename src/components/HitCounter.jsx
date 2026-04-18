@@ -14,7 +14,7 @@ export default function HitCounter() {
     const alreadyCountedToday = localStorage.getItem(STORAGE_KEY) === today
     const method = alreadyCountedToday ? 'GET' : 'POST'
 
-    fetch('/api/hit', { method })
+    fetch('/.netlify/functions/hit', { method })
       .then((r) => r.json())
       .then(({ count }) => {
         if (cancelled) return
