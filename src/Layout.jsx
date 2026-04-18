@@ -53,7 +53,7 @@ export default function Layout({ mainContent, rightSidebar }) {
                 <br />
                 <marquee behavior="scroll" direction="left" scrollAmount="6" bgColor="#FFFF00" width="90%">
                   <font face="Impact" size="4" color="#FF00FF">
-                    &#9733; Under Construction Since 1999... Just Kidding, It&rsquo;s 90s Forever!!! &#9733;
+                    &#9733; Under Construction Since 1998... Just Kidding, It&rsquo;s 90s Forever!!! &#9733;
                     &nbsp;&nbsp;&nbsp; SIGN MY GUESTBOOK!!! &nbsp;&nbsp;&nbsp;
                     &#9829; THANKS FOR VISITING!!! &#9829;
                   </font>

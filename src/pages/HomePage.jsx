@@ -113,7 +113,7 @@ const rightSidebar = (
             </font>
             <br />
             <font face="Comic Sans MS" size="1" color="#FFFFFF">
-              since July 14, 1999
+              since July 4, 1776
             </font>
           </td>
         </tr>
