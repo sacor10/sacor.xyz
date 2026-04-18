@@ -153,3 +153,64 @@
 .geocities .favlinks a {
   color: #0000EE;
 }
+
+/* ---- YtMp4 page ---- */
+.geocities .feature-row {
+  border: 2px outset #444;
+  padding: 6px 10px;
+}
+
+.geocities .dl-btn-wrap {
+  background: #C0C0C0;
+  border-top: 6px solid #FFFFFF;
+  border-left: 6px solid #FFFFFF;
+  border-right: 6px solid #404040;
+  border-bottom: 6px solid #404040;
+  padding: 4px;
+}
+
+.geocities .dl-btn {
+  display: block;
+  background: #C0C0C0;
+  border-top: 4px solid #FFFFFF;
+  border-left: 4px solid #FFFFFF;
+  border-right: 4px solid #404040;
+  border-bottom: 4px solid #404040;
+  font-family: "Impact", "Arial Black", sans-serif;
+  font-size: 26px;
+  color: #000080;
+  text-decoration: none;
+  padding: 14px 36px;
+  text-align: center;
+  letter-spacing: 1px;
+}
+.geocities .dl-btn:hover {
+  background: #FF00FF;
+  color: #FFFF00;
+  border-top-color: #404040;
+  border-left-color: #404040;
+  border-right-color: #FFFFFF;
+  border-bottom-color: #FFFFFF;
+}
+
+.geocities .navbtn-link {
+  display: inline-block;
+  background: #C0C0C0;
+  border-top: 3px solid #FFFFFF;
+  border-left: 3px solid #FFFFFF;
+  border-right: 3px solid #404040;
+  border-bottom: 3px solid #404040;
+  font-family: "Arial Black", Impact, sans-serif;
+  font-size: 13px;
+  color: #000080;
+  text-decoration: none;
+  padding: 6px 12px;
+}
+.geocities .navbtn-link:hover {
+  background: #FF00FF;
+  color: #FFFF00;
+  border-top-color: #404040;
+  border-left-color: #404040;
+  border-right-color: #FFFFFF;
+  border-bottom-color: #FFFFFF;
+}
