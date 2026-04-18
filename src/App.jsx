@@ -2,31 +2,31 @@ import './App.css'
 
 const posts = [
   {
-    title: 'I Built a Dumb Little EXE and You Should Try It!!!',
-    date: 'Posted April 14, 2026 by Zachary',
+    title: 'I Built a youtube link to mp4 downloader EXE and You Should Try It!!!',
+    date: 'Posted April 14, 2026 by Sacor',
     excerpt:
-      'So I made this little tray app that just reminds you to drink water, but it yells at you in Comic Sans. Download it below and let me know how many hydration crimes it catches you committing!!!',
+      'So I made this little tray app that just reminds you to drink water, but it yells at you in Comic Sans. Download it below and let me know how many hydration crimes it catches you committing!!! Haha jk, you should steal uncopyrighted from the internet with this, though.',
     thumbBorder: '#FF00FF',
   },
   {
     title: 'Why Salt Lake City Is Basically a Giant LAN Party in the Mountains',
-    date: 'Posted April 2, 2026 by Zachary',
+    date: 'Posted April 2, 2026 by Sacor',
     excerpt:
-      'A love letter to SLC coffee shops, cold winters, and the people who keep nerding out with me on the weekends. Also: I tried to skateboard. Results were mixed.',
+      'A love letter to SLC gay bars, cold winters, and the people who keep nerding out with me about Theodore Roosevelt on the weekends. Also: I tried to LARP as a Utah College Republican. Results were mixed.',
     thumbBorder: '#00FFFF',
   },
   {
     title: 'Ranking Every 90s Snack I Can Still Actually Find',
-    date: 'Posted March 21, 2026 by Zachary',
+    date: 'Posted March 21, 2026 by Sacor',
     excerpt:
       'Dunkaroos are BACK, Fruit Gushers never left, and I have STRONG opinions about Bagel Bites. Come fight me in the comments (that I haven\u2019t implemented yet).',
     thumbBorder: '#00FF00',
   },
   {
-    title: 'I Rewrote My Todo App in a Language I Barely Know!!!',
-    date: 'Posted March 8, 2026 by Zachary',
+    title: 'Somebody needs to stop it now!!!',
+    date: 'Posted March 8, 2026 by Sacor',
     excerpt:
-      'Was it a good idea? Absolutely not. Did I learn a lot? Kind of. Did I ship a buggy exe you can download anyway? You bet I did!!! Link inside.',
+      'Was it a good idea? Absolutely not. Did I learn a lot? Kind of. Did I? You bet I did!!! Link inside.',
     thumbBorder: '#FFFF00',
   },
 ]
@@ -67,7 +67,7 @@ export default function App() {
                   align="right"
                 />
                 <h1 className="glow">
-                  <blink>WELCOME TO ZACHARY&rsquo;S GEOCITIES BLOG!!!</blink>
+                  <blink>WELCOME TO Sacor&rsquo;S GEOCITIES BLOG!!!</blink>
                 </h1>
                 <font face="Comic Sans MS" size="4" color="#00FFFF">
                   ~*~ Green Hill Zone ~*~ Where the 90s Never Die!!! ~*~
@@ -149,7 +149,7 @@ export default function App() {
                 <br />
                 <font face="Comic Sans MS" size="4" color="#FFFFFF">
                   <font color="#FFFF00">&#9733;</font> Welcome welcome WELCOME to my little corner of the World
-                  Wide Web!!! My name is <b className="hotpink">Zachary</b> and this is where I post my{' '}
+                  Wide Web!!! My name is <b className="hotpink">Sacor</b> and this is where I post my{' '}
                   <i className="cyan">ramblings</i>, weird thoughts, and all the{' '}
                   <b className="lime">random apps and deployable executables</b> I make for YOU to download for
                   FREE!!! <font color="#FFFF00">&#9733;</font>
@@ -229,7 +229,7 @@ export default function App() {
                     <tr>
                       <td align="center" bgColor="#FF00FF" className="section-bar-sm">
                         <font face="Impact" size="4" color="#FFFF00">
-                          ~ ABOUT ZACHARY ~
+                          ~ ABOUT Sacor ~
                         </font>
                       </td>
                     </tr>
@@ -247,7 +247,7 @@ export default function App() {
                         <br />
                         <br />
                         <font face="Comic Sans MS" size="2" color="#FFFFFF">
-                          Howdy!!! I&rsquo;m <b className="cyan">Zachary</b>, coming at you LIVE from{' '}
+                          Howdy!!! I&rsquo;m <b className="cyan">Sacor</b>, coming at you LIVE from{' '}
                           <b className="lime">Salt Lake City, Utah</b>!!! I write about{' '}
                           <b className="yellow">tech</b>, <b className="hotpink">life</b>, and random{' '}
                           <b className="cyan">90s nostalgia</b>. I also make weird little apps and exes for
@@ -428,7 +428,7 @@ export default function App() {
                 </marquee>
                 <br />
                 <font face="Courier New" size="2" color="#00FF00">
-                  &copy; 1999&ndash;2026 Zachary &nbsp;&bull;&nbsp; Made with{' '}
+                  &copy; 1999&ndash;2026 Sacor &nbsp;&bull;&nbsp; Made with{' '}
                   <b className="cyan">Microsoft FrontPage</b> &nbsp;&bull;&nbsp; Best viewed in{' '}
                   <b className="yellow">Netscape Navigator 4.7</b> at 800&times;600 &nbsp;&bull;&nbsp; Email me at{' '}
                   <a href="mailto:vestibule@sacor.xyz" className="yellow-link">
