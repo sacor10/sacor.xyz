@@ -55,18 +55,42 @@ export default function HitCounter() {
               You are visitor #
             </font>
             <br />
-            <img
-              src="/placeholders/counter.svg"
-              alt={display}
+            <svg
               width="140"
               height="30"
-              border="2"
+              viewBox="0 0 140 30"
               className="inset-yellow"
-            />
-            <br />
-            <font face="Courier New" size="2" color="#FFFF00">
-              {display}
-            </font>
+              style={{ borderWidth: '2px' }}
+              role="img"
+              aria-label={`visitor number ${display}`}
+            >
+              <rect width="140" height="30" fill="#000" />
+              <rect
+                x="2"
+                y="2"
+                width="136"
+                height="26"
+                fill="#001100"
+                stroke="#00FF00"
+                strokeWidth="1"
+              />
+              <g
+                fontFamily="Courier New, monospace"
+                fontSize="20"
+                fontWeight="bold"
+                textAnchor="middle"
+              >
+                {display.split('').map((digit, i) => {
+                  const x = 14 + i * 16
+                  return (
+                    <g key={i}>
+                      <text x={x} y="22" fill="#003300">8</text>
+                      <text x={x} y="22" fill="#00FF00">{digit}</text>
+                    </g>
+                  )
+                })}
+              </g>
+            </svg>
             <br />
             <font face="Comic Sans MS" size="1" color="#FFFFFF">
               since July 4, 1776
