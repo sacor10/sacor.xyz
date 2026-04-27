@@ -28,8 +28,8 @@ const rightSidebar = (
             <br />
             <br />
             <font face="Comic Sans MS" size="2" color="#FFFFFF">
-              Howdy!!! I&rsquo;m <b className="cyan">Sacor</b>, coming at you LIVE from{' '}
-              <b className="lime">Salt Lake City, Utah</b>!!! I write about{' '}
+              Girl hey. I&rsquo;m <b className="cyan">Sacor</b>, coming at you from{' '}
+              <b className="lime">Salt Lake City, Utah</b>! I write about{' '}
               <b className="yellow">tech</b>, <b className="hotpink">life</b>, and random{' '}
               <b className="cyan">American nostalgia</b>. I also make weird little apps and exes for
               fun!

@@ -156,7 +156,7 @@ export default function BlogPostPage() {
 
       <center>
         <font face="Comic Sans MS" size="2" color="#00FFFF">
-          &#9733; End of post. Thanks for reading!!! &#9733;
+          &#9733; End of post. Thanks for scrolling. &#9733;
         </font>
         <br />
         <br />

@@ -97,11 +97,11 @@ const rightSidebar = (
           <td bgColor="#000000">
             <font face="Comic Sans MS" size="2" color="#FFFFFF">
               <ol style={{ paddingLeft: '18px', margin: 0 }}>
-                <li>Be kind!!!</li>
-                <li>No spam!!!</li>
-                <li>No crypto!!!</li>
-                <li>Weird is encouraged!!!</li>
-                <li>At least one exclamation point!!!</li>
+                <li>Be kind!</li>
+                <li>No spam!</li>
+                <li>No crypto!</li>
+                <li>Nothing but American excellence is encouraged here!</li>
+                <li>Have a good time and enjoy it too.</li>
               </ol>
             </font>
           </td>
@@ -135,7 +135,7 @@ const rightSidebar = (
               <br />
               <b className="yellow">Spam filtered:</b> 2,841
               <br />
-              <b className="yellow">Crypto bros blocked:</b> <blink>&infin;</blink>
+              <b className="yellow">Crypto bots and bros blocked:</b> <blink>&infin;</blink>
               <br />
               <b className="yellow">Vibes:</b> immaculate
             </font>
@@ -154,7 +154,7 @@ const mainContent = (
       </font>
       <br />
       <font face="Comic Sans MS" size="3" color="#FFFF00">
-        <blink>~ Leave a message for all of posterity!!! ~</blink>
+        <blink>~ Leave a message for all of posterity! ~</blink>
       </font>
     </center>
 
@@ -162,7 +162,7 @@ const mainContent = (
 
     <font face="Comic Sans MS" size="3" color="#FFFFFF">
       Welcome to the <b className="hotpink">Sacor.xyz Guestbook</b>, established in{' '}
-      <b className="cyan">1998</b> (spiritually). Below you will find the sacred scrolls of
+      <b className="cyan">1989</b> (spiritually). Below you will find the sacred scrolls of
       everyone who has ever stopped by to say hi. To add your own, email me &mdash; see below the
       entries.
     </font>

@@ -67,7 +67,7 @@ const mainContent = (
       </font>
       <br />
       <font face="Comic Sans MS" size="3" color="#FFFF00">
-        <blink>~ Reach out! I do not bite! Unless you like that kind of thing! ~</blink>
+        <blink>~ Reach out! I do not bite everybody. ~</blink>
       </font>
     </center>
 
@@ -75,9 +75,8 @@ const mainContent = (
 
     <font face="Comic Sans MS" size="3" color="#FFFFFF">
       So you want to <b className="hotpink">email me</b>, <b className="cyan">follow me</b>, or{' '}
-      <b className="lime">yell at me on the internet</b>??? Wonderful!!! Here are ALL the ways to do
-      that. Please be advised that responses may take anywhere from <i>4 minutes</i> to{' '}
-      <i>4 business weeks</i> depending on my mood and whether Mercury is in retrograde.
+      <b className="lime">yell at me on the internet</b>? Wonderful! Here are some the ways to do
+      that.
     </font>
 
     <br />
@@ -107,7 +106,7 @@ const mainContent = (
             <br />
             <br />
             <font face="Comic Sans MS" size="2" color="#FFFFFF">
-              The best way to reach me. I actually read these.
+              The best way to reach me.
             </font>
             <br />
             <br />
@@ -185,7 +184,7 @@ const mainContent = (
               </font>
               <br />
               <font face="Comic Sans MS" size="2" color="#FFFF00">
-                <i>A moment of silence for the chat clients of my youth.</i>
+                <i>What.</i>
               </font>
             </center>
             <br />
@@ -200,7 +199,7 @@ const mainContent = (
     <center>
       <font face="Comic Sans MS" size="2" color="#00FFFF">
         &#9733; Don&rsquo;t forget to sign the <Link to="/guestbook">guestbook</Link> on your way
-        out!!! &#9733;
+        out! &#9733;
       </font>
     </center>
   </>
