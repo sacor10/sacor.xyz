@@ -53,8 +53,8 @@ export default function Layout({ mainContent, rightSidebar }) {
                 <marquee behavior="scroll" direction="left" scrollAmount="6" bgColor="#FFFF00" width="90%">
                   <font face="Impact" size="4" color="#FF00FF">
                     &#9733; Since 1776 &#9733;
-                    &nbsp;&nbsp;&nbsp; SIGN MY GUESTBOOK!!! &nbsp;&nbsp;&nbsp;
-                    &#9829; THANKS FOR VISITING!!! &#9829;
+                    &nbsp;&nbsp;&nbsp; SIGN MY GUESTBOOK!?! &nbsp;&nbsp;&nbsp;
+                    &#9829; THANKS FOR VISITING! &#9829;
                   </font>
                 </marquee>
               </td>
@@ -126,12 +126,12 @@ export default function Layout({ mainContent, rightSidebar }) {
               <td className="footer">
                 <marquee behavior="alternate" scrollAmount="4">
                   <font face="Courier New" size="2" color="#FF00FF">
-                    &#9733; &#9733; &#9733; THANKS FOR VISITING!!! TELL YOUR FRIENDS!!! &#9733; &#9733; &#9733;
+                    &#9733; &#9733; &#9733; THANKS FOR VISITING! TELL YOUR FRIENDS! &#9733; &#9733; &#9733;
                   </font>
                 </marquee>
                 <br />
                 <font face="Courier New" size="2" color="#00FF00">
-                  &copy; 1999&ndash;2026 Sacor &nbsp;&bull;&nbsp; Made with{' '}
+                  &copy; 1989&ndash;2026 Sacor &nbsp;&bull;&nbsp; Made with{' '}
                   <b className="cyan">Microsoft FrontPage</b> &nbsp;&bull;&nbsp; Best viewed in{' '}
                   <b className="yellow">Netscape Navigator 4.7</b> at 800&times;600 &nbsp;&bull;&nbsp; Email me at{' '}
                   <a href="mailto:vestibule@sacor.xyz" className="yellow-link">

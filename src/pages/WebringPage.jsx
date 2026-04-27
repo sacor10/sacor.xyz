@@ -6,9 +6,9 @@ const members = [
     rank: 1,
     name: 'sacor.xyz',
     url: '/',
-    desc: 'The site you are on right now!!! Home of Sacor, the youtube-link-to-mp4 downloader, and strong Dunkaroo opinions.',
+    desc: 'The site you are on right now! Home of Sacor, the youtube-link-to-mp4 downloader, and strong opinions.',
     status: 'ACTIVE',
-    joined: 'Founded 1998 (retroactively)',
+    joined: 'Founded 1989 (retroactively)',
   },
 ]
 
@@ -118,7 +118,7 @@ const mainContent = (
       </font>
       <br />
       <font face="Comic Sans MS" size="3" color="#FFFF00">
-        <blink>~*~ Est. 2026, vibes Est. 1998 ~*~</blink>
+        <blink>~*~ Est. 2026, vibes Est. 1989 ~*~</blink>
       </font>
     </center>
 
@@ -136,7 +136,7 @@ const mainContent = (
       </font>{' '}
       there is currently <b className="lime">one (1)</b> member site, and you are looking at it.
       So [Prev], [Next], and [Random] all go to the same place. That place is <i>here</i>. You&rsquo;ve
-      arrived. Welcome home.
+      arrived. Welcome.
     </font>
 
     <br />
@@ -201,7 +201,7 @@ const mainContent = (
 
     <center>
       <font face="Comic Sans MS" size="2" color="#00FFFF">
-        &#9733; End of ring. You&rsquo;ve seen everything. Go outside. &#9733;
+        &#9733; End of ring. You&rsquo;ve seen everything. Go touch scratchy wall. &#9733;
       </font>
     </center>
   </>
