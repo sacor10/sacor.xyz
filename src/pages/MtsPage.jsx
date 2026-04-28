@@ -211,7 +211,7 @@ function Player({ status, videoId, subhead }) {
                   }}
                 >
                   <iframe
-                    src={`https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0&playsinline=1`}
+                    src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&modestbranding=1&rel=0&playsinline=1`}
                     title="MTS Live"
                     allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
                     allowFullScreen
