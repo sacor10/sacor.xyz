@@ -6,6 +6,7 @@ const navLinks = [
   { label: 'ABOUT ME',   to: '/#about-me' },
   { label: 'BLOG POSTS', to: '/#blog-posts' },
   { label: 'DOWNLOADS',  to: '/ytmp4' },
+  { label: 'MTS LIVE',   to: '/mts' },
   { label: 'GUESTBOOK',  to: '/guestbook' },
   { label: 'CONTACT',    to: '/contact' },
 ]
