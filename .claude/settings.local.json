@@ -6,7 +6,8 @@
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
       "Bash(curl -sI https://sacor.xyz)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "WebFetch(domain:www.mts.now)"
     ]
   }
 }
