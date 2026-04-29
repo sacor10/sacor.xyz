@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Layout from '../Layout'
 
 const CONFIG_URL = 'https://mts-api.dev-bae.workers.dev/config'
@@ -118,10 +118,10 @@ function Sidebar({ episode, onAir }) {
                 )}
                 <br />
                 <br />
-                <font color="#FFFF00">click unmute for sound!!!</font>
+                <font color="#FFFF00">sound should auto-start!!!</font>
                 <br />
                 <font face="Comic Sans MS" size="1" color="#FF00FF">
-                  (browsers block autoplay sound)
+                  (if muted, click the player to unmute)
                 </font>
               </font>
             </td>
@@ -132,7 +132,69 @@ function Sidebar({ episode, onAir }) {
   )
 }
 
+function loadYouTubeApi() {
+  if (document.getElementById('yt-api-script')) return
+  const s = document.createElement('script')
+  s.id = 'yt-api-script'
+  s.src = 'https://www.youtube.com/iframe_api'
+  document.head.appendChild(s)
+}
+
 function Player({ status, videoId, subhead }) {
+  const containerRef = useRef(null)
+
+  useEffect(() => {
+    if (status !== 'ready' || !videoId) return
+
+    let player = null
+    let destroyed = false
+
+    function createPlayer() {
+      if (destroyed || !containerRef.current) return
+      containerRef.current.innerHTML = ''
+      const target = document.createElement('div')
+      containerRef.current.appendChild(target)
+
+      player = new window.YT.Player(target, {
+        videoId,
+        width: '100%',
+        height: '100%',
+        playerVars: {
+          autoplay: 1,
+          mute: 1,
+          modestbranding: 1,
+          rel: 0,
+          playsinline: 1,
+        },
+        events: {
+          onReady(e) {
+            if (!destroyed) {
+              e.target.unMute()
+              e.target.setVolume(100)
+            }
+          },
+        },
+      })
+    }
+
+    if (window.YT?.Player) {
+      createPlayer()
+    } else {
+      const prev = window.onYouTubeIframeAPIReady
+      window.onYouTubeIframeAPIReady = () => {
+        prev?.()
+        createPlayer()
+      }
+      loadYouTubeApi()
+    }
+
+    return () => {
+      destroyed = true
+      player?.destroy()
+      if (containerRef.current) containerRef.current.innerHTML = ''
+    }
+  }, [status, videoId])
+
   return (
     <>
       <center>
@@ -210,19 +272,14 @@ function Player({ status, videoId, subhead }) {
                     paddingTop: '56.25%',
                   }}
                 >
-                  <iframe
-                    src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&modestbranding=1&rel=0&playsinline=1`}
-                    title="MTS Live"
-                    allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-                    allowFullScreen
-                    frameBorder="0"
+                  <div
+                    ref={containerRef}
                     style={{
                       position: 'absolute',
                       top: 0,
                       left: 0,
                       width: '100%',
                       height: '100%',
-                      border: 0,
                     }}
                   />
                 </div>
