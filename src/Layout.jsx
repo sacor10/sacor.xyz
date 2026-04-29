@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import './App.css'
 
@@ -11,7 +12,61 @@ const navLinks = [
   { label: 'CONTACT',    to: '/contact' },
 ]
 
+function useMediaQuery(query) {
+  const get = () => typeof window !== 'undefined' && window.matchMedia(query).matches
+  const [matches, setMatches] = useState(get)
+  useEffect(() => {
+    const mql = window.matchMedia(query)
+    const handler = () => setMatches(mql.matches)
+    mql.addEventListener('change', handler)
+    return () => mql.removeEventListener('change', handler)
+  }, [query])
+  return matches
+}
+
+const PANE_LABELS = ['Show navigation', 'Show main content', 'Show sidebar']
+
 export default function Layout({ mainContent, rightSidebar }) {
+  const isMobile = useMediaQuery('(max-width: 768px)')
+  const [pane, setPane] = useState(1)
+  const touch = useRef({ x: 0, y: 0, t: 0, axis: null, startPane: 1 })
+
+  const onTouchStart = (e) => {
+    const t0 = e.touches[0]
+    touch.current = {
+      x: t0.clientX,
+      y: t0.clientY,
+      t: Date.now(),
+      axis: null,
+      startPane: pane,
+    }
+  }
+
+  const onTouchMove = (e) => {
+    const t0 = e.touches[0]
+    const dx = t0.clientX - touch.current.x
+    const dy = t0.clientY - touch.current.y
+    if (touch.current.axis === null && Math.max(Math.abs(dx), Math.abs(dy)) > 10) {
+      touch.current.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'
+    }
+    if (touch.current.axis === 'x' && e.cancelable) {
+      e.preventDefault()
+    }
+  }
+
+  const onTouchEnd = (e) => {
+    const t1 = e.changedTouches[0]
+    const dx = t1.clientX - touch.current.x
+    const threshold = Math.min(60, window.innerWidth * 0.25)
+    if (touch.current.axis === 'x' && Math.abs(dx) > threshold) {
+      setPane((p) => {
+        if (dx < 0) return Math.min(p + 1, 2)
+        return Math.max(p - 1, 0)
+      })
+    }
+    touch.current.axis = null
+  }
+
   return (
     <div className="geocities">
       {/* ============ TOP HEADER BANNER ============ */}
@@ -67,6 +122,13 @@ export default function Layout({ mainContent, rightSidebar }) {
       <br />
 
       {/* ============ MAIN 3-COLUMN LAYOUT ============ */}
+      <div
+        className={isMobile ? 'pane-viewport' : ''}
+        style={isMobile ? { '--pane': pane } : undefined}
+        onTouchStart={isMobile ? onTouchStart : undefined}
+        onTouchMove={isMobile ? onTouchMove : undefined}
+        onTouchEnd={isMobile ? onTouchEnd : undefined}
+      >
       <center>
         <table width="95%" cellPadding="8" cellSpacing="6" border="0">
           <tbody>
@@ -116,6 +178,23 @@ export default function Layout({ mainContent, rightSidebar }) {
           </tbody>
         </table>
       </center>
+      </div>
+
+      {isMobile && (
+        <center className="pane-dots">
+          {[0, 1, 2].map((i) => (
+            <button
+              key={i}
+              type="button"
+              className={'pane-dot' + (i === pane ? ' active' : '')}
+              onClick={() => setPane(i)}
+              aria-label={PANE_LABELS[i]}
+            >
+              {i === pane ? '●' : '○'}
+            </button>
+          ))}
+        </center>
+      )}
 
       <br />
 
