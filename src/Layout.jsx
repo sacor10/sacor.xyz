@@ -4,7 +4,7 @@ import './App.css'
 const navLinks = [
   { label: 'HOME',       to: '/' },
   { label: 'ABOUT ME',   to: '/#about-me' },
-  { label: 'BLOG POSTS', to: '/#blog-posts' },
+  { label: 'BLOG POSTS', to: '/blog' },
   { label: 'DOWNLOADS',  to: '/ytmp4' },
   { label: 'MTS LIVE',   to: '/mts' },
   { label: 'GUESTBOOK',  to: '/guestbook' },
