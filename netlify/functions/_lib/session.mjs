@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from 'node:crypto'
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
 
 const COOKIE_NAME = 'sacor_session'
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
@@ -19,8 +19,19 @@ export function getTravelPlanEmails() {
 }
 
 export function canAccessTravelPlans(email) {
+  return !!normalizeEmail(email)
+}
+
+export function isOwnerEmail(email) {
   const normalized = normalizeEmail(email)
   return !!normalized && getTravelPlanEmails().includes(normalized)
+}
+
+export function userKeyPrefix(email) {
+  const normalized = normalizeEmail(email)
+  if (!normalized) throw new Error('userKeyPrefix requires an email')
+  const hash = createHash('sha256').update(normalized).digest('hex')
+  return `users/${hash}`
 }
 
 const getSecret = () => {
@@ -55,11 +66,10 @@ export function verifySession(token) {
   if (!payload || typeof payload.exp !== 'number' || payload.exp < Date.now()) return null
   const email = normalizeEmail(payload.email)
   if (!email) return null
-  const travelAccess = canAccessTravelPlans(email)
   return {
     email,
-    canAccessTravelPlans: travelAccess,
-    isOwner: travelAccess,
+    canAccessTravelPlans: canAccessTravelPlans(email),
+    isOwner: isOwnerEmail(email),
   }
 }
 
@@ -95,11 +105,5 @@ export function requireTravelAccess(req) {
   if (!canAccessTravelPlans(session.email)) {
     return { error: new Response('Forbidden', { status: 403 }) }
   }
-  return {
-    session: {
-      ...session,
-      canAccessTravelPlans: true,
-      isOwner: true,
-    },
-  }
+  return { session }
 }

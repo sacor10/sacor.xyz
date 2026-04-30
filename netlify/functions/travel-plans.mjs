@@ -1,10 +1,10 @@
 import { getStore } from '@netlify/blobs'
-import { requireTravelAccess } from './_lib/session.mjs'
+import { requireTravelAccess, userKeyPrefix } from './_lib/session.mjs'
 import { sfStops } from '../../src/data/sfTrip.js'
 
-const INDEX_KEY = 'index'
 const SEED_PLAN_ID = 'sf-long-weekend-demo'
-const planKey = (id) => `plans/${id}`
+const indexKey = (prefix) => `${prefix}/index`
+const planKey = (prefix, id) => `${prefix}/plans/${id}`
 
 const json = (data, init = {}) =>
   new Response(JSON.stringify(data), {
@@ -16,8 +16,8 @@ const json = (data, init = {}) =>
     },
   })
 
-const loadIndex = async (store) => {
-  const raw = await store.get(INDEX_KEY)
+const loadIndex = async (store, prefix) => {
+  const raw = await store.get(indexKey(prefix))
   if (!raw) return []
   try {
     const parsed = JSON.parse(raw)
@@ -27,7 +27,7 @@ const loadIndex = async (store) => {
   }
 }
 
-const saveIndex = (store, list) => store.set(INDEX_KEY, JSON.stringify(list))
+const saveIndex = (store, prefix, list) => store.set(indexKey(prefix), JSON.stringify(list))
 
 const sanitizeString = (value, max) => {
   if (typeof value !== 'string') return ''
@@ -53,7 +53,7 @@ const buildSeedMarkdown = (stops) => {
   return lines.join('\n')
 }
 
-const seedIfEmpty = async (store, list) => {
+const seedIfEmpty = async (store, prefix, list) => {
   if (list.length > 0) return list
   const now = new Date().toISOString()
   const plan = {
@@ -65,10 +65,10 @@ const seedIfEmpty = async (store, list) => {
     createdAt: now,
     updatedAt: now,
   }
-  await store.set(planKey(plan.id), JSON.stringify(plan))
+  await store.set(planKey(prefix, plan.id), JSON.stringify(plan))
   const summary = { id: plan.id, title: plan.title, destination: plan.destination, updatedAt: now }
   const next = [summary]
-  await saveIndex(store, next)
+  await saveIndex(store, prefix, next)
   return next
 }
 
@@ -96,18 +96,19 @@ export default async (req) => {
   const auth = requireTravelAccess(req)
   if (auth.error) return auth.error
 
+  const prefix = userKeyPrefix(auth.session.email)
   const store = getStore('travel-plans')
   const url = new URL(req.url)
   const id = url.searchParams.get('id')
 
   if (req.method === 'GET') {
     if (id) {
-      const raw = await store.get(planKey(id))
+      const raw = await store.get(planKey(prefix, id))
       if (!raw) return json({ error: 'Not found' }, { status: 404 })
       return json(JSON.parse(raw))
     }
-    const stored = await loadIndex(store)
-    const list = await seedIfEmpty(store, stored)
+    const stored = await loadIndex(store, prefix)
+    const list = await seedIfEmpty(store, prefix, stored)
     return json({ plans: list })
   }
 
@@ -133,16 +134,16 @@ export default async (req) => {
     const now = new Date().toISOString()
     const plan = { id: newId, title, destination, body: markdown, createdAt: now, updatedAt: now }
     if (stops) plan.stops = stops
-    await store.set(planKey(newId), JSON.stringify(plan))
-    const list = await loadIndex(store)
+    await store.set(planKey(prefix, newId), JSON.stringify(plan))
+    const list = await loadIndex(store, prefix)
     list.unshift({ id: newId, title, destination, updatedAt: now })
-    await saveIndex(store, list)
+    await saveIndex(store, prefix, list)
     return json(plan, { status: 201 })
   }
 
   if (req.method === 'PUT') {
     if (!id) return json({ error: 'Missing id' }, { status: 400 })
-    const raw = await store.get(planKey(id))
+    const raw = await store.get(planKey(prefix, id))
     if (!raw) return json({ error: 'Not found' }, { status: 404 })
     let body
     try {
@@ -164,24 +165,24 @@ export default async (req) => {
     const updated = { ...existing, title, destination, body: markdown, updatedAt: now }
     if (stops) updated.stops = stops
     else delete updated.stops
-    await store.set(planKey(id), JSON.stringify(updated))
+    await store.set(planKey(prefix, id), JSON.stringify(updated))
 
-    const list = await loadIndex(store)
+    const list = await loadIndex(store, prefix)
     const idx = list.findIndex((p) => p.id === id)
     const summary = { id, title, destination, updatedAt: now }
     if (idx >= 0) list[idx] = summary
     else list.unshift(summary)
-    await saveIndex(store, list)
+    await saveIndex(store, prefix, list)
 
     return json(updated)
   }
 
   if (req.method === 'DELETE') {
     if (!id) return json({ error: 'Missing id' }, { status: 400 })
-    await store.delete(planKey(id))
-    const list = await loadIndex(store)
+    await store.delete(planKey(prefix, id))
+    const list = await loadIndex(store, prefix)
     const next = list.filter((p) => p.id !== id)
-    await saveIndex(store, next)
+    await saveIndex(store, prefix, next)
     return json({ ok: true })
   }
 

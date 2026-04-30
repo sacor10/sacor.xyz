@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../Layout'
 import { useAuth } from '../auth/useAuth'
@@ -16,23 +16,21 @@ const formatDate = (iso) => {
   }
 }
 
-function GatedMessage({ loading, isSignedIn }) {
+function GatedMessage({ loading }) {
   return (
     <table width="100%" cellPadding="14" cellSpacing="0" border="0" className="postbox" bgColor="#000000">
       <tbody>
         <tr>
           <td align="center">
             <font face="Impact" size="5" color="#FF00FF">
-              ~ AREA RESERVED FOR SACOR ~
+              ~ SIGN IN TO START PLANNING ~
             </font>
             <br />
             <br />
             <font face="Comic Sans MS" size="3" color="#FFFFFF">
               {loading
                 ? 'checking your session...'
-                : isSignedIn
-                  ? 'You are signed in, but this area is for Sacor only. Sorry!'
-                  : 'Sign in with Google in the top banner to access Sacor’s private travel itineraries.'}
+                : 'Sign in with Google in the top banner to view and edit your private travel itineraries.'}
             </font>
           </td>
         </tr>
@@ -203,6 +201,94 @@ function NewPlanForm({ onCreated }) {
   )
 }
 
+function ImportPlanButton({ onImported }) {
+  const inputRef = useRef(null)
+  const [importing, setImporting] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setError('')
+    setSuccess('')
+    setImporting(true)
+    try {
+      const text = await file.text()
+      let parsed
+      try {
+        parsed = JSON.parse(text)
+      } catch (err) {
+        throw new Error(`Invalid JSON file: ${err.message}`)
+      }
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error('Import file must be a JSON object.')
+      }
+      if (typeof parsed.title !== 'string' || !parsed.title.trim()) {
+        throw new Error('Import file is missing a "title".')
+      }
+      const payload = {
+        title: parsed.title,
+        destination: typeof parsed.destination === 'string' ? parsed.destination : '',
+        body: typeof parsed.body === 'string' ? parsed.body : '',
+        stops: Array.isArray(parsed.stops) ? parsed.stops : null,
+      }
+      const res = await fetch('/.netlify/functions/travel-plans', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || `Import failed (${res.status})`)
+      }
+      const plan = await res.json()
+      setSuccess(`Imported "${plan.title}".`)
+      onImported?.(plan)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setImporting(false)
+      if (inputRef.current) inputRef.current.value = ''
+    }
+  }
+
+  return (
+    <center>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="application/json,.json"
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+      />
+      <button
+        type="button"
+        className="dl-btn"
+        onClick={() => inputRef.current?.click()}
+        disabled={importing}
+      >
+        {importing ? 'IMPORTING...' : 'IMPORT FROM JSON'}
+      </button>
+      {error && (
+        <div className="travel-error">
+          <font face="Comic Sans MS" size="2" color="#FF00FF">
+            {error}
+          </font>
+        </div>
+      )}
+      {success && (
+        <div>
+          <font face="Comic Sans MS" size="2" color="#FFFF00">
+            {success}
+          </font>
+        </div>
+      )}
+    </center>
+  )
+}
+
 function PlansList() {
   const [plans, setPlans] = useState(null)
   const [error, setError] = useState('')
@@ -246,6 +332,10 @@ function PlansList() {
   return (
     <>
       <NewPlanForm onCreated={load} />
+
+      <br />
+
+      <ImportPlanButton onImported={load} />
 
       <br />
 
@@ -358,7 +448,8 @@ const rightSidebar = (
           <td bgColor="#000000">
             <font face="Comic Sans MS" size="2" color="#FFFFFF">
               Paste a markdown itinerary (e.g. one Claude generated for you) and the page will
-              render it with full Geocities glory. Plans are private to Sacor only.
+              render it with full Geocities glory. Plans are private to your Google account &mdash;
+              export and import as JSON to move them between accounts.
             </font>
           </td>
         </tr>
@@ -368,7 +459,7 @@ const rightSidebar = (
 )
 
 export default function TravelPlansPage() {
-  const { loading, isSignedIn, canAccessTravelPlans } = useAuth()
+  const { loading, canAccessTravelPlans } = useAuth()
 
   const mainContent = (
     <>
@@ -378,13 +469,13 @@ export default function TravelPlansPage() {
         </font>
         <br />
         <font face="Comic Sans MS" size="3" color="#FFFF00">
-          <blink>~ Sacor&rsquo;s private itinerary stash ~</blink>
+          <blink>~ your private itinerary stash ~</blink>
         </font>
       </center>
 
       <br />
 
-      {canAccessTravelPlans ? <PlansList /> : <GatedMessage loading={loading} isSignedIn={isSignedIn} />}
+      {canAccessTravelPlans ? <PlansList /> : <GatedMessage loading={loading} />}
     </>
   )
 
