@@ -1,26 +1,26 @@
-# React + Vite
+# sacor.xyz
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Personal homepage with a loud late-90s/GeoCities aesthetic. Built with React 19 + Vite, deployed on Netlify, with a handful of serverless functions backing the dynamic bits.
 
-Currently, two official plugins are available:
+## Pages
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Most pages are static React (home, blog index/post, contact, guestbook, MTS, webring, YtMp4). Two pages need backend setup to work end-to-end:
 
-## React Compiler
+- `/stocks` — candlestick chart + live price ticker (see below).
+- `/travel-plans` — allowlisted markdown CRUD (see below).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Scripts
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- `npm run dev` — Vite dev server (no Netlify Functions; `/stocks` and `/travel-plans` won't work).
+- `npx netlify dev` — Vite + Functions on `http://localhost:8888`.
+- `npm run build` / `npm run preview` / `npm run lint`.
 
 ## Live Stocks (`/stocks`)
 
 The `/stocks` page renders a candlestick chart with hourly OHLC data plus a live-ish price ticker.
 
-- **Historical bars** come from Yahoo Finance's public chart endpoint (no API key needed). It's an undocumented endpoint, so it may break if Yahoo changes the response shape.
-- **Live quotes** come from [Finnhub](https://finnhub.io/) and require a free API key.
+- **Historical bars** try Yahoo Finance's undocumented public chart endpoint first (two hosts), then fall back to [Finnhub](https://finnhub.io/) if Yahoo fails. Yahoo doesn't need a key; the Finnhub fallback uses the same `FINNHUB_API_KEY` as live quotes.
+- **Live quotes** come from Finnhub and require a free API key.
 
 ### Running locally
 
@@ -42,6 +42,11 @@ The `/stocks` page renders a candlestick chart with hourly OHLC data plus a live
 
 - `GET /.netlify/functions/stocks-history?symbol=AAPL` &mdash; ~1 month of hourly OHLC bars (5-minute in-memory cache).
 - `GET /.netlify/functions/stocks-quote?symbol=AAPL` &mdash; current price, change, change %, timestamp.
+
+## Other Endpoints
+
+- `GET /.netlify/functions/substack-feed` &mdash; merged Substack RSS feed used by the blog index, sorted newest-first (30-minute in-memory cache, returns the previous payload on upstream failure). The list of source feeds is hard-coded in [`netlify/functions/substack-feed.mjs`](netlify/functions/substack-feed.mjs).
+- `GET|POST|DELETE /.netlify/functions/hit` &mdash; the GeoCities-style hit counter, backed by the Netlify Blobs `hits` store. `GET` reads the current count, `POST` increments, `DELETE` resets to 0.
 
 ## Account / Google Sign-In
 
@@ -66,6 +71,6 @@ The site supports Google sign-in. By default any signed-in user gets a no-op ses
 ### Endpoints
 
 - `POST /.netlify/functions/auth-google` &mdash; verifies a Google ID token and sets the session cookie.
-- `GET  /.netlify/functions/auth-me` &mdash; returns `{ user: { email, canAccessTravelPlans, isOwner } | null }`.
+- `GET  /.netlify/functions/auth-me` &mdash; returns `{ user: { email, canAccessTravelPlans, isOwner } | null, googleClientId }`. The `googleClientId` is echoed so the frontend can render the Google button without a separate config fetch.
 - `POST /.netlify/functions/auth-logout` &mdash; clears the session cookie.
-- `GET|POST|PUT|DELETE /.netlify/functions/travel-plans[?id=...]` &mdash; CRUD for travel plans, allowlisted accounts only. Plans are stored in Netlify Blobs (`travel-plans` store) as markdown.
+- `GET|POST|PUT|DELETE /.netlify/functions/travel-plans[?id=...]` &mdash; CRUD for travel plans, allowlisted accounts only. Plans live in the Netlify Blobs `travel-plans` store as JSON (`{ id, title, destination, body, createdAt, updatedAt }`, where `body` is markdown), with a separate `index` blob holding the summary list for the index view.
