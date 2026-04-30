@@ -3,7 +3,7 @@ import Layout from '../Layout'
 import HitCounter from '../components/HitCounter'
 import StockChart from '../components/StockChart'
 
-const QUICK_PICKS = ['AAPL', 'MSFT', 'GOOGL']
+const QUICK_PICKS = ['GLD', 'GDX', 'BTC-USD', 'NVDA']
 const POLL_MS = 3000
 const SYMBOL_RE = /^[A-Z.-]{1,8}$/
 
@@ -95,8 +95,8 @@ function Sidebar() {
 }
 
 export default function StocksPage() {
-  const [symbol, setSymbol] = useState('AAPL')
-  const [input, setInput] = useState('AAPL')
+  const [symbol, setSymbol] = useState('GLD')
+  const [input, setInput] = useState('GLD')
   const [history, setHistory] = useState({ symbol: null, bars: [], status: 'loading' })
   const [quoteData, setQuoteData] = useState({ symbol: null, quote: null, error: null })
   const pollRef = useRef(null)
