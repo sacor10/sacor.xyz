@@ -14,6 +14,47 @@ const formatDate = (iso) => {
   }
 }
 
+const buildPromptFromPlan = (plan) => {
+  const example = {
+    title: plan.title,
+    destination: plan.destination,
+    body: plan.body,
+    stops: Array.isArray(plan.stops) ? plan.stops : [],
+  }
+  return `You are generating a travel itinerary that will be pasted into a Travel Plans tool. Output ONLY a single JSON object matching the schema below — no markdown fencing, no commentary, no preamble.
+
+SCHEMA
+{
+  "title": string (1-200 chars; short, evocative),
+  "destination": string (e.g. "San Francisco, CA"),
+  "body": string (full itinerary as markdown — overview, sections, narrative; can use headings, lists, links),
+  "stops": [
+    {
+      "name": string (REQUIRED, max 200 chars),
+      "lat": number (REQUIRED, -90..90),
+      "lng": number (REQUIRED, -180..180),
+      "arrivalTime": string (optional, e.g. "9:30 AM"),
+      "durationMinutes": number (optional),
+      "notes": string (optional, max 1000 chars)
+    }
+  ]
+}
+
+RULES
+- "stops" must be in visit order.
+- The "body" markdown should reference the stops by name so the rendered page reads naturally.
+- Coordinates must be real and accurate — do not invent locations or guess at lat/lng.
+- "title" and "destination" should match the trip described.
+- Output JSON only. The first character of your response must be \`{\` and the last must be \`}\`.
+
+EXAMPLE (a complete plan in the exact target shape):
+
+${JSON.stringify(example, null, 2)}
+
+NEW PLAN REQUEST
+Generate a plan for: <DESCRIBE YOUR TRIP HERE — e.g. "a 2-day food-focused trip to Lisbon">`
+}
+
 function EditForm({ plan, onCancel, onSaved }) {
   const [title, setTitle] = useState(plan.title || '')
   const [destination, setDestination] = useState(plan.destination || '')
@@ -188,6 +229,8 @@ export default function TravelPlanPage() {
   const [editing, setEditing] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+  const [exportOpen, setExportOpen] = useState(false)
+  const [copyStatus, setCopyStatus] = useState('')
 
   const plan = result?.plan ?? null
   const fetchError = result?.error ?? ''
@@ -323,6 +366,17 @@ export default function TravelPlanPage() {
           >
             &#9733; {deleting ? 'DELETING...' : 'DELETE'} &#9733;
           </button>
+          &nbsp;&nbsp;
+          <button
+            type="button"
+            className="navbtn-link"
+            onClick={() => {
+              setCopyStatus('')
+              setExportOpen((v) => !v)
+            }}
+          >
+            &#9733; {exportOpen ? 'HIDE PROMPT' : 'EXPORT AS PROMPT'} &#9733;
+          </button>
         </center>
         {deleteError && (
           <center>
@@ -331,6 +385,63 @@ export default function TravelPlanPage() {
             </font>
           </center>
         )}
+        {exportOpen && (() => {
+          const promptText = buildPromptFromPlan(plan)
+          const handleCopy = async () => {
+            try {
+              await navigator.clipboard.writeText(promptText)
+              setCopyStatus('Copied to clipboard!')
+            } catch {
+              setCopyStatus('Copy failed — select the text and copy manually.')
+            }
+          }
+          return (
+            <>
+              <br />
+              <table width="100%" cellPadding="10" cellSpacing="0" border="0" className="postbox travel-form" bgColor="#000000">
+                <tbody>
+                  <tr>
+                    <td align="center" bgColor="#00FFFF" className="section-bar-sm">
+                      <font face="Impact" size="4" color="#000000">
+                        ~ AI PROMPT (PASTE INTO CLAUDE / CHATGPT) ~
+                      </font>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <font face="Comic Sans MS" size="2" color="#FFFFFF">
+                        Copy this prompt, replace the trip description at the bottom, and paste the JSON the model returns into the STOPS field of a new plan (the model will also produce title / destination / body — paste those into matching fields).
+                      </font>
+                      <br />
+                      <br />
+                      <textarea
+                        value={promptText}
+                        readOnly
+                        rows={18}
+                        onFocus={(e) => e.target.select()}
+                      />
+                      <br />
+                      <br />
+                      <center>
+                        <button type="button" className="dl-btn" onClick={handleCopy}>
+                          COPY PROMPT
+                        </button>
+                        {copyStatus && (
+                          <>
+                            &nbsp;&nbsp;
+                            <font face="Comic Sans MS" size="2" color="#FFFF00">
+                              {copyStatus}
+                            </font>
+                          </>
+                        )}
+                      </center>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </>
+          )
+        })()}
       </>
     )
   }
