@@ -1,4 +1,10 @@
-import { canAccessTravelPlans, normalizeEmail, signSession, setSessionCookieHeader } from './_lib/session.mjs'
+import {
+  canAccessTravelPlans,
+  isOwnerEmail,
+  normalizeEmail,
+  signSession,
+  setSessionCookieHeader,
+} from './_lib/session.mjs'
 
 const json = (data, init = {}) =>
   new Response(JSON.stringify(data), {
@@ -57,11 +63,13 @@ export default async (req) => {
   if (!email) {
     return json({ error: 'Missing Google email' }, { status: 401 })
   }
-  const travelAccess = canAccessTravelPlans(email)
-
   const token = signSession({ email })
   return json(
-    { email, canAccessTravelPlans: travelAccess, isOwner: travelAccess },
+    {
+      email,
+      canAccessTravelPlans: canAccessTravelPlans(email),
+      isOwner: isOwnerEmail(email),
+    },
     {
       headers: {
         'Set-Cookie': setSessionCookieHeader(token),

@@ -17,6 +17,32 @@ const formatDate = (iso) => {
   }
 }
 
+const slugifyTitle = (title) => {
+  const slug = String(title || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return slug || 'travel-plan'
+}
+
+const downloadPlanAsJson = (plan) => {
+  const payload = {
+    title: plan.title,
+    destination: plan.destination || '',
+    body: plan.body || '',
+    stops: Array.isArray(plan.stops) ? plan.stops : [],
+  }
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${slugifyTitle(plan.title)}.travel-plan.json`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
 const buildPromptFromPlan = (plan) => {
   const example = {
     title: plan.title,
@@ -290,7 +316,7 @@ export default function TravelPlanPage() {
           <tr>
             <td align="center">
               <font face="Comic Sans MS" size="3" color="#FFFFFF">
-                This itinerary is private. Sign in as Sacor to view.
+                Sign in with Google to view your travel plans.
               </font>
             </td>
           </tr>
@@ -406,6 +432,14 @@ export default function TravelPlanPage() {
             disabled={deleting}
           >
             &#9733; {deleting ? 'DELETING...' : 'DELETE'} &#9733;
+          </button>
+          &nbsp;&nbsp;
+          <button
+            type="button"
+            className="navbtn-link"
+            onClick={() => downloadPlanAsJson(plan)}
+          >
+            &#9733; EXPORT AS JSON &#9733;
           </button>
           &nbsp;&nbsp;
           <button
