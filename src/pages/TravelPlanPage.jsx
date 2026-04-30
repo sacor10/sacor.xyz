@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import Layout from '../Layout'
 import MarkdownView from '../components/MarkdownView'
+import ItineraryMap from '../components/ItineraryMap'
+import { sfStops } from '../data/sfTrip'
 import { useAuth } from '../auth/useAuth'
 
 const formatDate = (iso) => {
@@ -17,6 +19,11 @@ function EditForm({ plan, onCancel, onSaved }) {
   const [title, setTitle] = useState(plan.title || '')
   const [destination, setDestination] = useState(plan.destination || '')
   const [body, setBody] = useState(plan.body || '')
+  const [stopsJson, setStopsJson] = useState(
+    Array.isArray(plan.stops) && plan.stops.length > 0
+      ? JSON.stringify(plan.stops, null, 2)
+      : '',
+  )
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -25,6 +32,16 @@ function EditForm({ plan, onCancel, onSaved }) {
     if (!title.trim()) {
       setError('Title is required.')
       return
+    }
+    let parsedStops = null
+    if (stopsJson.trim()) {
+      try {
+        parsedStops = JSON.parse(stopsJson)
+        if (!Array.isArray(parsedStops)) throw new Error('Stops must be a JSON array.')
+      } catch (err) {
+        setError(`Invalid stops JSON: ${err.message}`)
+        return
+      }
     }
     setSubmitting(true)
     setError('')
@@ -35,7 +52,7 @@ function EditForm({ plan, onCancel, onSaved }) {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
-          body: JSON.stringify({ title, destination, body }),
+          body: JSON.stringify({ title, destination, body, stops: parsedStops }),
         },
       )
       if (!res.ok) {
@@ -97,6 +114,18 @@ function EditForm({ plan, onCancel, onSaved }) {
                   value={body}
                   rows={20}
                   onChange={(e) => setBody(e.target.value)}
+                />
+              </label>
+              <br />
+              <label className="travel-label">
+                <font face="Impact" size="3" color="#FFFF00">
+                  STOPS (JSON, optional)
+                </font>
+                <textarea
+                  value={stopsJson}
+                  rows={8}
+                  onChange={(e) => setStopsJson(e.target.value)}
+                  placeholder='[{"name":"...","lat":37.78,"lng":-122.4}]'
                 />
               </label>
               {error && (
@@ -247,8 +276,29 @@ export default function TravelPlanPage() {
       />
     )
   } else {
+    const isSf = /san francisco|\bsf\b/i.test(`${plan.title} ${plan.destination}`)
+    const displayStops =
+      Array.isArray(plan.stops) && plan.stops.length > 0
+        ? plan.stops
+        : isSf
+          ? sfStops
+          : []
     body = (
       <>
+        {displayStops.length > 0 && (
+          <>
+            <table width="100%" cellPadding="14" cellSpacing="0" border="0" className="postbox" bgColor="#000000">
+              <tbody>
+                <tr>
+                  <td>
+                    <ItineraryMap stops={displayStops} />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <br />
+          </>
+        )}
         <table width="100%" cellPadding="14" cellSpacing="0" border="0" className="postbox" bgColor="#000000">
           <tbody>
             <tr>

@@ -1,33 +1,16 @@
-import { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { useEffect } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 
-// Fix default marker icons (Leaflet's default icons break with most bundlers)
-delete (L.Icon.Default.prototype as any)._getIconUrl;
+delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
+})
 
-export interface Stop {
-  name: string;
-  lat: number;
-  lng: number;
-  arrivalTime?: string;
-  durationMinutes?: number;
-  notes?: string;
-}
-
-export interface ItineraryMapProps {
-  stops: Stop[];
-  showRoute?: boolean;
-  height?: string;
-}
-
-// Numbered marker so users can see the order at a glance
-const numberedIcon = (n: number) =>
+const numberedIcon = (n) =>
   L.divIcon({
     className: 'itinerary-marker',
     html: `<div style="
@@ -38,28 +21,23 @@ const numberedIcon = (n: number) =>
     ">${n}</div>`,
     iconSize: [32, 32],
     iconAnchor: [16, 16],
-  });
+  })
 
-// Helper to auto-fit the map bounds to all stops
-function FitBounds({ stops }: { stops: Stop[] }) {
-  const map = useMap();
+function FitBounds({ stops }) {
+  const map = useMap()
   useEffect(() => {
-    if (stops.length === 0) return;
-    const bounds = L.latLngBounds(stops.map((s) => [s.lat, s.lng]));
-    map.fitBounds(bounds, { padding: [40, 40] });
-  }, [stops, map]);
-  return null;
+    if (stops.length === 0) return
+    const bounds = L.latLngBounds(stops.map((s) => [s.lat, s.lng]))
+    map.fitBounds(bounds, { padding: [40, 40] })
+  }, [stops, map])
+  return null
 }
 
-export default function ItineraryMap({
-  stops,
-  showRoute = true,
-  height = '500px',
-}: ItineraryMapProps) {
-  if (stops.length === 0) return null;
+export default function ItineraryMap({ stops, showRoute = true, height = '500px' }) {
+  if (stops.length === 0) return null
 
-  const center: [number, number] = [stops[0].lat, stops[0].lng];
-  const routePoints: [number, number][] = stops.map((s) => [s.lat, s.lng]);
+  const center = [stops[0].lat, stops[0].lng]
+  const routePoints = stops.map((s) => [s.lat, s.lng])
 
   return (
     <div style={{ height, width: '100%' }}>
@@ -84,5 +62,5 @@ export default function ItineraryMap({
         ))}
       </MapContainer>
     </div>
-  );
+  )
 }

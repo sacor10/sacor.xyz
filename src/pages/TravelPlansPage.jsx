@@ -46,6 +46,7 @@ function NewPlanForm({ onCreated }) {
   const [title, setTitle] = useState('')
   const [destination, setDestination] = useState('')
   const [body, setBody] = useState('')
+  const [stopsJson, setStopsJson] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -53,6 +54,7 @@ function NewPlanForm({ onCreated }) {
     setTitle('')
     setDestination('')
     setBody('')
+    setStopsJson('')
     setError('')
   }
 
@@ -62,6 +64,16 @@ function NewPlanForm({ onCreated }) {
       setError('Title is required.')
       return
     }
+    let parsedStops = null
+    if (stopsJson.trim()) {
+      try {
+        parsedStops = JSON.parse(stopsJson)
+        if (!Array.isArray(parsedStops)) throw new Error('Stops must be a JSON array.')
+      } catch (err) {
+        setError(`Invalid stops JSON: ${err.message}`)
+        return
+      }
+    }
     setSubmitting(true)
     setError('')
     try {
@@ -69,7 +81,7 @@ function NewPlanForm({ onCreated }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ title, destination, body }),
+        body: JSON.stringify({ title, destination, body, stops: parsedStops }),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
@@ -145,6 +157,18 @@ function NewPlanForm({ onCreated }) {
                   rows={18}
                   onChange={(e) => setBody(e.target.value)}
                   placeholder="Paste the markdown itinerary here..."
+                />
+              </label>
+              <br />
+              <label className="travel-label">
+                <font face="Impact" size="3" color="#FFFF00">
+                  STOPS (JSON, optional)
+                </font>
+                <textarea
+                  value={stopsJson}
+                  rows={8}
+                  onChange={(e) => setStopsJson(e.target.value)}
+                  placeholder='[{"name":"...","lat":37.78,"lng":-122.4}]'
                 />
               </label>
               {error && (

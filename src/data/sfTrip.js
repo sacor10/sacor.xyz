@@ -1,6 +1,4 @@
-import ItineraryMap, { Stop } from './ItineraryMap';
-
-const sfStops: Stop[] = [
+export const sfStops = [
   {
     name: 'Moscone Center South',
     lat: 37.7836044,
@@ -62,13 +60,4 @@ const sfStops: Stop[] = [
     arrivalTime: '3:00 PM',
     durationMinutes: 15,
   },
-];
-
-export default function SFTrip() {
-  return (
-    <div>
-      <h1>SF Day Trip</h1>
-      <ItineraryMap stops={sfStops} showRoute={true} height="600px" />
-    </div>
-  );
-}
+]
