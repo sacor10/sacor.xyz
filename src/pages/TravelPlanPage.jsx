@@ -5,6 +5,9 @@ import MarkdownView from '../components/MarkdownView'
 import ItineraryMap from '../components/ItineraryMap'
 import { useAuth } from '../auth/useAuth'
 
+const mapsUrl = (stop) =>
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stop.name)}&center=${stop.lat},${stop.lng}`
+
 const formatDate = (iso) => {
   if (!iso) return ''
   try {
@@ -330,6 +333,44 @@ export default function TravelPlanPage() {
                     <ItineraryMap stops={plan.stops} />
                   </td>
                 </tr>
+              </tbody>
+            </table>
+            <br />
+            <table width="100%" cellPadding="0" cellSpacing="0" border="0" className="postbox" bgColor="#000000">
+              <tbody>
+                <tr>
+                  <td align="center" bgColor="#FF00FF" className="section-bar-sm">
+                    <font face="Impact" size="4" color="#FFFF00">
+                      ~ STOPS ~
+                    </font>
+                  </td>
+                </tr>
+                {plan.stops.map((stop, i) => (
+                  <tr key={i} style={{ borderTop: i === 0 ? 'none' : '1px solid #333' }}>
+                    <td style={{ padding: '10px 14px' }}>
+                      <font face="Impact" size="3" color="#c0392b">{i + 1}.&nbsp;</font>
+                      <a href={mapsUrl(stop)} target="_blank" rel="noopener noreferrer" className="cyan-link">
+                        <font face="Impact" size="3">{stop.name}</font>
+                      </a>
+                      {(stop.arrivalTime || stop.durationMinutes) && (
+                        <span>
+                          &nbsp;&nbsp;
+                          <font face="Comic Sans MS" size="2" color="#FFFF00">
+                            {stop.arrivalTime}
+                            {stop.arrivalTime && stop.durationMinutes && ' · '}
+                            {stop.durationMinutes && `${stop.durationMinutes} min`}
+                          </font>
+                        </span>
+                      )}
+                      {stop.notes && (
+                        <>
+                          <br />
+                          <font face="Comic Sans MS" size="2" color="#AAAAAA">{stop.notes}</font>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
             <br />
