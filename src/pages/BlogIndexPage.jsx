@@ -6,7 +6,25 @@ const FEED_COLORS = {
   'Cremieux Recueil': '#FF00FF',
   'TR Center':        '#00FFFF',
   'The New Outlook':  '#00FF00',
+  'MTS Live':          '#FFFF00',
+  'a16z News':         '#FF6600',
+  'MacroEdge':         '#66FF66',
+  'More in Common':   '#FF99CC',
+  "Lenny's Newsletter": '#99CCFF',
+  "That's Kaizen":    '#CC99FF',
 }
+
+const SUBSCRIPTIONS = [
+  { name: 'Cremieux Recueil', url: 'https://cremieux.substack.com' },
+  { name: 'TR Center', url: 'https://trcenter.substack.com' },
+  { name: 'The New Outlook', url: 'https://thenewoutlook.substack.com' },
+  { name: 'MTS Live', url: 'https://mtslive.substack.com' },
+  { name: 'a16z News', url: 'https://www.a16z.news' },
+  { name: 'MacroEdge', url: 'https://www.macroedge.world' },
+  { name: 'More in Common', url: 'https://moreincommon.substack.com' },
+  { name: "Lenny's Newsletter", url: 'https://www.lennysnewsletter.com' },
+  { name: "That's Kaizen", url: 'https://thatskaizen.substack.com' },
+]
 
 function formatDate(pubDate) {
   const d = new Date(pubDate)
@@ -83,21 +101,18 @@ const rightSidebar = (
             <br />
             <font face="Comic Sans MS" size="2">
               <ul style={{ margin: 0, paddingLeft: '1.2em', color: '#FFFFFF' }}>
-                <li style={{ marginBottom: '6px' }}>
-                  <a href="https://cremieux.substack.com" target="_blank" rel="noopener noreferrer" style={{ color: '#FF00FF' }}>
-                    Cremieux Recueil
-                  </a>
-                </li>
-                <li style={{ marginBottom: '6px' }}>
-                  <a href="https://trcenter.substack.com" target="_blank" rel="noopener noreferrer" style={{ color: '#00FFFF' }}>
-                    TR Center
-                  </a>
-                </li>
-                <li>
-                  <a href="https://thenewoutlook.substack.com" target="_blank" rel="noopener noreferrer" style={{ color: '#00FF00' }}>
-                    The New Outlook
-                  </a>
-                </li>
+                {SUBSCRIPTIONS.map((subscription, index) => (
+                  <li key={subscription.url} style={{ marginBottom: index === SUBSCRIPTIONS.length - 1 ? 0 : '6px' }}>
+                    <a
+                      href={subscription.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: FEED_COLORS[subscription.name] ?? '#FF00FF' }}
+                    >
+                      {subscription.name}
+                    </a>
+                  </li>
+                ))}
               </ul>
             </font>
           </td>

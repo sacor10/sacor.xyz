@@ -2,6 +2,12 @@ const FEEDS = [
   { url: 'https://cremieux.substack.com/feed',     name: 'Cremieux Recueil' },
   { url: 'https://trcenter.substack.com/feed',      name: 'TR Center'        },
   { url: 'https://thenewoutlook.substack.com/feed', name: 'The New Outlook'  },
+  { url: 'https://mtslive.substack.com/feed',        name: 'MTS Live'         },
+  { url: 'https://www.a16z.news/feed',              name: 'a16z News'        },
+  { url: 'https://www.macroedge.world/feed',        name: 'MacroEdge'        },
+  { url: 'https://moreincommon.substack.com/feed',  name: 'More in Common'   },
+  { url: 'https://www.lennysnewsletter.com/feed',   name: "Lenny's Newsletter" },
+  { url: 'https://thatskaizen.substack.com/feed',   name: "That's Kaizen"    },
 ]
 
 const TTL_MS = 30 * 60 * 1000
