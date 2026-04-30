@@ -27,7 +27,7 @@ export default async (req) => {
     return json({ error: 'Missing credential' }, { status: 400 })
   }
 
-  const expectedAud = process.env.GOOGLE_CLIENT_ID
+  const expectedAud = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID
   if (!expectedAud) {
     return json({ error: 'Server misconfigured: GOOGLE_CLIENT_ID' }, { status: 500 })
   }
