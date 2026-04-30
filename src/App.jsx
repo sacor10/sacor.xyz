@@ -7,6 +7,7 @@ import BlogIndexPage from './pages/BlogIndexPage'
 import BlogPostPage from './pages/BlogPostPage'
 import ContactPage from './pages/ContactPage'
 import GuestbookPage from './pages/GuestbookPage'
+import StocksPage from './pages/StocksPage'
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/blog/:slug" element={<BlogPostPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/guestbook" element={<GuestbookPage />} />
+        <Route path="/stocks" element={<StocksPage />} />
       </Routes>
     </BrowserRouter>
   )
