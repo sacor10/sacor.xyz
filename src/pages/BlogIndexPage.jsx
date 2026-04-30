@@ -107,9 +107,12 @@ const rightSidebar = (
   </>
 )
 
+const PAGE_SIZE = 5
+
 export default function BlogIndexPage() {
   const [items, setItems] = useState([])
   const [status, setStatus] = useState('loading')
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
 
   useEffect(() => {
     let cancelled = false
@@ -169,7 +172,7 @@ export default function BlogIndexPage() {
         </table>
       )}
 
-      {status === 'ready' && items.map(item => (
+      {status === 'ready' && items.slice(0, visibleCount).map(item => (
         <div key={item.link}>
           <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="postbox">
             <tbody>
@@ -200,6 +203,26 @@ export default function BlogIndexPage() {
           <br />
         </div>
       ))}
+
+      {status === 'ready' && visibleCount < items.length && (
+        <center>
+          <button
+            onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
+            style={{
+              fontFamily: 'Impact',
+              fontSize: '18px',
+              color: '#FFFF00',
+              background: '#000000',
+              border: '4px outset #FF00FF',
+              padding: '8px 24px',
+              cursor: 'pointer',
+              letterSpacing: '2px',
+            }}
+          >
+            &#9660; LOAD MORE RAMBLINGS &#9660;
+          </button>
+        </center>
+      )}
     </>
   )
 
