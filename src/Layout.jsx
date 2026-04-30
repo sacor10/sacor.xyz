@@ -92,7 +92,7 @@ export default function Layout({ mainContent, rightSidebar }) {
             <tr>
               <td align="center" bgColor="#4B0082">
                 <img
-                  src="/placeholders/globe.svg"
+                  src="/generated-assets/globe.png"
                   alt="spinning globe"
                   width="64"
                   height="64"
@@ -100,7 +100,7 @@ export default function Layout({ mainContent, rightSidebar }) {
                   align="left"
                 />
                 <img
-                  src="/placeholders/globe.svg"
+                  src="/generated-assets/globe.png"
                   alt="spinning globe"
                   width="64"
                   height="64"
@@ -154,7 +154,7 @@ export default function Layout({ mainContent, rightSidebar }) {
                   <br />
                   <br />
                   <img
-                    src="/placeholders/construction.svg"
+                    src="/generated-assets/construction.png"
                     alt="construction worker"
                     width="90"
                     height="90"

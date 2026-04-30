@@ -10,7 +10,7 @@ export const posts = [
     excerpt:
       'So I made this little tray app that just reminds you to drink water, but it yells at you in Comic Sans. Download it below and let me know how many hydration crimes it catches you committing!!! Haha jk, you could steal uncopyrighted music and videos and music videos from the internet with this, though.',
     thumbBorder: '#FF00FF',
-    thumb: '/placeholders/thumb1.svg',
+    thumb: '/generated-assets/thumb-ytmp4.png',
     link: '/ytmp4',
   },
   {
@@ -20,7 +20,7 @@ export const posts = [
     excerpt:
       'A love letter to SLUT, cold winters, and the people who are never nerding out with me about Theodore Roosevelt on the weekends. Also: I tried to LARP as a Utah College Republican. Results were mixed.',
     thumbBorder: '#00FFFF',
-    thumb: '/placeholders/thumb2.svg',
+    thumb: '/generated-assets/thumb-slc-lan.png',
     body: (
       <font face="Comic Sans MS" size="3" color="#FFFFFF">
         <i>Post coming soon!!! Sacor is writing this one up.</i>
@@ -37,7 +37,7 @@ export const posts = [
     excerpt:
       'Cheez-its are BACK, Fruit Gushers never left, and I have STRONG opinions about Bagel Bites. Come fight me in the comments (that I haven\u2019t implemented yet).',
     thumbBorder: '#00FF00',
-    thumb: '/placeholders/thumb3.svg',
+    thumb: '/generated-assets/thumb-90s-snacks.png',
     body: (
       <font face="Comic Sans MS" size="3" color="#FFFFFF">
         <i>Post coming soon!!! Sacor is writing this one up.</i>
@@ -54,7 +54,7 @@ export const posts = [
     excerpt:
       'Was it a good idea? Absolutely not. Did I learn a lot? Kind of. Did I? You bet I did!!! Link inside.',
     thumbBorder: '#FFFF00',
-    thumb: '/placeholders/thumb4.svg',
+    thumb: '/generated-assets/thumb-stop-warning.png',
     body: (
       <font face="Comic Sans MS" size="3" color="#FFFFFF">
         <i>Post coming soon!!! Sacor is writing this one up.</i>
