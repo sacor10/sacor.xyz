@@ -26,7 +26,7 @@ function loadGisScript() {
 }
 
 export function AuthProvider({ children }) {
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
+  const [clientId, setClientId] = useState(import.meta.env.VITE_GOOGLE_CLIENT_ID || '')
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [gisReady, setGisReady] = useState(false)
@@ -59,7 +59,11 @@ export function AuthProvider({ children }) {
     fetch('/.netlify/functions/auth-me', { credentials: 'same-origin' })
       .then((r) => (r.ok ? r.json() : { user: null }))
       .then((data) => {
-        if (!cancelled) setUser(data?.user || null)
+        if (cancelled) return
+        setUser(data?.user || null)
+        if (data?.googleClientId) {
+          setClientId((current) => current || data.googleClientId)
+        }
       })
       .catch(() => {})
       .finally(() => {

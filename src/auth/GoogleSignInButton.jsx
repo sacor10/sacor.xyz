@@ -38,7 +38,7 @@ export default function GoogleSignInButton() {
     return (
       <span className="account-pill">
         <font face="Comic Sans MS" size="2" color="#FF00FF">
-          missing VITE_GOOGLE_CLIENT_ID
+          missing GOOGLE_CLIENT_ID
         </font>
       </span>
     )
