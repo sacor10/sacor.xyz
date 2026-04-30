@@ -42,7 +42,10 @@ export default function Layout({ mainContent, rightSidebar }) {
 
   const onTouchStart = (e) => {
     const t0 = e.touches[0]
-    const ignore = !!(e.target.closest && e.target.closest('[data-no-pane-swipe]'))
+    const ignore = !!(
+      e.target.closest &&
+      (e.target.closest('[data-no-pane-swipe]') || e.target.closest('.leaflet-container'))
+    )
     touch.current = {
       x: t0.clientX,
       y: t0.clientY,
