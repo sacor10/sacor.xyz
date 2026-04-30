@@ -28,7 +28,10 @@ const SUBSCRIPTIONS = [
 
 function formatDate(pubDate) {
   const d = new Date(pubDate)
-  return isNaN(d) ? pubDate : d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  if (isNaN(d)) return pubDate
+  const datePart = d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  const timePart = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  return `${datePart} \u00b7 ${timePart}`
 }
 
 function Thumbnail({ item }) {
