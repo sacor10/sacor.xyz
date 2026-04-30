@@ -214,6 +214,163 @@
   border-bottom-color: #FFFFFF;
 }
 
+/* === Account / sign-in === */
+.geocities .header-account {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.geocities .gis-btn {
+  display: inline-block;
+  filter: drop-shadow(0 0 4px #00FFFF);
+}
+
+.geocities .account-pill {
+  background: #000000;
+  border: 3px ridge #00FFFF;
+  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #FFFFFF;
+}
+
+.geocities .signout-btn {
+  background: #C0C0C0;
+  border-top: 2px solid #FFFFFF;
+  border-left: 2px solid #FFFFFF;
+  border-right: 2px solid #404040;
+  border-bottom: 2px solid #404040;
+  font-family: "Arial Black", Impact, sans-serif;
+  font-size: 11px;
+  color: #000080;
+  padding: 2px 8px;
+  cursor: crosshair;
+}
+.geocities .signout-btn:hover {
+  background: #FF00FF;
+  color: #FFFF00;
+  border-top-color: #404040;
+  border-left-color: #404040;
+  border-right-color: #FFFFFF;
+  border-bottom-color: #FFFFFF;
+}
+
+/* === Travel plan form === */
+.geocities .travel-form input[type="text"],
+.geocities .travel-form textarea {
+  width: 100%;
+  background: #000000;
+  color: #00FF00;
+  border: 3px inset #FFFF00;
+  font-family: "Courier New", monospace;
+  font-size: 14px;
+  padding: 6px;
+  box-sizing: border-box;
+  margin-top: 4px;
+}
+
+.geocities .travel-form textarea {
+  font-size: 13px;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.geocities .travel-label {
+  display: block;
+  margin: 10px 0;
+}
+
+.geocities .travel-error {
+  border: 2px ridge #FF00FF;
+  background: #000000;
+  padding: 6px 10px;
+  margin: 8px 0;
+}
+
+/* === Markdown rendering === */
+.geocities .markdown-body {
+  background: #000000;
+  color: #FFFFFF;
+}
+
+.geocities .markdown-body .md-h1,
+.geocities .markdown-body .md-h2,
+.geocities .markdown-body .md-h3,
+.geocities .markdown-body .md-h4 {
+  margin: 16px 0 8px;
+  filter: drop-shadow(0 0 4px #FF00FF);
+}
+
+.geocities .markdown-body .md-p {
+  margin: 8px 0;
+  line-height: 1.5;
+}
+
+.geocities .markdown-body .md-ul,
+.geocities .markdown-body .md-ol {
+  padding-left: 26px;
+  margin: 8px 0;
+}
+
+.geocities .markdown-body .md-li {
+  margin: 4px 0;
+  line-height: 1.5;
+}
+
+.geocities .markdown-body .md-quote {
+  border-left: 5px ridge #00FFFF;
+  background: #1a0033;
+  margin: 10px 0;
+  padding: 6px 12px;
+  color: #FFFF00;
+  font-family: "Comic Sans MS", sans-serif;
+}
+
+.geocities .markdown-body .md-code-inline {
+  background: #1a0033;
+  color: #00FF00;
+  font-family: "Courier New", monospace;
+  padding: 1px 6px;
+  border: 1px solid #FF00FF;
+}
+
+.geocities .markdown-body .md-pre {
+  background: #000000;
+  color: #00FF00;
+  border: 3px inset #00FFFF;
+  font-family: "Courier New", monospace;
+  padding: 10px;
+  overflow-x: auto;
+}
+
+.geocities .markdown-body .md-hr {
+  border: 0;
+  border-top: 3px ridge #FF00FF;
+  margin: 16px 0;
+}
+
+.geocities .markdown-body .md-table {
+  border-collapse: separate;
+  margin: 10px 0;
+  border-color: #FFFF00;
+}
+
+.geocities .markdown-body .md-th {
+  background: #FF00FF;
+  padding: 6px 10px;
+}
+
+.geocities .markdown-body .md-td {
+  background: #1a0033;
+  padding: 6px 10px;
+  border: 1px solid #FF00FF;
+}
+
 /* === Mobile swipeable panes === */
 @media (max-width: 768px) {
   .geocities .header-table { width: 100% !important; }

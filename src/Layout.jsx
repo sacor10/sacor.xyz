@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import './App.css'
+import GoogleSignInButton from './auth/GoogleSignInButton'
+import { useAuth } from './auth/useAuth'
 
-const navLinks = [
+const baseNavLinks = [
   { label: 'HOME',       to: '/' },
   { label: 'ABOUT ME',   to: '/#about-me' },
   { label: 'BLOG POSTS', to: '/blog' },
@@ -12,6 +14,8 @@ const navLinks = [
   { label: 'GUESTBOOK',  to: '/guestbook' },
   { label: 'CONTACT',    to: '/contact' },
 ]
+
+const ownerNavLink = { label: 'TRAVEL PLANS', to: '/travel-plans' }
 
 function useMediaQuery(query) {
   const get = () => typeof window !== 'undefined' && window.matchMedia(query).matches
@@ -30,6 +34,10 @@ const PANE_LABELS = ['Show navigation', 'Show main content', 'Show sidebar']
 export default function Layout({ mainContent, rightSidebar }) {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [pane, setPane] = useState(1)
+  const { isOwner } = useAuth()
+  const navLinks = isOwner
+    ? [...baseNavLinks.slice(0, 6), ownerNavLink, ...baseNavLinks.slice(6)]
+    : baseNavLinks
   const touch = useRef({ x: 0, y: 0, t: 0, axis: null, startPane: 1 })
 
   const onTouchStart = (e) => {
@@ -102,6 +110,9 @@ export default function Layout({ mainContent, rightSidebar }) {
                 <h1 className="glow">
                   <blink>SACOR&rsquo;S SPACE</blink>
                 </h1>
+                <div className="header-account">
+                  <GoogleSignInButton />
+                </div>
                 <font face="Comic Sans MS" size="4" color="#00FFFF">
                   ~*~ DO WHAT YOU CAN, WITH WHAT YOU HAVE, WHERE YOU ARE ~*~ WE HAVE FALLEN HEIRS TO THE MOST GLORIOUS HERITAGE A PEOPLE EVER RECEIVED ~*~
                 </font>

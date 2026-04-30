@@ -8,21 +8,28 @@ import BlogPostPage from './pages/BlogPostPage'
 import ContactPage from './pages/ContactPage'
 import GuestbookPage from './pages/GuestbookPage'
 import StocksPage from './pages/StocksPage'
+import TravelPlansPage from './pages/TravelPlansPage'
+import TravelPlanPage from './pages/TravelPlanPage'
+import { AuthProvider } from './auth/AuthContext'
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/ytmp4" element={<YtMp4Page />} />
-        <Route path="/mts" element={<MtsPage />} />
-        <Route path="/webring" element={<WebringPage />} />
-        <Route path="/blog" element={<BlogIndexPage />} />
-        <Route path="/blog/:slug" element={<BlogPostPage />} />
-        <Route path="/contact" element={<ContactPage />} />
-        <Route path="/guestbook" element={<GuestbookPage />} />
-        <Route path="/stocks" element={<StocksPage />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/ytmp4" element={<YtMp4Page />} />
+          <Route path="/mts" element={<MtsPage />} />
+          <Route path="/webring" element={<WebringPage />} />
+          <Route path="/blog" element={<BlogIndexPage />} />
+          <Route path="/blog/:slug" element={<BlogPostPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/guestbook" element={<GuestbookPage />} />
+          <Route path="/stocks" element={<StocksPage />} />
+          <Route path="/travel-plans" element={<TravelPlansPage />} />
+          <Route path="/travel-plans/:id" element={<TravelPlanPage />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }
