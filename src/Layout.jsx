@@ -8,6 +8,7 @@ const navLinks = [
   { label: 'BLOG POSTS', to: '/blog' },
   { label: 'DOWNLOADS',  to: '/ytmp4' },
   { label: 'MTS LIVE',   to: '/mts' },
+  { label: 'LIVE STOCKS', to: '/stocks' },
   { label: 'GUESTBOOK',  to: '/guestbook' },
   { label: 'CONTACT',    to: '/contact' },
 ]
