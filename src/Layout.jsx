@@ -110,9 +110,6 @@ export default function Layout({ mainContent, rightSidebar }) {
                 <h1 className="glow">
                   <blink>SACOR&rsquo;S SPACE</blink>
                 </h1>
-                <div className="header-account">
-                  <GoogleSignInButton />
-                </div>
                 <font face="Comic Sans MS" size="4" color="#00FFFF">
                   ~*~ DO WHAT YOU CAN, WITH WHAT YOU HAVE, WHERE YOU ARE ~*~ WE HAVE FALLEN HEIRS TO THE MOST GLORIOUS HERITAGE A PEOPLE EVER RECEIVED ~*~
                 </font>
@@ -162,6 +159,10 @@ export default function Layout({ mainContent, rightSidebar }) {
                     className="ridge-pink"
                   />
                   <br />
+                  <br />
+                  <div className="header-account">
+                    <GoogleSignInButton />
+                  </div>
                   <br />
                 </center>
 
