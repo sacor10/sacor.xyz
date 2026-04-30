@@ -35,15 +35,29 @@ function extractFirstImgSrc(html) {
   return m ? m[1] : null
 }
 
+function decodeHtmlEntities(text) {
+  const namedEntities = {
+    amp: '&',
+    lt: '<',
+    gt: '>',
+    quot: '"',
+    apos: "'",
+    nbsp: ' ',
+  }
+
+  return text.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (entity, value) => {
+    if (value[0] === '#') {
+      const isHex = value[1]?.toLowerCase() === 'x'
+      const codePoint = Number.parseInt(value.slice(isHex ? 2 : 1), isHex ? 16 : 10)
+      return Number.isNaN(codePoint) ? entity : String.fromCodePoint(codePoint)
+    }
+
+    return namedEntities[value.toLowerCase()] ?? entity
+  })
+}
+
 function stripHtml(html) {
-  return html
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ')
+  return decodeHtmlEntities(html.replace(/<[^>]+>/g, ' '))
     .replace(/\s+/g, ' ')
     .trim()
 }
@@ -67,7 +81,7 @@ async function fetchFeed({ url, name }) {
   return xml.split('<item>').slice(1).map(block => {
     const rawDesc = extractTag(block, 'description')
     return {
-      title:       extractTag(block, 'title') || '(Untitled)',
+      title:       decodeHtmlEntities(extractTag(block, 'title') || '(Untitled)'),
       link:        extractTag(block, 'link')  || '',
       pubDate:     extractTag(block, 'pubDate'),
       author:      extractTag(block, 'dc:creator') || extractTag(block, 'author') || name,
