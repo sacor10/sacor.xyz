@@ -47,7 +47,8 @@ export function AuthProvider({ children }) {
         return
       }
       const data = await res.json()
-      setUser({ email: data.email, isOwner: !!data.isOwner })
+      const canAccessTravelPlans = !!(data.canAccessTravelPlans || data.isOwner)
+      setUser({ email: data.email, canAccessTravelPlans, isOwner: canAccessTravelPlans })
     } catch {
       setUser(null)
     }
@@ -107,6 +108,7 @@ export function AuthProvider({ children }) {
     loading,
     isSignedIn: !!user,
     isOwner: !!user?.isOwner,
+    canAccessTravelPlans: !!(user?.canAccessTravelPlans || user?.isOwner),
     gisReady,
     clientId,
     signOut,

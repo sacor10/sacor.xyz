@@ -155,7 +155,7 @@ const rightSidebar = (
 export default function TravelPlanPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { loading: authLoading, isOwner } = useAuth()
+  const { loading: authLoading, canAccessTravelPlans } = useAuth()
   const [result, setResult] = useState(null)
   const [editing, setEditing] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -163,10 +163,10 @@ export default function TravelPlanPage() {
 
   const plan = result?.plan ?? null
   const fetchError = result?.error ?? ''
-  const loading = isOwner && result === null
+  const loading = canAccessTravelPlans && result === null
 
   useEffect(() => {
-    if (authLoading || !isOwner) return
+    if (authLoading || !canAccessTravelPlans) return
     let cancelled = false
     ;(async () => {
       try {
@@ -184,7 +184,7 @@ export default function TravelPlanPage() {
     return () => {
       cancelled = true
     }
-  }, [id, authLoading, isOwner])
+  }, [id, authLoading, canAccessTravelPlans])
 
   const handleDelete = async () => {
     if (!window.confirm('Delete this travel plan? This cannot be undone.')) return
@@ -209,7 +209,7 @@ export default function TravelPlanPage() {
         loading...
       </font>
     )
-  } else if (!isOwner) {
+  } else if (!canAccessTravelPlans) {
     body = (
       <table width="100%" cellPadding="14" cellSpacing="0" border="0" className="postbox" bgColor="#000000">
         <tbody>

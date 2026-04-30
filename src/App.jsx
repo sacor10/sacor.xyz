@@ -10,7 +10,7 @@ import GuestbookPage from './pages/GuestbookPage'
 import StocksPage from './pages/StocksPage'
 import TravelPlansPage from './pages/TravelPlansPage'
 import TravelPlanPage from './pages/TravelPlanPage'
-import { AuthProvider } from './auth/AuthContext'
+import { AuthProvider } from './auth/AuthContext.jsx'
 
 export default function App() {
   return (

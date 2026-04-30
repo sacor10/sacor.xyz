@@ -1,4 +1,4 @@
-import { signSession, setSessionCookieHeader } from './_lib/session.mjs'
+import { canAccessTravelPlans, normalizeEmail, signSession, setSessionCookieHeader } from './_lib/session.mjs'
 
 const json = (data, init = {}) =>
   new Response(JSON.stringify(data), {
@@ -28,7 +28,6 @@ export default async (req) => {
   }
 
   const expectedAud = process.env.GOOGLE_CLIENT_ID
-  const ownerEmail = (process.env.OWNER_EMAIL || '').toLowerCase()
   if (!expectedAud) {
     return json({ error: 'Server misconfigured: GOOGLE_CLIENT_ID' }, { status: 500 })
   }
@@ -54,12 +53,15 @@ export default async (req) => {
     return json({ error: 'Token expired' }, { status: 401 })
   }
 
-  const email = String(claims.email || '').toLowerCase()
-  const isOwner = !!ownerEmail && email === ownerEmail
+  const email = normalizeEmail(claims.email)
+  if (!email) {
+    return json({ error: 'Missing Google email' }, { status: 401 })
+  }
+  const travelAccess = canAccessTravelPlans(email)
 
-  const token = signSession({ email, isOwner })
+  const token = signSession({ email })
   return json(
-    { email, isOwner },
+    { email, canAccessTravelPlans: travelAccess, isOwner: travelAccess },
     {
       headers: {
         'Set-Cookie': setSessionCookieHeader(token),

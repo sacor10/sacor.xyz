@@ -40,6 +40,34 @@ const fetchYahoo = async (symbol) => {
   return bars
 }
 
+const fetchFinnhub = async (symbol) => {
+  const apiKey = process.env.FINNHUB_API_KEY
+  if (!apiKey) throw new Error('finnhub: missing api key')
+
+  const to = Math.floor(Date.now() / 1000)
+  const from = to - 30 * 24 * 60 * 60
+  const url = `https://finnhub.io/api/v1/stock/candle?symbol=${encodeURIComponent(
+    symbol,
+  )}&resolution=60&from=${from}&to=${to}&token=${encodeURIComponent(apiKey)}`
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`finnhub ${res.status}`)
+  const data = await res.json()
+  if (data?.s !== 'ok') throw new Error(`finnhub: ${data?.s || 'bad response'}`)
+
+  const ts = data.t ?? []
+  const bars = []
+  for (let i = 0; i < ts.length; i++) {
+    const o = data.o?.[i]
+    const h = data.h?.[i]
+    const l = data.l?.[i]
+    const c = data.c?.[i]
+    if (o == null || h == null || l == null || c == null) continue
+    bars.push({ time: ts[i], open: o, high: h, low: l, close: c })
+  }
+  if (bars.length === 0) throw new Error('finnhub: no bars')
+  return bars
+}
+
 export default async (req) => {
   const symbol = (new URL(req.url).searchParams.get('symbol') ?? '').toUpperCase()
   if (!SYMBOL_RE.test(symbol)) return json(400, { error: 'invalid symbol' })
@@ -51,11 +79,18 @@ export default async (req) => {
   }
 
   try {
-    const bars = await fetchYahoo(symbol)
+    let bars
+    try {
+      bars = await fetchFinnhub(symbol)
+    } catch (finnhubError) {
+      console.warn('stocks-history finnhub failed', finnhubError)
+      bars = await fetchYahoo(symbol)
+    }
     const payload = { symbol, bars }
     cache.set(symbol, { ts: now, payload })
     return json(200, payload)
-  } catch {
+  } catch (err) {
+    console.error('stocks-history failed', err)
     if (cached) return json(200, cached.payload)
     return json(502, { error: 'upstream failed' })
   }

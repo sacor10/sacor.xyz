@@ -45,7 +45,7 @@ The `/stocks` page renders a candlestick chart with hourly OHLC data plus a live
 
 ## Account / Google Sign-In
 
-The site supports Google sign-in. By default any signed-in user gets a no-op session; only the owner email (`OWNER_EMAIL`) gets `isOwner: true`, which unlocks the **Travel Plans** menu and the `/travel-plans` CRUD endpoints.
+The site supports Google sign-in. By default any signed-in user gets a no-op session; only emails listed in `TRAVEL_PLAN_EMAILS` can see the **Travel Plans** menu and use the `/travel-plans` CRUD endpoints. The server checks that allowlist on every protected request, so removing an email takes effect without waiting for old sessions to expire.
 
 ### One-time setup
 
@@ -55,16 +55,17 @@ The site supports Google sign-in. By default any signed-in user gets a no-op ses
    - `http://localhost:8888` (Netlify Dev)
    - `https://sacor.xyz` (production)
 4. Copy the Client ID into both `VITE_GOOGLE_CLIENT_ID` (frontend) and `GOOGLE_CLIENT_ID` (backend, used to verify the `aud` claim). They are the same value &mdash; the `VITE_` prefix exposes it to the browser bundle.
-5. Set `OWNER_EMAIL` to the Google account email that should unlock Travel Plans.
+5. Set `TRAVEL_PLAN_EMAILS` to a comma-separated list of exact Google account emails that should unlock Travel Plans, for example `you@example.com,friend@example.com`. `OWNER_EMAIL` still works as a temporary single-account fallback, but `TRAVEL_PLAN_EMAILS` is preferred.
 6. Generate a session secret and set `SESSION_SECRET`:
    ```sh
    openssl rand -hex 32
    ```
-7. Mirror the four vars into Netlify (Site settings &rarr; Environment variables) for production.
+7. Mirror the required vars into Netlify (Site settings &rarr; Environment variables) for production: `VITE_GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_ID`, `TRAVEL_PLAN_EMAILS`, and `SESSION_SECRET`.
+8. Redeploy the site after changing `VITE_GOOGLE_CLIENT_ID`; Vite bakes `VITE_` env vars into the frontend bundle at build time.
 
 ### Endpoints
 
 - `POST /.netlify/functions/auth-google` &mdash; verifies a Google ID token and sets the session cookie.
-- `GET  /.netlify/functions/auth-me` &mdash; returns `{ user: { email, isOwner } | null }`.
+- `GET  /.netlify/functions/auth-me` &mdash; returns `{ user: { email, canAccessTravelPlans, isOwner } | null }`.
 - `POST /.netlify/functions/auth-logout` &mdash; clears the session cookie.
-- `GET|POST|PUT|DELETE /.netlify/functions/travel-plans[?id=...]` &mdash; CRUD for travel plans, owner-only. Plans are stored in Netlify Blobs (`travel-plans` store) as markdown.
+- `GET|POST|PUT|DELETE /.netlify/functions/travel-plans[?id=...]` &mdash; CRUD for travel plans, allowlisted accounts only. Plans are stored in Netlify Blobs (`travel-plans` store) as markdown.

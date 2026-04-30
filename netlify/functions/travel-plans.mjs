@@ -1,5 +1,5 @@
 import { getStore } from '@netlify/blobs'
-import { requireOwner } from './_lib/session.mjs'
+import { requireTravelAccess } from './_lib/session.mjs'
 
 const INDEX_KEY = 'index'
 const planKey = (id) => `plans/${id}`
@@ -33,7 +33,7 @@ const sanitizeString = (value, max) => {
 }
 
 export default async (req) => {
-  const auth = requireOwner(req)
+  const auth = requireTravelAccess(req)
   if (auth.error) return auth.error
 
   const store = getStore('travel-plans')

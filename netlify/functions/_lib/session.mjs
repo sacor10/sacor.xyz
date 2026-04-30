@@ -8,6 +8,21 @@ const b64url = (buf) =>
 
 const fromB64url = (str) => Buffer.from(str.replace(/-/g, '+').replace(/_/g, '/'), 'base64')
 
+export const normalizeEmail = (email) => String(email || '').trim().toLowerCase()
+
+export function getTravelPlanEmails() {
+  const raw = process.env.TRAVEL_PLAN_EMAILS || process.env.OWNER_EMAIL || ''
+  return raw
+    .split(',')
+    .map(normalizeEmail)
+    .filter(Boolean)
+}
+
+export function canAccessTravelPlans(email) {
+  const normalized = normalizeEmail(email)
+  return !!normalized && getTravelPlanEmails().includes(normalized)
+}
+
 const getSecret = () => {
   const secret = process.env.SESSION_SECRET
   if (!secret || secret.length < 16) {
@@ -16,8 +31,8 @@ const getSecret = () => {
   return secret
 }
 
-export function signSession({ email, isOwner }) {
-  const payload = { email, isOwner: !!isOwner, exp: Date.now() + SESSION_TTL_MS }
+export function signSession({ email }) {
+  const payload = { email: normalizeEmail(email), exp: Date.now() + SESSION_TTL_MS }
   const body = b64url(JSON.stringify(payload))
   const mac = createHmac('sha256', getSecret()).update(body).digest()
   return `${body}.${b64url(mac)}`
@@ -38,7 +53,14 @@ export function verifySession(token) {
     return null
   }
   if (!payload || typeof payload.exp !== 'number' || payload.exp < Date.now()) return null
-  return { email: payload.email, isOwner: !!payload.isOwner }
+  const email = normalizeEmail(payload.email)
+  if (!email) return null
+  const travelAccess = canAccessTravelPlans(email)
+  return {
+    email,
+    canAccessTravelPlans: travelAccess,
+    isOwner: travelAccess,
+  }
 }
 
 export function readSessionCookie(req) {
@@ -65,4 +87,19 @@ export function requireOwner(req) {
   if (!session) return { error: new Response('Unauthorized', { status: 401 }) }
   if (!session.isOwner) return { error: new Response('Forbidden', { status: 403 }) }
   return { session }
+}
+
+export function requireTravelAccess(req) {
+  const session = readSessionCookie(req)
+  if (!session) return { error: new Response('Unauthorized', { status: 401 }) }
+  if (!canAccessTravelPlans(session.email)) {
+    return { error: new Response('Forbidden', { status: 403 }) }
+  }
+  return {
+    session: {
+      ...session,
+      canAccessTravelPlans: true,
+      isOwner: true,
+    },
+  }
 }

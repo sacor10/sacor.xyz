@@ -344,7 +344,7 @@ const rightSidebar = (
 )
 
 export default function TravelPlansPage() {
-  const { loading, isSignedIn, isOwner } = useAuth()
+  const { loading, isSignedIn, canAccessTravelPlans } = useAuth()
 
   const mainContent = (
     <>
@@ -360,7 +360,7 @@ export default function TravelPlansPage() {
 
       <br />
 
-      {isOwner ? <PlansList /> : <GatedMessage loading={loading} isSignedIn={isSignedIn} />}
+      {canAccessTravelPlans ? <PlansList /> : <GatedMessage loading={loading} isSignedIn={isSignedIn} />}
     </>
   )
 

@@ -34,8 +34,8 @@ const PANE_LABELS = ['Show navigation', 'Show main content', 'Show sidebar']
 export default function Layout({ mainContent, rightSidebar }) {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [pane, setPane] = useState(1)
-  const { isOwner } = useAuth()
-  const navLinks = isOwner
+  const { canAccessTravelPlans } = useAuth()
+  const navLinks = canAccessTravelPlans
     ? [...baseNavLinks.slice(0, 6), ownerNavLink, ...baseNavLinks.slice(6)]
     : baseNavLinks
   const touch = useRef({ x: 0, y: 0, t: 0, axis: null, startPane: 1 })

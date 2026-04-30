@@ -38,7 +38,7 @@ export default function GoogleSignInButton() {
     return (
       <span className="account-pill">
         <font face="Comic Sans MS" size="2" color="#FF00FF">
-          sign-in not configured
+          missing VITE_GOOGLE_CLIENT_ID
         </font>
       </span>
     )
@@ -48,7 +48,7 @@ export default function GoogleSignInButton() {
     return (
       <span className="account-pill">
         <font face="Comic Sans MS" size="2" color="#00FF00">
-          {user.isOwner ? '★ ' : ''}signed in as <b>{user.email}</b>
+          {user.canAccessTravelPlans || user.isOwner ? '* ' : ''}signed in as <b>{user.email}</b>
         </font>
         <button type="button" className="signout-btn" onClick={signOut}>
           Sign Out
