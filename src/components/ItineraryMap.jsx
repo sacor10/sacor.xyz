@@ -10,6 +10,9 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 })
 
+const mapsUrl = (stop) =>
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stop.name)}&center=${stop.lat},${stop.lng}`
+
 const numberedIcon = (n) =>
   L.divIcon({
     className: 'itinerary-marker',
@@ -57,6 +60,11 @@ export default function ItineraryMap({ stops, showRoute = true, height = '500px'
               {stop.arrivalTime && <div>Arrive: {stop.arrivalTime}</div>}
               {stop.durationMinutes && <div>Duration: {stop.durationMinutes} min</div>}
               {stop.notes && <div style={{ marginTop: 6 }}>{stop.notes}</div>}
+              <div style={{ marginTop: 8 }}>
+                <a href={mapsUrl(stop)} target="_blank" rel="noopener noreferrer">
+                  Open in Google Maps
+                </a>
+              </div>
             </Popup>
           </Marker>
         ))}
