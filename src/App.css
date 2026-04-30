@@ -1,7 +1,7 @@
 /* === Geocities-style overrides for the whole app === */
 
 .geocities {
-  background-image: url('/generated-assets/bg-tile.png');
+  background-image: url('/generated-assets/bg-tile-v2.png');
   background-repeat: repeat;
   background-color: #4B0082;
   color: #FFFF00;

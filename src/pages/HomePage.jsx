@@ -19,7 +19,7 @@ const rightSidebar = (
         <tr>
           <td align="center">
             <img
-              src="/generated-assets/avatar.png"
+              src="/generated-assets/avatar-v2.png"
               alt="me"
               width="100"
               height="100"
@@ -122,7 +122,7 @@ const rightSidebar = (
 
     <center>
       <img
-        src="/generated-assets/browser-badge.png"
+        src="/generated-assets/browser-badge-v2.png"
         alt="Netscape Now"
         width="88"
         height="31"
