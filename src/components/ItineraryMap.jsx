@@ -43,7 +43,12 @@ export default function ItineraryMap({ stops, showRoute = true, height = '500px'
   const routePoints = stops.map((s) => [s.lat, s.lng])
 
   return (
-    <div style={{ height, width: '100%' }}>
+    <div
+      style={{ height, width: '100%' }}
+      onTouchStart={(e) => e.stopPropagation()}
+      onTouchMove={(e) => e.stopPropagation()}
+      onTouchEnd={(e) => e.stopPropagation()}
+    >
       <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
