@@ -92,7 +92,7 @@ export default function Layout({ mainContent, rightSidebar }) {
             <tr>
               <td align="center" bgColor="#4B0082">
                 <img
-                  src="/generated-assets/globe-v2.png"
+                  src="https://i.imgur.com/PLACEHOLDER_HEADER.gif"
                   alt="spinning globe"
                   width="64"
                   height="64"
@@ -100,7 +100,7 @@ export default function Layout({ mainContent, rightSidebar }) {
                   align="left"
                 />
                 <img
-                  src="/generated-assets/globe-v2.png"
+                  src="https://i.imgur.com/PLACEHOLDER_HEADER.gif"
                   alt="spinning globe"
                   width="64"
                   height="64"
