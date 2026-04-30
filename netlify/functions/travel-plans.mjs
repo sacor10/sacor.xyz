@@ -1,7 +1,9 @@
 import { getStore } from '@netlify/blobs'
 import { requireTravelAccess } from './_lib/session.mjs'
+import { sfStops } from '../../src/data/sfTrip.js'
 
 const INDEX_KEY = 'index'
+const SEED_PLAN_ID = 'sf-long-weekend-demo'
 const planKey = (id) => `plans/${id}`
 
 const json = (data, init = {}) =>
@@ -30,6 +32,44 @@ const saveIndex = (store, list) => store.set(INDEX_KEY, JSON.stringify(list))
 const sanitizeString = (value, max) => {
   if (typeof value !== 'string') return ''
   return value.slice(0, max)
+}
+
+const buildSeedMarkdown = (stops) => {
+  const lines = [
+    '# SF Long Weekend',
+    '',
+    'A scenic one-day loop hitting San Francisco\'s classic landmarks. Edit or delete this demo plan whenever you want — it only seeds once your itinerary list is empty.',
+    '',
+    '## Stops',
+    '',
+  ]
+  stops.forEach((s, i) => {
+    let line = `${i + 1}. **${s.name}**`
+    if (s.arrivalTime) line += ` — ${s.arrivalTime}`
+    if (s.durationMinutes) line += ` _(${s.durationMinutes} min)_`
+    if (s.notes) line += `  \n   ${s.notes}`
+    lines.push(line)
+  })
+  return lines.join('\n')
+}
+
+const seedIfEmpty = async (store, list) => {
+  if (list.length > 0) return list
+  const now = new Date().toISOString()
+  const plan = {
+    id: SEED_PLAN_ID,
+    title: 'SF Long Weekend',
+    destination: 'San Francisco, CA',
+    body: buildSeedMarkdown(sfStops),
+    stops: sfStops,
+    createdAt: now,
+    updatedAt: now,
+  }
+  await store.set(planKey(plan.id), JSON.stringify(plan))
+  const summary = { id: plan.id, title: plan.title, destination: plan.destination, updatedAt: now }
+  const next = [summary]
+  await saveIndex(store, next)
+  return next
 }
 
 const sanitizeStops = (value) => {
@@ -66,7 +106,8 @@ export default async (req) => {
       if (!raw) return json({ error: 'Not found' }, { status: 404 })
       return json(JSON.parse(raw))
     }
-    const list = await loadIndex(store)
+    const stored = await loadIndex(store)
+    const list = await seedIfEmpty(store, stored)
     return json({ plans: list })
   }
 

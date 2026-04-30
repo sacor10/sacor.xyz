@@ -3,7 +3,6 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import Layout from '../Layout'
 import MarkdownView from '../components/MarkdownView'
 import ItineraryMap from '../components/ItineraryMap'
-import { sfStops } from '../data/sfTrip'
 import { useAuth } from '../auth/useAuth'
 
 const formatDate = (iso) => {
@@ -276,22 +275,16 @@ export default function TravelPlanPage() {
       />
     )
   } else {
-    const isSf = /san francisco|\bsf\b/i.test(`${plan.title} ${plan.destination}`)
-    const displayStops =
-      Array.isArray(plan.stops) && plan.stops.length > 0
-        ? plan.stops
-        : isSf
-          ? sfStops
-          : []
+    const hasStops = Array.isArray(plan.stops) && plan.stops.length > 0
     body = (
       <>
-        {displayStops.length > 0 && (
+        {hasStops && (
           <>
             <table width="100%" cellPadding="14" cellSpacing="0" border="0" className="postbox" bgColor="#000000">
               <tbody>
                 <tr>
                   <td>
-                    <ItineraryMap stops={displayStops} />
+                    <ItineraryMap stops={plan.stops} />
                   </td>
                 </tr>
               </tbody>
