@@ -38,20 +38,23 @@ export default function Layout({ mainContent, rightSidebar }) {
   const navLinks = canAccessTravelPlans
     ? [...baseNavLinks.slice(0, 6), ownerNavLink, ...baseNavLinks.slice(6)]
     : baseNavLinks
-  const touch = useRef({ x: 0, y: 0, t: 0, axis: null, startPane: 1 })
+  const touch = useRef({ x: 0, y: 0, t: 0, axis: null, startPane: 1, ignore: false })
 
   const onTouchStart = (e) => {
     const t0 = e.touches[0]
+    const ignore = !!(e.target.closest && e.target.closest('[data-no-pane-swipe]'))
     touch.current = {
       x: t0.clientX,
       y: t0.clientY,
       t: Date.now(),
       axis: null,
       startPane: pane,
+      ignore,
     }
   }
 
   const onTouchMove = (e) => {
+    if (touch.current.ignore) return
     const t0 = e.touches[0]
     const dx = t0.clientX - touch.current.x
     const dy = t0.clientY - touch.current.y
@@ -64,6 +67,10 @@ export default function Layout({ mainContent, rightSidebar }) {
   }
 
   const onTouchEnd = (e) => {
+    if (touch.current.ignore) {
+      touch.current.axis = null
+      return
+    }
     const t1 = e.changedTouches[0]
     const dx = t1.clientX - touch.current.x
     const threshold = Math.min(60, window.innerWidth * 0.25)
