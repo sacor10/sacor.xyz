@@ -518,23 +518,19 @@
 }
 
 @media (min-width: 769px) {
-  /* Sidebars: center in tall table row while unstuck (<tr valign="top"> loses to per-cell valign). */
-  .geocities .left-sidebar,
-  .geocities .right-sidebar {
-    vertical-align: middle;
-  }
-
   /*
-   Transform on position:sticky breaks stickiness in WebKit/Chromium.
-   Outer .sticky-mount sticks; inner .sticky-pane translates for true vertical center at top: 50vh.
-   */
+    Keep both sidebars vertically aligned with each other:
+    • vertical-align inherited as top on .left-sidebar / .right-sidebar (same row baseline as ~ NAVIGATE~ etc.)
+    • No translateY on the panes — per-pane translateY(-50%) centers each box on 50vh, so a taller left column
+      does not share a top edge with the shorter right (that was the misalignment vs the right menu).
+    • Shared sticky top + no transform ⇒ both mounts share the same viewport top inset while stuck.
+  */
   .geocities .sticky-mount {
     position: sticky;
-    top: 50vh;
+    top: 12px;
   }
   .geocities .sticky-mount > .sticky-pane {
-    transform: translateY(-50%);
-    max-height: 100vh;
+    max-height: calc(100vh - 24px);
     overflow-y: auto;
   }
 }
