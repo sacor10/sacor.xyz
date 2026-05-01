@@ -58,6 +58,8 @@
 
 .geocities .right-sidebar {
   background: transparent;
+  border: none;
+  padding: 0;
   vertical-align: top;
 }
 
@@ -92,6 +94,9 @@
 .geocities .main-content {
   border: 5px ridge #FFFF00;
   padding: 12px;
+  /* Match side columns: default table-cell vertical-align is baseline, which can pin
+     short right cells oddly relative to tall center content in the same row. */
+  vertical-align: top;
 }
 
 .geocities .hero-glow {
@@ -519,15 +524,15 @@
 
 @media (min-width: 769px) {
   /*
-    Keep both sidebars vertically aligned with each other:
-    • vertical-align inherited as top on .left-sidebar / .right-sidebar (same row baseline as ~ NAVIGATE~ etc.)
-    • No translateY on the panes — per-pane translateY(-50%) centers each box on 50vh, so a taller left column
-      does not share a top edge with the shorter right (that was the misalignment vs the right menu).
-    • Shared sticky top + no transform ⇒ both mounts share the same viewport top inset while stuck.
+    Keep sidebars lined up with the main column top:
+    • All three cells use vertical-align: top (main-content was relying on UA baseline otherwise).
+    • Shrink-wrap the sticky wrapper so short right panes aren’t vertically centered inside a stretched block.
+    • Shared sticky top + no per-pane translateY keeps left/right tops aligned while stuck.
   */
   .geocities .sticky-mount {
     position: sticky;
     top: 12px;
+    height: fit-content;
   }
   .geocities .sticky-mount > .sticky-pane {
     max-height: calc(100vh - 24px);
