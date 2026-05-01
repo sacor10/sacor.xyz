@@ -93,13 +93,19 @@ NEW PLAN REQUEST
 Generate a plan for: <DESCRIBE YOUR TRIP HERE — e.g. "a 2-day food-focused trip to Lisbon">`
 }
 
-function EditForm({ plan, ownerHash, onCancel, onSaved }) {
+const TRAVEL_PLAN_EDIT_FORM_ID = 'travel-plan-edit-form'
+
+function EditForm({ plan, ownerHash, onCancel, onSaved, onBusyChange }) {
   const [title, setTitle] = useState(plan.title || '')
   const [destination, setDestination] = useState(plan.destination || '')
   const [body, setBody] = useState(plan.body || '')
   const [stops, setStops] = useState(stopsToDraft(plan.stops))
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    onBusyChange?.(submitting)
+  }, [submitting, onBusyChange])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -160,7 +166,7 @@ function EditForm({ plan, ownerHash, onCancel, onSaved }) {
         </tr>
         <tr>
           <td>
-            <form onSubmit={handleSubmit} method="post">
+            <form id={TRAVEL_PLAN_EDIT_FORM_ID} onSubmit={handleSubmit} method="post">
               <label className="travel-label">
                 <font face="Impact" size="3" color="#FFFF00">
                   TITLE
@@ -459,6 +465,7 @@ export default function TravelPlanPage() {
   const [exportOpen, setExportOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [copyStatus, setCopyStatus] = useState('')
+  const [editBusy, setEditBusy] = useState(false)
 
   const editFormScrollRef = useRef(null)
   const exportPanelScrollRef = useRef(null)
@@ -495,6 +502,10 @@ export default function TravelPlanPage() {
       cancelled = true
     }
   }, [id, ownerHashParam, authLoading, canAccessTravelPlans])
+
+  useEffect(() => {
+    if (!editing) setEditBusy(false)
+  }, [editing])
 
   const handleDelete = async () => {
     if (!window.confirm('Delete this travel plan? This cannot be undone.')) return
@@ -647,6 +658,7 @@ export default function TravelPlanPage() {
           plan={plan}
           ownerHash={ownerHashParam || (plan.isShared ? plan.ownerHash : '')}
           onCancel={() => setEditing(false)}
+          onBusyChange={setEditBusy}
           onSaved={(updated) => {
             setResult({ plan: updated })
             setEditing(false)
@@ -864,6 +876,30 @@ export default function TravelPlanPage() {
               <Link to="/" className="navbtn-link">
                 &#9733; BACK TO HOME &#9733;
               </Link>
+              {editing && plan && (
+                <>
+                  <br />
+                  <br />
+                  <button
+                    type="submit"
+                    form={TRAVEL_PLAN_EDIT_FORM_ID}
+                    className="dl-btn"
+                    disabled={editBusy}
+                  >
+                    {editBusy ? 'SAVING...' : 'SAVE CHANGES'}
+                  </button>
+                  <br />
+                  <br />
+                  <button
+                    type="button"
+                    className="navbtn-link"
+                    disabled={editBusy}
+                    onClick={() => setEditing(false)}
+                  >
+                    &#9733; CANCEL &#9733;
+                  </button>
+                </>
+              )}
               {showPlanActions && (
                 <>
                   <br />
