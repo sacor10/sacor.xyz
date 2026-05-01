@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { Link } from 'react-router-dom'
 import './App.css'
 import GoogleSignInButton from './auth/GoogleSignInButton'
@@ -38,52 +38,38 @@ export default function Layout({ mainContent, rightSidebar }) {
   const navLinks = canAccessTravelPlans
     ? [...baseNavLinks.slice(0, 6), ownerNavLink, ...baseNavLinks.slice(6)]
     : baseNavLinks
-  const touch = useRef({ x: 0, y: 0, t: 0, axis: null, startPane: 1, ignore: false })
+  const viewportRef = useRef(null)
 
-  const onTouchStart = (e) => {
-    const t0 = e.touches[0]
-    const ignore = !!(
-      e.target.closest &&
-      (e.target.closest('[data-no-pane-swipe]') || e.target.closest('.leaflet-container'))
-    )
-    touch.current = {
-      x: t0.clientX,
-      y: t0.clientY,
-      t: Date.now(),
-      axis: null,
-      startPane: pane,
-      ignore,
-    }
-  }
+  useLayoutEffect(() => {
+    if (!isMobile) return
+    const vp = viewportRef.current
+    if (vp) vp.scrollLeft = vp.clientWidth
+  }, [isMobile])
 
-  const onTouchMove = (e) => {
-    if (touch.current.ignore) return
-    const t0 = e.touches[0]
-    const dx = t0.clientX - touch.current.x
-    const dy = t0.clientY - touch.current.y
-    if (touch.current.axis === null && Math.max(Math.abs(dx), Math.abs(dy)) > 10) {
-      touch.current.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'
-    }
-    if (touch.current.axis === 'x' && e.cancelable) {
-      e.preventDefault()
-    }
-  }
-
-  const onTouchEnd = (e) => {
-    if (touch.current.ignore) {
-      touch.current.axis = null
-      return
-    }
-    const t1 = e.changedTouches[0]
-    const dx = t1.clientX - touch.current.x
-    const threshold = Math.min(60, window.innerWidth * 0.25)
-    if (touch.current.axis === 'x' && Math.abs(dx) > threshold) {
-      setPane((p) => {
-        if (dx < 0) return Math.min(p + 1, 2)
-        return Math.max(p - 1, 0)
+  useEffect(() => {
+    if (!isMobile) return
+    const vp = viewportRef.current
+    if (!vp) return
+    let raf = 0
+    const onScroll = () => {
+      if (raf) cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(() => {
+        if (vp.clientWidth === 0) return
+        const idx = Math.round(vp.scrollLeft / vp.clientWidth)
+        setPane(Math.max(0, Math.min(2, idx)))
       })
     }
-    touch.current.axis = null
+    vp.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      vp.removeEventListener('scroll', onScroll)
+      if (raf) cancelAnimationFrame(raf)
+    }
+  }, [isMobile])
+
+  const goToPane = (i) => {
+    const vp = viewportRef.current
+    if (vp) vp.scrollTo({ left: i * vp.clientWidth, behavior: 'smooth' })
+    else setPane(i)
   }
 
   return (
@@ -142,11 +128,8 @@ export default function Layout({ mainContent, rightSidebar }) {
 
       {/* ============ MAIN 3-COLUMN LAYOUT ============ */}
       <div
+        ref={viewportRef}
         className={isMobile ? 'pane-viewport' : ''}
-        style={isMobile ? { '--pane': pane } : undefined}
-        onTouchStart={isMobile ? onTouchStart : undefined}
-        onTouchMove={isMobile ? onTouchMove : undefined}
-        onTouchEnd={isMobile ? onTouchEnd : undefined}
       >
       <center>
         <table width="95%" cellPadding="8" cellSpacing="6" border="0">
@@ -210,7 +193,7 @@ export default function Layout({ mainContent, rightSidebar }) {
               key={i}
               type="button"
               className={'pane-dot' + (i === pane ? ' active' : '')}
-              onClick={() => setPane(i)}
+              onClick={() => goToPane(i)}
               aria-label={PANE_LABELS[i]}
             >
               {i === pane ? '●' : '○'}
