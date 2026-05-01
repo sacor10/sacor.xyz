@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import Layout from '../Layout'
 import MarkdownView from '../components/MarkdownView'
@@ -447,34 +447,6 @@ function SharePanel({ plan }) {
   )
 }
 
-const rightSidebar = (
-  <>
-    <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox">
-      <tbody>
-        <tr>
-          <td align="center" bgcolor="#FF00FF" className="section-bar-sm">
-            <font face="Impact" size="4" color="#FFFF00">
-              ~ NAVIGATE ~
-            </font>
-          </td>
-        </tr>
-        <tr>
-          <td align="center">
-            <Link to="/travel-plans" className="navbtn-link">
-              &#9733; ALL PLANS &#9733;
-            </Link>
-            <br />
-            <br />
-            <Link to="/" className="navbtn-link">
-              &#9733; BACK TO HOME &#9733;
-            </Link>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </>
-)
-
 export default function TravelPlanPage() {
   const { id } = useParams()
   const [searchParams] = useSearchParams()
@@ -529,6 +501,72 @@ export default function TravelPlanPage() {
       setDeleting(false)
     }
   }
+
+  const showPlanActions =
+    Boolean(plan) &&
+    !editing &&
+    canAccessTravelPlans &&
+    !fetchError &&
+    !authLoading &&
+    !loading
+
+  const actionButtonItems = showPlanActions
+    ? [
+        <button key="edit" type="button" className="navbtn-link" onClick={() => setEditing(true)}>
+          &#9733; EDIT &#9733;
+        </button>,
+        ...(plan.isOwner
+          ? [
+              <button
+                key="delete"
+                type="button"
+                className="navbtn-link"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                &#9733; {deleting ? 'DELETING...' : 'DELETE'} &#9733;
+              </button>,
+            ]
+          : []),
+        <button key="json" type="button" className="navbtn-link" onClick={() => downloadPlanAsJson(plan)}>
+          &#9733; EXPORT AS JSON &#9733;
+        </button>,
+        <button
+          key="prompt"
+          type="button"
+          className="navbtn-link"
+          onClick={() => {
+            setCopyStatus('')
+            setExportOpen((v) => !v)
+          }}
+        >
+          &#9733; {exportOpen ? 'HIDE PROMPT' : 'EXPORT AS PROMPT'} &#9733;
+        </button>,
+        ...(plan.isOwner
+          ? [
+              <button key="share" type="button" className="navbtn-link" onClick={() => setShareOpen((v) => !v)}>
+                &#9733; {shareOpen ? 'HIDE SHARE' : 'SHARE'} &#9733;
+              </button>,
+            ]
+          : []),
+      ]
+    : null
+
+  const actionButtons = actionButtonItems ? (
+    <>
+      {actionButtonItems.flatMap((el, i) =>
+        i === 0 ? [el] : [<br key={`ab-br1-${i}`} />, <br key={`ab-br2-${i}`} />, el],
+      )}
+    </>
+  ) : null
+
+  const actionButtonsRow = actionButtonItems ? (
+    <>
+      {actionButtonItems.flatMap((el, i) =>
+        i === 0 ? [el] : [<Fragment key={`ab-h-${i}`}>&nbsp;&nbsp;</Fragment>, el],
+      )}
+    </>
+  ) : null
 
   let body
   if (authLoading || loading) {
@@ -671,55 +709,7 @@ export default function TravelPlanPage() {
 
         <br />
 
-        <center>
-          <button type="button" className="navbtn-link" onClick={() => setEditing(true)}>
-            &#9733; EDIT &#9733;
-          </button>
-          {plan.isOwner && (
-            <>
-              &nbsp;&nbsp;
-              <button
-                type="button"
-                className="navbtn-link"
-                onClick={handleDelete}
-                disabled={deleting}
-              >
-                &#9733; {deleting ? 'DELETING...' : 'DELETE'} &#9733;
-              </button>
-            </>
-          )}
-          &nbsp;&nbsp;
-          <button
-            type="button"
-            className="navbtn-link"
-            onClick={() => downloadPlanAsJson(plan)}
-          >
-            &#9733; EXPORT AS JSON &#9733;
-          </button>
-          &nbsp;&nbsp;
-          <button
-            type="button"
-            className="navbtn-link"
-            onClick={() => {
-              setCopyStatus('')
-              setExportOpen((v) => !v)
-            }}
-          >
-            &#9733; {exportOpen ? 'HIDE PROMPT' : 'EXPORT AS PROMPT'} &#9733;
-          </button>
-          {plan.isOwner && (
-            <>
-              &nbsp;&nbsp;
-              <button
-                type="button"
-                className="navbtn-link"
-                onClick={() => setShareOpen((v) => !v)}
-              >
-                &#9733; {shareOpen ? 'HIDE SHARE' : 'SHARE'} &#9733;
-              </button>
-            </>
-          )}
-        </center>
+        <center>{actionButtonsRow}</center>
         {deleteError && (
           <center>
             <font face="Comic Sans MS" size="2" color="#FF00FF">
@@ -809,6 +799,41 @@ export default function TravelPlanPage() {
           &#9733; BACK TO ALL PLANS &#9733;
         </Link>
       </center>
+    </>
+  )
+
+  const rightSidebar = (
+    <>
+      <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox">
+        <tbody>
+          <tr>
+            <td align="center" bgcolor="#FF00FF" className="section-bar-sm">
+              <font face="Impact" size="4" color="#FFFF00">
+                ~ NAVIGATE ~
+              </font>
+            </td>
+          </tr>
+          <tr>
+            <td align="center">
+              <Link to="/travel-plans" className="navbtn-link">
+                &#9733; ALL PLANS &#9733;
+              </Link>
+              <br />
+              <br />
+              <Link to="/" className="navbtn-link">
+                &#9733; BACK TO HOME &#9733;
+              </Link>
+              {showPlanActions && (
+                <>
+                  <br />
+                  <br />
+                  {actionButtons}
+                </>
+              )}
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </>
   )
 
