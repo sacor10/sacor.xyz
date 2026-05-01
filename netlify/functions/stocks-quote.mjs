@@ -38,6 +38,27 @@ const fetchYahooQuote = async (symbol) => {
   }
 }
 
+// Handles crypto pairs like BTC-USD → BTCUSDT on Binance public API (no auth)
+const fetchBinanceQuote = async (symbol) => {
+  if (!symbol.endsWith('-USD')) throw new Error('not a USD pair')
+  const binancePair = symbol.replace('-USD', 'USDT')
+  const url = `https://api.binance.com/api/v3/ticker/24hr?symbol=${encodeURIComponent(binancePair)}`
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`binance http ${res.status}`)
+  const data = await res.json()
+  const price = parseFloat(data.lastPrice)
+  const prev = parseFloat(data.prevClosePrice)
+  if (!Number.isFinite(price) || price === 0) throw new Error('binance: no price')
+  const change = price - prev
+  const changePct = prev !== 0 ? (change / prev) * 100 : 0
+  return {
+    price,
+    change,
+    changePct,
+    ts: Math.floor((data.closeTime ?? Date.now()) / 1000),
+  }
+}
+
 export default async (req) => {
   const symbol = (new URL(req.url).searchParams.get('symbol') ?? '').toUpperCase()
   if (!SYMBOL_RE.test(symbol)) return json(400, { error: 'invalid symbol' })
@@ -78,6 +99,15 @@ export default async (req) => {
   try {
     const yq = await fetchYahooQuote(symbol)
     const payload = { symbol, ...yq }
+    lastPayload.set(symbol, payload)
+    return json(200, payload)
+  } catch {
+    // fall through to Binance for crypto
+  }
+
+  try {
+    const bq = await fetchBinanceQuote(symbol)
+    const payload = { symbol, ...bq }
     lastPayload.set(symbol, payload)
     return json(200, payload)
   } catch {
