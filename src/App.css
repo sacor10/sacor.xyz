@@ -49,11 +49,16 @@
   vertical-align: top;
 }
 
-.geocities .left-sidebar > .sticky-pane {
+.geocities .left-sidebar .sticky-pane {
   background-color: #000080;
   border: 5px ridge #00FFFF;
   padding: 8px;
   box-sizing: border-box;
+}
+
+.geocities .right-sidebar {
+  background: transparent;
+  vertical-align: top;
 }
 
 .geocities .navbtn {
@@ -513,9 +518,21 @@
 }
 
 @media (min-width: 769px) {
-  .geocities .sticky-pane {
+  /* Sidebars: center in tall table row while unstuck (<tr valign="top"> loses to per-cell valign). */
+  .geocities .left-sidebar,
+  .geocities .right-sidebar {
+    vertical-align: middle;
+  }
+
+  /*
+   Transform on position:sticky breaks stickiness in WebKit/Chromium.
+   Outer .sticky-mount sticks; inner .sticky-pane translates for true vertical center at top: 50vh.
+   */
+  .geocities .sticky-mount {
     position: sticky;
     top: 50vh;
+  }
+  .geocities .sticky-mount > .sticky-pane {
     transform: translateY(-50%);
     max-height: 100vh;
     overflow-y: auto;

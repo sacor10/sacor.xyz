@@ -216,8 +216,9 @@ export default function Layout({ mainContent, rightSidebar }) {
             <tr valign="top">
               {/* ========== LEFT NAV SIDEBAR ========== */}
               <td width="18%" className="left-sidebar">
-                <div className="sticky-pane">
-                  <center>
+                <div className="sticky-mount">
+                  <div className="sticky-pane">
+                    <center>
                     <font face="Impact" size="5" color="#FFFF00">
                       <span className="blink">~ NAVIGATE ~</span>
                     </font>
@@ -250,6 +251,7 @@ export default function Layout({ mainContent, rightSidebar }) {
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </td>
 
@@ -258,8 +260,10 @@ export default function Layout({ mainContent, rightSidebar }) {
                 {mainContent}
               </td>
 
-              <td width="26%">
-                <div className="sticky-pane">{rightSidebar}</div>
+              <td width="26%" className="right-sidebar">
+                <div className="sticky-mount">
+                  <div className="sticky-pane">{rightSidebar}</div>
+                </div>
               </td>
             </tr>
           </tbody>
