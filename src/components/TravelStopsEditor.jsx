@@ -10,6 +10,9 @@ const initialViewMode = (stop) => {
 
 const SEARCH_DEBOUNCE_MS = 300
 
+/** Phantom id: omitting a matching <form> opts this finder field out of the itinerary save form (otherwise Enter / GET submits add "?"). */
+const FIND_PLACE_FIELD_FORM_ID = '__noop_travel_stop_finder__'
+
 function StopFinder({ onPick }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
@@ -56,8 +59,8 @@ function StopFinder({ onPick }) {
     }
   }
 
-  const handleSubmit = (event) => {
-    event.preventDefault()
+  /** Nested <form> is invalid HTML and submits the itinerary parent <form>; use controls only. */
+  const scheduleSearch = () => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
       debounceRef.current = null
@@ -65,9 +68,29 @@ function StopFinder({ onPick }) {
     }, SEARCH_DEBOUNCE_MS)
   }
 
+  const handleFinderSearchClick = (event) => {
+    event.preventDefault()
+    event.stopPropagation()
+    scheduleSearch()
+  }
+
+  const handleFinderInputKeyDown = (event) => {
+    const isEnter =
+      event.key === 'Enter' ||
+      event.key === 'NumpadEnter' ||
+      event.code === 'Enter' ||
+      event.code === 'NumpadEnter'
+    if (!isEnter) return
+    /* Let IME composition finish; phantom `form=` blocks the GET save-<form>. */
+    if (event.isComposing || event.nativeEvent?.isComposing) return
+    event.preventDefault()
+    event.stopPropagation()
+    scheduleSearch()
+  }
+
   return (
     <div className="travel-stop-finder">
-      <form onSubmit={handleSubmit} className="travel-stop-finder-form">
+      <div className="travel-stop-finder-form">
         <label className="travel-label">
           <font face="Impact" size="2" color="#FFFF00">
             FIND A PLACE
@@ -76,16 +99,24 @@ function StopFinder({ onPick }) {
             type="text"
             value={query}
             maxLength={200}
+            form={FIND_PLACE_FIELD_FORM_ID}
+            autoComplete="off"
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleFinderInputKeyDown}
             placeholder="e.g. Eiffel Tower, Paris"
           />
         </label>
         <span className="travel-stops-actions">
-          <button type="submit" className="mini-btn" disabled={status === 'loading'}>
+          <button
+            type="button"
+            className="mini-btn"
+            disabled={status === 'loading'}
+            onClick={handleFinderSearchClick}
+          >
             {status === 'loading' ? 'SEARCHING…' : 'SEARCH'}
           </button>
         </span>
-      </form>
+      </div>
 
       {error && (
         <div className="travel-error">

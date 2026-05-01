@@ -118,7 +118,7 @@ function NewPlanForm({ onCreated }) {
         </tr>
         <tr>
           <td>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} method="post">
               <label className="travel-label">
                 <font face="Impact" size="3" color="#FFFF00">
                   TITLE

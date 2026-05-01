@@ -160,7 +160,7 @@ function EditForm({ plan, ownerHash, onCancel, onSaved }) {
         </tr>
         <tr>
           <td>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} method="post">
               <label className="travel-label">
                 <font face="Impact" size="3" color="#FFFF00">
                   TITLE
@@ -359,7 +359,7 @@ function SharePanel({ plan }) {
               </font>
             ) : (
               <>
-                <form onSubmit={handleShare}>
+                <form onSubmit={handleShare} method="post">
                   <label className="travel-label">
                     <font face="Impact" size="3" color="#FFFF00">
                       EMAILS
