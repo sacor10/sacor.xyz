@@ -153,10 +153,10 @@ function EditForm({ plan, ownerHash, onCancel, onSaved }) {
   }
 
   return (
-    <table width="100%" cellPadding="10" cellSpacing="0" border="0" className="postbox travel-form" bgColor="#000000">
+    <table width="100%" cellPadding="10" cellSpacing="0" border="0" className="postbox travel-form" bgcolor="#000000">
       <tbody>
         <tr>
-          <td align="center" bgColor="#FFFF00" className="section-bar-sm">
+          <td align="center" bgcolor="#FFFF00" className="section-bar-sm">
             <font face="Impact" size="4" color="#000000">
               ~ EDIT ITINERARY ~
             </font>
@@ -360,10 +360,10 @@ function SharePanel({ plan }) {
   }
 
   return (
-    <table width="100%" cellPadding="10" cellSpacing="0" border="0" className="postbox travel-form" bgColor="#000000">
+    <table width="100%" cellPadding="10" cellSpacing="0" border="0" className="postbox travel-form" bgcolor="#000000">
       <tbody>
         <tr>
-          <td align="center" bgColor="#00FF00" className="section-bar-sm">
+          <td align="center" bgcolor="#00FF00" className="section-bar-sm">
             <font face="Impact" size="4" color="#000000">
               ~ SHARE THIS PLAN ~
             </font>
@@ -475,7 +475,7 @@ const rightSidebar = (
     <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox">
       <tbody>
         <tr>
-          <td align="center" bgColor="#FF00FF" className="section-bar-sm">
+          <td align="center" bgcolor="#FF00FF" className="section-bar-sm">
             <font face="Impact" size="4" color="#FFFF00">
               ~ NAVIGATE ~
             </font>
@@ -562,7 +562,7 @@ export default function TravelPlanPage() {
     )
   } else if (!canAccessTravelPlans) {
     body = (
-      <table width="100%" cellPadding="14" cellSpacing="0" border="0" className="postbox" bgColor="#000000">
+      <table width="100%" cellPadding="14" cellSpacing="0" border="0" className="postbox" bgcolor="#000000">
         <tbody>
           <tr>
             <td align="center">
@@ -604,7 +604,7 @@ export default function TravelPlanPage() {
       <>
         {hasStops && (
           <>
-            <table width="100%" cellPadding="14" cellSpacing="0" border="0" className="postbox" bgColor="#000000">
+            <table width="100%" cellPadding="14" cellSpacing="0" border="0" className="postbox" bgcolor="#000000">
               <tbody>
                 <tr>
                   <td>
@@ -614,10 +614,10 @@ export default function TravelPlanPage() {
               </tbody>
             </table>
             <br />
-            <table width="100%" cellPadding="0" cellSpacing="0" border="0" className="postbox" bgColor="#000000">
+            <table width="100%" cellPadding="0" cellSpacing="0" border="0" className="postbox" bgcolor="#000000">
               <tbody>
                 <tr>
-                  <td align="center" bgColor="#FF00FF" className="section-bar-sm">
+                  <td align="center" bgcolor="#FF00FF" className="section-bar-sm">
                     <font face="Impact" size="4" color="#FFFF00">
                       ~ STOPS ~
                     </font>
@@ -654,7 +654,7 @@ export default function TravelPlanPage() {
             <br />
           </>
         )}
-        <table width="100%" cellPadding="14" cellSpacing="0" border="0" className="postbox" bgColor="#000000">
+        <table width="100%" cellPadding="14" cellSpacing="0" border="0" className="postbox" bgcolor="#000000">
           <tbody>
             <tr>
               <td>
@@ -769,10 +769,10 @@ export default function TravelPlanPage() {
           return (
             <>
               <br />
-              <table width="100%" cellPadding="10" cellSpacing="0" border="0" className="postbox travel-form" bgColor="#000000">
+              <table width="100%" cellPadding="10" cellSpacing="0" border="0" className="postbox travel-form" bgcolor="#000000">
                 <tbody>
                   <tr>
-                    <td align="center" bgColor="#00FFFF" className="section-bar-sm">
+                    <td align="center" bgcolor="#00FFFF" className="section-bar-sm">
                       <font face="Impact" size="4" color="#000000">
                         ~ AI PROMPT (PASTE INTO CLAUDE / CHATGPT) ~
                       </font>

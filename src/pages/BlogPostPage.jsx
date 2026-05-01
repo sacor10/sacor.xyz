@@ -7,7 +7,7 @@ function NotFound() {
     <center>
       <br />
       <font face="Impact" size="7" color="#FF0000" className="hero-glow">
-        <blink>404!!!</blink>
+        <span className="blink">404!!!</span>
       </font>
       <br />
       <br />
@@ -40,7 +40,7 @@ export default function BlogPostPage() {
       <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox">
         <tbody>
           <tr>
-            <td align="center" bgColor="#FF00FF" className="section-bar-sm">
+            <td align="center" bgcolor="#FF00FF" className="section-bar-sm">
               <font face="Impact" size="4" color="#FFFF00">
                 ~ NAVIGATE ~
               </font>
@@ -66,18 +66,18 @@ export default function BlogPostPage() {
         cellSpacing="0"
         border="0"
         className="bevelbox"
-        bgColor="#000080"
+        bgcolor="#000080"
       >
         <tbody>
           <tr>
-            <td align="center" bgColor="#00FFFF" className="section-bar-sm">
+            <td align="center" bgcolor="#00FFFF" className="section-bar-sm">
               <font face="Impact" size="4" color="#000000">
                 ~ OTHER POSTS ~
               </font>
             </td>
           </tr>
           <tr>
-            <td bgColor="#FFFFFF">
+            <td bgcolor="#FFFFFF">
               <font face="Times New Roman" size="3" color="#000000">
                 <ul className="favlinks">
                   {otherPosts.map((p) =>
@@ -106,9 +106,9 @@ export default function BlogPostPage() {
         <table width="100%" cellPadding="0" cellSpacing="0" border="0">
           <tbody>
             <tr>
-              <td align="center" bgColor="#FF00FF" className="section-bar">
+              <td align="center" bgcolor="#FF00FF" className="section-bar">
                 <font face="Impact" size="5" color="#FFFF00">
-                  <blink>~*~ BLOG POST ~*~</blink>
+                  <span className="blink">~*~ BLOG POST ~*~</span>
                 </font>
               </td>
             </tr>

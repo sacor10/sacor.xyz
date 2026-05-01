@@ -132,6 +132,14 @@
 .geocities .yellow-link { color: #FFFF00; }
 .geocities .cyan-link   { color: #00FFFF; }
 
+.geocities .blink {
+  animation: geocities-blink 1s steps(2, start) infinite;
+}
+
+@keyframes geocities-blink {
+  50% { visibility: hidden; }
+}
+
 .geocities .ridge-pink {
   border-style: ridge;
   border-color: #FF00FF;

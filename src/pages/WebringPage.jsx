@@ -17,7 +17,7 @@ const rightSidebar = (
     <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox">
       <tbody>
         <tr>
-          <td align="center" bgColor="#FF00FF" className="section-bar-sm">
+          <td align="center" bgcolor="#FF00FF" className="section-bar-sm">
             <font face="Impact" size="4" color="#FFFF00">
               ~ RING STATS ~
             </font>
@@ -36,7 +36,7 @@ const rightSidebar = (
               <br />
               <b className="yellow">Status:</b>{' '}
               <font color="#00FF00">
-                <blink>OPERATIONAL</blink>
+                <span className="blink">OPERATIONAL</span>
               </font>
               <br />
               <b className="yellow">Uptime:</b> 100%
@@ -53,17 +53,17 @@ const rightSidebar = (
 
     <br />
 
-    <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox" bgColor="#000000">
+    <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox" bgcolor="#000000">
       <tbody>
         <tr>
-          <td align="center" bgColor="#00FFFF" className="section-bar-sm">
+          <td align="center" bgcolor="#00FFFF" className="section-bar-sm">
             <font face="Impact" size="4" color="#000000">
               ~ APPLY TO JOIN ~
             </font>
           </td>
         </tr>
         <tr>
-          <td bgColor="#000000" align="center">
+          <td bgcolor="#000000" align="center">
             <font face="Comic Sans MS" size="2" color="#FFFF00">
               Email <a href="mailto:vestibule@sacor.xyz" className="cyan-link">vestibule@sacor.xyz</a>{' '}
               with the subject line <b className="hotpink">&quot;LET ME IN THE RING&quot;</b> and:
@@ -94,7 +94,7 @@ const rightSidebar = (
     <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox">
       <tbody>
         <tr>
-          <td align="center" bgColor="#FFFF00" className="section-bar-sm">
+          <td align="center" bgcolor="#FFFF00" className="section-bar-sm">
             <font face="Impact" size="4" color="#000000">
               ~ NAVIGATE ~
             </font>
@@ -118,7 +118,7 @@ const mainContent = (
       </font>
       <br />
       <font face="Comic Sans MS" size="3" color="#FFFF00">
-        <blink>~*~ Est. 2026, vibes Est. 1989 ~*~</blink>
+        <span className="blink">~*~ Est. 2026, vibes Est. 1989 ~*~</span>
       </font>
     </center>
 
@@ -146,9 +146,9 @@ const mainContent = (
       <table width="100%" cellPadding="0" cellSpacing="0" border="0">
         <tbody>
           <tr>
-            <td align="center" bgColor="#FF00FF" className="section-bar">
+            <td align="center" bgcolor="#FF00FF" className="section-bar">
               <font face="Impact" size="5" color="#FFFF00">
-                <blink>~*~ MEMBER SITES ~*~</blink>
+                <span className="blink">~*~ MEMBER SITES ~*~</span>
               </font>
             </td>
           </tr>

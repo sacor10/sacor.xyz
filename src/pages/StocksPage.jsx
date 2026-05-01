@@ -30,18 +30,18 @@ function Sidebar() {
         cellSpacing="0"
         border="0"
         className="bevelbox"
-        bgColor="#000080"
+        bgcolor="#000080"
       >
         <tbody>
           <tr>
-            <td align="center" bgColor="#FFFF00" className="section-bar-sm">
+            <td align="center" bgcolor="#FFFF00" className="section-bar-sm">
               <font face="Impact" size="4" color="#000000">
                 ~ MARKET HOURS ~
               </font>
             </td>
           </tr>
           <tr>
-            <td align="center" bgColor="#000000">
+            <td align="center" bgcolor="#000000">
               <font face="Comic Sans MS" size="2" color="#00FFFF">
                 <b className="yellow">NYSE</b>
                 <br />
@@ -69,19 +69,19 @@ function Sidebar() {
         cellSpacing="0"
         border="0"
         className="bevelbox"
-        bgColor="#4B0082"
+        bgcolor="#4B0082"
       >
         <tbody>
           <tr>
-            <td align="center" bgColor="#FF00FF" className="section-bar-sm">
+            <td align="center" bgcolor="#FF00FF" className="section-bar-sm">
               <font face="Impact" size="4" color="#FFFF00">
                 ~ DISCLAIMER ~
               </font>
             </td>
           </tr>
           <tr>
-            <td bgColor="#000000">
-              <marquee behavior="scroll" direction="left" scrollAmount="4">
+            <td bgcolor="#000000">
+              <marquee behavior="scroll" direction="left" scrollamount="4">
                 <font face="Impact" size="3" color="#FFFF00">
                   &#9888; NOT FINANCIAL ADVICE &#9888; DATA MAY BE DELAYED &#9888; FOR ENTERTAINMENT ONLY &#9888;
                 </font>
@@ -202,7 +202,7 @@ export default function StocksPage() {
         <table width="100%" cellPadding="0" cellSpacing="0" border="0">
           <tbody>
             <tr>
-              <td align="center" bgColor="#FF00FF" className="section-bar">
+              <td align="center" bgcolor="#FF00FF" className="section-bar">
                 <font face="Impact" size="5" color="#FFFF00">
                   ~ TICKER ~
                 </font>
@@ -217,7 +217,7 @@ export default function StocksPage() {
       <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox">
         <tbody>
           <tr>
-            <td align="center" bgColor="#000000">
+            <td align="center" bgcolor="#000000">
               <form onSubmit={submit}>
                 <font face="Courier New" size="3" color="#00FF00">
                   SYMBOL:&nbsp;
@@ -281,7 +281,7 @@ export default function StocksPage() {
         <table width="100%" cellPadding="0" cellSpacing="0" border="0">
           <tbody>
             <tr>
-              <td align="center" bgColor="#00FFFF" className="section-bar">
+              <td align="center" bgcolor="#00FFFF" className="section-bar">
                 <font face="Impact" size="5" color="#000000">
                   ~ {symbol} QUOTE ~
                 </font>
@@ -293,10 +293,10 @@ export default function StocksPage() {
 
       <br />
 
-      <table width="100%" cellPadding="12" cellSpacing="0" border="0" className="bevelbox" bgColor="#000000">
+      <table width="100%" cellPadding="12" cellSpacing="0" border="0" className="bevelbox" bgcolor="#000000">
         <tbody>
           <tr>
-            <td align="center" bgColor="#000000">
+            <td align="center" bgcolor="#000000">
               {quoteError ? (
                 <font face="Impact" size="4" color="#FF0000">
                   &#9888; QUOTE ERROR: {quoteError} &#9888;
@@ -318,7 +318,7 @@ export default function StocksPage() {
                 </>
               ) : (
                 <font face="Impact" size="4" color="#00FFFF">
-                  <blink>~ LOADING QUOTE ~</blink>
+                  <span className="blink">~ LOADING QUOTE ~</span>
                 </font>
               )}
             </td>
@@ -332,7 +332,7 @@ export default function StocksPage() {
         <table width="100%" cellPadding="0" cellSpacing="0" border="0">
           <tbody>
             <tr>
-              <td align="center" bgColor="#FFFF00" className="section-bar">
+              <td align="center" bgcolor="#FFFF00" className="section-bar">
                 <font face="Impact" size="5" color="#000000">
                   ~ HOURLY CANDLES ~
                 </font>
@@ -344,14 +344,14 @@ export default function StocksPage() {
 
       <br />
 
-      <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox" bgColor="#000000">
+      <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox" bgcolor="#000000">
         <tbody>
           <tr>
-            <td bgColor="#000000">
+            <td bgcolor="#000000">
               {historyState === 'loading' && (
                 <center>
                   <font face="Impact" size="4" color="#00FFFF">
-                    <blink>~ LOADING CHART ~</blink>
+                    <span className="blink">~ LOADING CHART ~</span>
                   </font>
                 </center>
               )}

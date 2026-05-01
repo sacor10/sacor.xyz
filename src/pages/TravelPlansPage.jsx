@@ -18,7 +18,7 @@ const formatDate = (iso) => {
 
 function GatedMessage({ loading }) {
   return (
-    <table width="100%" cellPadding="14" cellSpacing="0" border="0" className="postbox" bgColor="#000000">
+    <table width="100%" cellPadding="14" cellSpacing="0" border="0" className="postbox" bgcolor="#000000">
       <tbody>
         <tr>
           <td align="center">
@@ -107,10 +107,10 @@ function NewPlanForm({ onCreated }) {
   }
 
   return (
-    <table width="100%" cellPadding="10" cellSpacing="0" border="0" className="postbox travel-form" bgColor="#000000">
+    <table width="100%" cellPadding="10" cellSpacing="0" border="0" className="postbox travel-form" bgcolor="#000000">
       <tbody>
         <tr>
-          <td align="center" bgColor="#00FF00" className="section-bar-sm">
+          <td align="center" bgcolor="#00FF00" className="section-bar-sm">
             <font face="Impact" size="4" color="#000000">
               ~ NEW ITINERARY ~
             </font>
@@ -303,9 +303,9 @@ function PlanSection({ title, plans, emptyText }) {
         <table width="100%" cellPadding="0" cellSpacing="0" border="0">
           <tbody>
             <tr>
-              <td align="center" bgColor="#FF00FF" className="section-bar">
+              <td align="center" bgcolor="#FF00FF" className="section-bar">
                 <font face="Impact" size="5" color="#FFFF00">
-                  <blink>{title}</blink>
+                  <span className="blink">{title}</span>
                 </font>
               </td>
             </tr>
@@ -316,7 +316,7 @@ function PlanSection({ title, plans, emptyText }) {
       <br />
 
       {plans.length === 0 && (
-        <table width="100%" cellPadding="14" cellSpacing="0" border="0" className="postbox" bgColor="#000000">
+        <table width="100%" cellPadding="14" cellSpacing="0" border="0" className="postbox" bgcolor="#000000">
           <tbody>
             <tr>
               <td align="center">
@@ -435,7 +435,7 @@ function PlansList({ canCreateTravelPlans }) {
 
       {!canCreateTravelPlans && (
         <>
-          <table width="100%" cellPadding="14" cellSpacing="0" border="0" className="postbox" bgColor="#000000">
+          <table width="100%" cellPadding="14" cellSpacing="0" border="0" className="postbox" bgcolor="#000000">
             <tbody>
               <tr>
                 <td align="center">
@@ -497,7 +497,7 @@ const rightSidebar = (
     <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox">
       <tbody>
         <tr>
-          <td align="center" bgColor="#FF00FF" className="section-bar-sm">
+          <td align="center" bgcolor="#FF00FF" className="section-bar-sm">
             <font face="Impact" size="4" color="#FFFF00">
               ~ NAVIGATE ~
             </font>
@@ -515,17 +515,17 @@ const rightSidebar = (
 
     <br />
 
-    <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox" bgColor="#000000">
+    <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox" bgcolor="#000000">
       <tbody>
         <tr>
-          <td align="center" bgColor="#FFFF00" className="section-bar-sm">
+          <td align="center" bgcolor="#FFFF00" className="section-bar-sm">
             <font face="Impact" size="4" color="#000000">
               ~ HOW IT WORKS ~
             </font>
           </td>
         </tr>
         <tr>
-          <td bgColor="#000000">
+          <td bgcolor="#000000">
             <font face="Comic Sans MS" size="2" color="#FFFFFF">
               Paste a markdown itinerary (e.g. one Claude generated for you) and the page will
               render it with full Geocities glory. Plans are private to your Google account &mdash;
@@ -549,7 +549,7 @@ export default function TravelPlansPage() {
         </font>
         <br />
         <font face="Comic Sans MS" size="3" color="#FFFF00">
-          <blink>~ your private itinerary stash ~</blink>
+          <span className="blink">~ your private itinerary stash ~</span>
         </font>
       </center>
 

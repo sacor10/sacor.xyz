@@ -39,18 +39,18 @@ export default function HitCounter() {
       cellSpacing="0"
       border="0"
       className="bevelbox"
-      bgColor="#000000"
+      bgcolor="#000000"
     >
       <tbody>
         <tr>
-          <td align="center" bgColor="#00FF00" className="section-bar-sm">
+          <td align="center" bgcolor="#00FF00" className="section-bar-sm">
             <font face="Impact" size="4" color="#000000">
               ~ HIT COUNTER ~
             </font>
           </td>
         </tr>
         <tr>
-          <td align="center" bgColor="#000000">
+          <td align="center" bgcolor="#000000">
             <font face="Courier New" size="3" color="#00FF00">
               You are visitor #
             </font>

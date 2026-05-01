@@ -159,12 +159,12 @@ export default function Layout({ mainContent, rightSidebar }) {
           cellPadding="10"
           cellSpacing="0"
           border="4"
-          bgColor="#000000"
+          bgcolor="#000000"
           className="header-table"
         >
           <tbody>
             <tr>
-              <td align="center" bgColor="#4B0082">
+              <td align="center" bgcolor="#4B0082">
                 <img
                   src="/generated-assets/globe-v2.png"
                   alt="spinning globe"
@@ -189,7 +189,7 @@ export default function Layout({ mainContent, rightSidebar }) {
                 </font>
                 <br />
                 <br />
-                <marquee behavior="scroll" direction="left" scrollAmount="6" bgColor="#FFFF00" width="90%">
+                <marquee behavior="scroll" direction="left" scrollamount="6" bgcolor="#FFFF00" width="90%">
                   <font face="Impact" size="4" color="#FF00FF">
                     &#9733; Since 1776 &#9733;
                     &nbsp;&nbsp;&nbsp; SIGN MY GUESTBOOK!?! &nbsp;&nbsp;&nbsp;
@@ -215,7 +215,7 @@ export default function Layout({ mainContent, rightSidebar }) {
           <tbody>
             <tr valign="top">
               {/* ========== LEFT NAV SIDEBAR ========== */}
-              <td width="18%" bgColor="#000080" className="left-sidebar">
+              <td width="18%" bgcolor="#000080" className="left-sidebar">
                 <center>
                   <font face="Impact" size="5" color="#FFFF00">
                     <span className="blink">~ NAVIGATE ~</span>
@@ -252,7 +252,7 @@ export default function Layout({ mainContent, rightSidebar }) {
               </td>
 
               {/* ========== MAIN + RIGHT CONTENT ========== */}
-              <td width="56%" bgColor="#2E0854" className="main-content">
+              <td width="56%" bgcolor="#2E0854" className="main-content">
                 {mainContent}
               </td>
 
@@ -289,7 +289,7 @@ export default function Layout({ mainContent, rightSidebar }) {
           <tbody>
             <tr>
               <td className="footer">
-                <marquee behavior="alternate" scrollAmount="4">
+                <marquee behavior="alternate" scrollamount="4">
                   <font face="Courier New" size="2" color="#FF00FF">
                     &#9733; &#9733; &#9733; THANKS FOR VISITING! TELL YOUR FRIENDS! &#9733; &#9733; &#9733;
                   </font>

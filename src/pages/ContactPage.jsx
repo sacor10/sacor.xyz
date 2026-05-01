@@ -6,7 +6,7 @@ const rightSidebar = (
     <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox">
       <tbody>
         <tr>
-          <td align="center" bgColor="#FF00FF" className="section-bar-sm">
+          <td align="center" bgcolor="#FF00FF" className="section-bar-sm">
             <font face="Impact" size="4" color="#FFFF00">
               ~ NAVIGATE ~
             </font>
@@ -31,18 +31,18 @@ const rightSidebar = (
       cellSpacing="0"
       border="0"
       className="bevelbox"
-      bgColor="#000000"
+      bgcolor="#000000"
     >
       <tbody>
         <tr>
-          <td align="center" bgColor="#00FF00" className="section-bar-sm">
+          <td align="center" bgcolor="#00FF00" className="section-bar-sm">
             <font face="Impact" size="4" color="#000000">
               ~ BEST USED WITH ~
             </font>
           </td>
         </tr>
         <tr>
-          <td bgColor="#000000" align="center">
+          <td bgcolor="#000000" align="center">
             <font face="Courier New" size="2" color="#00FF00">
               <b className="yellow">Mail client:</b> Outlook Express 5
               <br />
@@ -67,7 +67,7 @@ const mainContent = (
       </font>
       <br />
       <font face="Comic Sans MS" size="3" color="#FFFF00">
-        <blink>~ Reach out! I do not bite everybody. ~</blink>
+        <span className="blink">~ Reach out! I do not bite everybody. ~</span>
       </font>
     </center>
 
@@ -86,14 +86,14 @@ const mainContent = (
     <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="postbox">
       <tbody>
         <tr>
-          <td align="center" bgColor="#FFFF00" className="section-bar-sm">
+          <td align="center" bgcolor="#FFFF00" className="section-bar-sm">
             <font face="Impact" size="4" color="#000000">
               &#9993; EMAIL (PREFERRED) &#9993;
             </font>
           </td>
         </tr>
         <tr>
-          <td align="center" bgColor="#000000">
+          <td align="center" bgcolor="#000000">
             <br />
             <font face="Courier New" size="4" color="#00FF00">
               <a
@@ -121,14 +121,14 @@ const mainContent = (
     <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="postbox">
       <tbody>
         <tr>
-          <td align="center" bgColor="#00FFFF" className="section-bar-sm">
+          <td align="center" bgcolor="#00FFFF" className="section-bar-sm">
             <font face="Impact" size="4" color="#000000">
               &lt;/&gt; GITHUB &lt;/&gt;
             </font>
           </td>
         </tr>
         <tr>
-          <td align="center" bgColor="#000000">
+          <td align="center" bgcolor="#000000">
             <br />
             <font face="Courier New" size="3" color="#FFFF00">
               <a
@@ -158,14 +158,14 @@ const mainContent = (
     <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="postbox">
       <tbody>
         <tr>
-          <td align="center" bgColor="#FF00FF" className="section-bar-sm">
+          <td align="center" bgcolor="#FF00FF" className="section-bar-sm">
             <font face="Impact" size="4" color="#FFFF00">
               ~ INSTANT MESSAGE ME ~
             </font>
           </td>
         </tr>
         <tr>
-          <td bgColor="#000000">
+          <td bgcolor="#000000">
             <br />
             <center>
               <font face="Courier New" size="3" color="#00FF00">

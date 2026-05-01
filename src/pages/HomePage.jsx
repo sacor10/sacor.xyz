@@ -10,7 +10,7 @@ const rightSidebar = (
     <table id="about-me" width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox">
       <tbody>
         <tr>
-          <td align="center" bgColor="#FF00FF" className="section-bar-sm">
+          <td align="center" bgcolor="#FF00FF" className="section-bar-sm">
             <font face="Impact" size="4" color="#FFFF00">
               ~ ABOUT Sacor ~
             </font>
@@ -54,19 +54,19 @@ const rightSidebar = (
       cellSpacing="0"
       border="0"
       className="bevelbox"
-      bgColor="#4B0082"
+      bgcolor="#4B0082"
     >
       <tbody>
         <tr>
-          <td align="center" bgColor="#FFFF00" className="section-bar-sm">
+          <td align="center" bgcolor="#FFFF00" className="section-bar-sm">
             <font face="Impact" size="4" color="#000000">
               ~ THOUGHT OF THE DAY ~
             </font>
           </td>
         </tr>
         <tr>
-          <td bgColor="#000000">
-            <marquee behavior="scroll" direction="up" scrollAmount="2" height="80">
+          <td bgcolor="#000000">
+            <marquee behavior="scroll" direction="up" scrollamount="2" height="80">
               <font face="Comic Sans MS" size="3" color="#00FFFF">
                 &quot;Tum tum is full.&quot;
                 <br />
@@ -91,18 +91,18 @@ const rightSidebar = (
       cellSpacing="0"
       border="0"
       className="bevelbox"
-      bgColor="#000080"
+      bgcolor="#000080"
     >
       <tbody>
         <tr>
-          <td align="center" bgColor="#00FFFF" className="section-bar-sm">
+          <td align="center" bgcolor="#00FFFF" className="section-bar-sm">
             <font face="Impact" size="4" color="#000000">
               ~ MY FAVORITE LINKS ~
             </font>
           </td>
         </tr>
         <tr>
-          <td bgColor="#FFFFFF">
+          <td bgcolor="#FFFFFF">
             <font face="Times New Roman" size="3" color="#000000">
               <ul className="favlinks">
                 <li><Link to="/blog">Slop Blog Archive</Link></li>
@@ -131,7 +131,7 @@ const rightSidebar = (
       <br />
       <br />
       <font face="Comic Sans MS" size="2" color="#FFFF00">
-        <blink>SIGN MY GUESTBOOK!!!</blink>
+        <span className="blink">SIGN MY GUESTBOOK!!!</span>
       </font>
     </center>
   </>
@@ -153,9 +153,9 @@ const mainContent = (
       <br />
       <br />
       Grab a salami lid, crank up some naked flames, and stick around awhile! Don&rsquo;t forget to{' '}
-      <blink>
+      <span className="blink">
         <font color="#00FF00">SIGN MY GUESTBOOK</font>
-      </blink>{' '}
+      </span>{' '}
       before you depart this realm.
     </font>
 
@@ -165,7 +165,7 @@ const mainContent = (
     {/* ====== ROOSEVELT MEMORIAL LIVESTREAM ====== */}
     <center>
       <font face="Impact" size="6" color="#FF00FF" className="hero-glow">
-        <blink>~*~ LIVE FROM THE BOONE & CROCKETT CLUB ~*~</blink>
+        <span className="blink">~*~ LIVE FROM THE BOONE & CROCKETT CLUB ~*~</span>
       </font>
     </center>
 
@@ -175,7 +175,7 @@ const mainContent = (
       <table width="100%" cellPadding="0" cellSpacing="0" border="0">
         <tbody>
           <tr>
-            <td align="center" bgColor="#FF00FF" className="section-bar">
+            <td align="center" bgcolor="#FF00FF" className="section-bar">
               <font face="Impact" size="5" color="#FFFF00">
                 ~*~ THEODORE ROOSEVELT MEMORIAL RANCH ~*~
               </font>
@@ -207,7 +207,7 @@ const mainContent = (
       <table width="100%" cellPadding="0" cellSpacing="0" border="0">
         <tbody>
           <tr>
-            <td align="center" bgColor="#00FFFF" className="section-bar">
+            <td align="center" bgcolor="#00FFFF" className="section-bar">
               <font face="Impact" size="4" color="#000000">
                 ~ THE LIVE FEED ~
               </font>
@@ -219,10 +219,10 @@ const mainContent = (
 
     <br />
 
-    <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox" bgColor="#000000">
+    <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox" bgcolor="#000000">
       <tbody>
         <tr>
-          <td bgColor="#000000" align="center">
+          <td bgcolor="#000000" align="center">
             <div
               style={{
                 position: 'relative',
@@ -233,7 +233,7 @@ const mainContent = (
               <iframe
                 src={`https://www.youtube.com/embed/live_stream?channel=${ROOSEVELT_CHANNEL_ID}&autoplay=1&mute=1&modestbranding=1&rel=0&playsinline=1`}
                 title="Theodore Roosevelt Memorial Live"
-                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                allow="autoplay; encrypted-media; picture-in-picture"
                 allowFullScreen
                 frameBorder="0"
                 style={{

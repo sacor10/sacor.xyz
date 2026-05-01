@@ -24,7 +24,7 @@ function Sidebar({ episode, onAir }) {
       <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox">
         <tbody>
           <tr>
-            <td align="center" bgColor="#FF00FF" className="section-bar-sm">
+            <td align="center" bgcolor="#FF00FF" className="section-bar-sm">
               <font face="Impact" size="4" color="#FFFF00">
                 ~ NAVIGATION ~
               </font>
@@ -45,17 +45,17 @@ function Sidebar({ episode, onAir }) {
 
       <br />
 
-      <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox" bgColor="#000000">
+      <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox" bgcolor="#000000">
         <tbody>
           <tr>
-            <td align="center" bgColor="#00FFFF" className="section-bar-sm">
+            <td align="center" bgcolor="#00FFFF" className="section-bar-sm">
               <font face="Impact" size="4" color="#000000">
                 ~ ABOUT MTS ~
               </font>
             </td>
           </tr>
           <tr>
-            <td bgColor="#000000">
+            <td bgcolor="#000000">
               <font face="Comic Sans MS" size="2" color="#00FF00">
                 <b className="yellow">MTS</b> is an X-native daily tech news show.
                 <br />
@@ -97,22 +97,22 @@ function Sidebar({ episode, onAir }) {
 
       <br />
 
-      <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox" bgColor="#4B0082">
+      <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox" bgcolor="#4B0082">
         <tbody>
           <tr>
-            <td align="center" bgColor="#FFFF00" className="section-bar-sm">
+            <td align="center" bgcolor="#FFFF00" className="section-bar-sm">
               <font face="Impact" size="4" color="#000000">
                 ~ STATUS ~
               </font>
             </td>
           </tr>
           <tr>
-            <td bgColor="#000000" align="center">
+            <td bgcolor="#000000" align="center">
               <font face="Comic Sans MS" size="2" color="#00FFFF">
                 {onAir ? (
-                  <blink>
+                  <span className="blink">
                     <font color="#FF0000">&#9679; ON AIR</font>
-                  </blink>
+                  </span>
                 ) : (
                   <font color="#888888">&#9711; off air</font>
                 )}
@@ -199,7 +199,7 @@ function Player({ status, videoId, subhead }) {
     <>
       <center>
         <font face="Impact" size="6" color="#FF00FF" className="hero-glow">
-          <blink>~*~ LIVE FROM @MTSLIVE ~*~</blink>
+          <span className="blink">~*~ LIVE FROM @MTSLIVE ~*~</span>
         </font>
       </center>
 
@@ -209,7 +209,7 @@ function Player({ status, videoId, subhead }) {
         <table width="100%" cellPadding="0" cellSpacing="0" border="0">
           <tbody>
             <tr>
-              <td align="center" bgColor="#FF00FF" className="section-bar">
+              <td align="center" bgcolor="#FF00FF" className="section-bar">
                 <font face="Impact" size="5" color="#FFFF00">
                   ~*~ {subhead || 'MAKE SENSE OF THE WORLD RIGHT NOW'} ~*~
                 </font>
@@ -243,7 +243,7 @@ function Player({ status, videoId, subhead }) {
         <table width="100%" cellPadding="0" cellSpacing="0" border="0">
           <tbody>
             <tr>
-              <td align="center" bgColor="#00FFFF" className="section-bar">
+              <td align="center" bgcolor="#00FFFF" className="section-bar">
                 <font face="Impact" size="4" color="#000000">
                   ~ THE LIVE FEED ~
                 </font>
@@ -255,13 +255,13 @@ function Player({ status, videoId, subhead }) {
 
       <br />
 
-      <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox" bgColor="#000000">
+      <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox" bgcolor="#000000">
         <tbody>
           <tr>
-            <td bgColor="#000000" align="center">
+            <td bgcolor="#000000" align="center">
               {status === 'loading' && (
                 <font face="Comic Sans MS" size="3" color="#00FFFF">
-                  <blink>Tuning in...</blink>
+                  <span className="blink">Tuning in...</span>
                 </font>
               )}
               {status === 'ready' && videoId && (

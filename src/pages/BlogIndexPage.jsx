@@ -65,7 +65,7 @@ const rightSidebar = (
     <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox">
       <tbody>
         <tr>
-          <td align="center" bgColor="#FF00FF" className="section-bar-sm">
+          <td align="center" bgcolor="#FF00FF" className="section-bar-sm">
             <font face="Impact" size="4" color="#FFFF00">
               ~ NAVIGATION ~
             </font>
@@ -86,17 +86,17 @@ const rightSidebar = (
 
     <br />
 
-    <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox" bgColor="#000000">
+    <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox" bgcolor="#000000">
       <tbody>
         <tr>
-          <td align="center" bgColor="#FF00FF" className="section-bar-sm">
+          <td align="center" bgcolor="#FF00FF" className="section-bar-sm">
             <font face="Impact" size="4" color="#FFFF00">
               ~ SUBSCRIPTIONS ~
             </font>
           </td>
         </tr>
         <tr>
-          <td bgColor="#000000">
+          <td bgcolor="#000000">
             <font face="Comic Sans MS" size="2" color="#00FF00">
               Posts pulled live from these fine publications:
             </font>
@@ -151,9 +151,9 @@ export default function BlogIndexPage() {
         <table width="100%" cellPadding="0" cellSpacing="0" border="0">
           <tbody>
             <tr>
-              <td align="center" bgColor="#FF00FF" className="section-bar">
+              <td align="center" bgcolor="#FF00FF" className="section-bar">
                 <font face="Impact" size="5" color="#FFFF00">
-                  <blink>~*~ LATEST RAMBLINGS ~*~</blink>
+                  <span className="blink">~*~ LATEST RAMBLINGS ~*~</span>
                 </font>
               </td>
             </tr>
@@ -166,7 +166,7 @@ export default function BlogIndexPage() {
       {status === 'loading' && (
         <center>
           <font face="Impact" size="5" color="#00FFFF">
-            <blink>~ FETCHING RAMBLINGS... ~</blink>
+            <span className="blink">~ FETCHING RAMBLINGS... ~</span>
           </font>
         </center>
       )}
