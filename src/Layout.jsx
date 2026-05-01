@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import './App.css'
 import GoogleSignInButton from './auth/GoogleSignInButton'
 import { useAuth } from './auth/useAuth'
@@ -33,47 +33,121 @@ const PANE_LABELS = ['Show navigation', 'Show main content', 'Show sidebar']
 
 export default function Layout({ mainContent, rightSidebar }) {
   const isMobile = useMediaQuery('(max-width: 768px)')
+  const location = useLocation()
+  const swipeDisabled = location.pathname.startsWith('/travel-plans/')
   const [pane, setPane] = useState(1)
   const { canAccessTravelPlans } = useAuth()
   const navLinks = canAccessTravelPlans
     ? [...baseNavLinks.slice(0, 6), ownerNavLink, ...baseNavLinks.slice(6)]
     : baseNavLinks
-  const touch = useRef({ x: 0, y: 0, t: 0, axis: null, startPane: 1 })
+  const viewportRef = useRef(null)
+  const paneRef = useRef(pane)
+  const swipeRef = useRef({ active: false, pointerId: null, x: 0, y: 0, axis: null, startPane: 1 })
 
-  const onTouchStart = (e) => {
-    const t0 = e.touches[0]
-    touch.current = {
-      x: t0.clientX,
-      y: t0.clientY,
-      t: Date.now(),
-      axis: null,
-      startPane: pane,
-    }
-  }
+  useEffect(() => {
+    paneRef.current = pane
+  }, [pane])
 
-  const onTouchMove = (e) => {
-    const t0 = e.touches[0]
-    const dx = t0.clientX - touch.current.x
-    const dy = t0.clientY - touch.current.y
-    if (touch.current.axis === null && Math.max(Math.abs(dx), Math.abs(dy)) > 10) {
-      touch.current.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'
-    }
-    if (touch.current.axis === 'x' && e.cancelable) {
-      e.preventDefault()
-    }
-  }
+  useEffect(() => {
+    if (!isMobile) return
+    if (swipeDisabled) return
+    const vp = viewportRef.current
+    if (!vp) return
 
-  const onTouchEnd = (e) => {
-    const t1 = e.changedTouches[0]
-    const dx = t1.clientX - touch.current.x
-    const threshold = Math.min(60, window.innerWidth * 0.25)
-    if (touch.current.axis === 'x' && Math.abs(dx) > threshold) {
-      setPane((p) => {
-        if (dx < 0) return Math.min(p + 1, 2)
-        return Math.max(p - 1, 0)
-      })
+    const pointerInMapZone = (e) => {
+      if (e.target instanceof Element && e.target.closest('.itinerary-map-zone, .leaflet-container')) {
+        return true
+      }
+      const zones = document.querySelectorAll('.itinerary-map-zone, .leaflet-container')
+      for (const zone of zones) {
+        const r = zone.getBoundingClientRect()
+        if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+          return true
+        }
+      }
+      return false
     }
-    touch.current.axis = null
+
+    const cleanup = () => {
+      window.removeEventListener('pointermove', onPointerMove)
+      window.removeEventListener('pointerup', onPointerEnd)
+      window.removeEventListener('pointercancel', onPointerCancel)
+    }
+
+    const resetSwipe = () => {
+      swipeRef.current = { active: false, pointerId: null, x: 0, y: 0, axis: null, startPane: paneRef.current }
+      cleanup()
+    }
+
+    const onPointerDown = (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return
+      if (pointerInMapZone(e)) return
+
+      swipeRef.current = {
+        active: true,
+        pointerId: e.pointerId,
+        x: e.clientX,
+        y: e.clientY,
+        axis: null,
+        startPane: paneRef.current,
+      }
+      window.addEventListener('pointermove', onPointerMove, { passive: false })
+      window.addEventListener('pointerup', onPointerEnd)
+      window.addEventListener('pointercancel', onPointerCancel)
+    }
+
+    function onPointerMove(e) {
+      const swipe = swipeRef.current
+      if (!swipe.active || e.pointerId !== swipe.pointerId) return
+
+      if (pointerInMapZone(e)) {
+        resetSwipe()
+        return
+      }
+
+      const dx = e.clientX - swipe.x
+      const dy = e.clientY - swipe.y
+      if (swipe.axis === null && Math.max(Math.abs(dx), Math.abs(dy)) > 10) {
+        swipe.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'
+      }
+      if (swipe.axis === 'x' && e.cancelable) {
+        e.preventDefault()
+      }
+    }
+
+    function onPointerEnd(e) {
+      const swipe = swipeRef.current
+      if (!swipe.active || e.pointerId !== swipe.pointerId) return
+
+      if (pointerInMapZone(e)) {
+        resetSwipe()
+        return
+      }
+
+      const dx = e.clientX - swipe.x
+      const threshold = Math.min(60, window.innerWidth * 0.25)
+      if (swipe.axis === 'x' && Math.abs(dx) > threshold) {
+        setPane(dx < 0 ? Math.min(swipe.startPane + 1, 2) : Math.max(swipe.startPane - 1, 0))
+      }
+
+      resetSwipe()
+    }
+
+    function onPointerCancel(e) {
+      const swipe = swipeRef.current
+      if (e.pointerId !== swipe.pointerId) return
+      resetSwipe()
+    }
+
+    vp.addEventListener('pointerdown', onPointerDown)
+    return () => {
+      vp.removeEventListener('pointerdown', onPointerDown)
+      cleanup()
+    }
+  }, [isMobile, swipeDisabled])
+
+  const goToPane = (i) => {
+    setPane(i)
   }
 
   return (
@@ -132,11 +206,9 @@ export default function Layout({ mainContent, rightSidebar }) {
 
       {/* ============ MAIN 3-COLUMN LAYOUT ============ */}
       <div
+        ref={viewportRef}
         className={isMobile ? 'pane-viewport' : ''}
         style={isMobile ? { '--pane': pane } : undefined}
-        onTouchStart={isMobile ? onTouchStart : undefined}
-        onTouchMove={isMobile ? onTouchMove : undefined}
-        onTouchEnd={isMobile ? onTouchEnd : undefined}
       >
       <center>
         <table width="95%" cellPadding="8" cellSpacing="6" border="0">
@@ -200,7 +272,7 @@ export default function Layout({ mainContent, rightSidebar }) {
               key={i}
               type="button"
               className={'pane-dot' + (i === pane ? ' active' : '')}
-              onClick={() => setPane(i)}
+              onClick={() => goToPane(i)}
               aria-label={PANE_LABELS[i]}
             >
               {i === pane ? '●' : '○'}

@@ -418,4 +418,12 @@
     color: #00FFFF;
     background: #4B0082;
   }
+
+  /* Map is its own touch zone — browser must route all touches starting
+     on the map to Leaflet, never to ancestor scroll/pane behavior. */
+  .geocities .itinerary-map-zone,
+  .geocities .leaflet-container {
+    touch-action: none !important;
+    overscroll-behavior: contain;
+  }
 }
