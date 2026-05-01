@@ -376,15 +376,9 @@
   .geocities .header-table { width: 100% !important; }
 
   .geocities .pane-viewport {
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow: hidden;
     width: 100%;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  .geocities .pane-viewport::-webkit-scrollbar {
-    display: none;
+    touch-action: pan-y;
   }
   .geocities .pane-viewport > center,
   .geocities .pane-viewport > center > table,
@@ -396,6 +390,8 @@
     display: flex;
     flex-direction: row;
     width: 300% !important;
+    transform: translateX(calc(var(--pane, 1) * -33.3333%));
+    transition: transform 280ms ease-out;
   }
   .geocities .pane-viewport > center > table > tbody > tr > td {
     display: block;
@@ -403,8 +399,6 @@
     flex: 0 0 33.3333%;
     box-sizing: border-box;
     vertical-align: top;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
   }
 
   .geocities .pane-dots {

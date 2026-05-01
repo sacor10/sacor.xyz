@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useLayoutEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import './App.css'
 import GoogleSignInButton from './auth/GoogleSignInButton'
@@ -39,37 +39,88 @@ export default function Layout({ mainContent, rightSidebar }) {
     ? [...baseNavLinks.slice(0, 6), ownerNavLink, ...baseNavLinks.slice(6)]
     : baseNavLinks
   const viewportRef = useRef(null)
+  const paneRef = useRef(pane)
+  const swipeRef = useRef({ active: false, pointerId: null, x: 0, y: 0, axis: null, startPane: 1 })
 
-  useLayoutEffect(() => {
-    if (!isMobile) return
-    const vp = viewportRef.current
-    if (vp) vp.scrollLeft = vp.clientWidth
-  }, [isMobile])
+  useEffect(() => {
+    paneRef.current = pane
+  }, [pane])
 
   useEffect(() => {
     if (!isMobile) return
     const vp = viewportRef.current
     if (!vp) return
-    let raf = 0
-    const onScroll = () => {
-      if (raf) cancelAnimationFrame(raf)
-      raf = requestAnimationFrame(() => {
-        if (vp.clientWidth === 0) return
-        const idx = Math.round(vp.scrollLeft / vp.clientWidth)
-        setPane(Math.max(0, Math.min(2, idx)))
-      })
+
+    const startedOnMap = (target) =>
+      target instanceof Element && !!target.closest('.itinerary-map-zone, .leaflet-container')
+
+    const cleanup = () => {
+      window.removeEventListener('pointermove', onPointerMove)
+      window.removeEventListener('pointerup', onPointerEnd)
+      window.removeEventListener('pointercancel', onPointerCancel)
     }
-    vp.addEventListener('scroll', onScroll, { passive: true })
+
+    const onPointerDown = (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return
+      if (startedOnMap(e.target)) return
+
+      swipeRef.current = {
+        active: true,
+        pointerId: e.pointerId,
+        x: e.clientX,
+        y: e.clientY,
+        axis: null,
+        startPane: paneRef.current,
+      }
+      window.addEventListener('pointermove', onPointerMove, { passive: false })
+      window.addEventListener('pointerup', onPointerEnd)
+      window.addEventListener('pointercancel', onPointerCancel)
+    }
+
+    function onPointerMove(e) {
+      const swipe = swipeRef.current
+      if (!swipe.active || e.pointerId !== swipe.pointerId) return
+
+      const dx = e.clientX - swipe.x
+      const dy = e.clientY - swipe.y
+      if (swipe.axis === null && Math.max(Math.abs(dx), Math.abs(dy)) > 10) {
+        swipe.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'
+      }
+      if (swipe.axis === 'x' && e.cancelable) {
+        e.preventDefault()
+      }
+    }
+
+    function onPointerEnd(e) {
+      const swipe = swipeRef.current
+      if (!swipe.active || e.pointerId !== swipe.pointerId) return
+
+      const dx = e.clientX - swipe.x
+      const threshold = Math.min(60, window.innerWidth * 0.25)
+      if (swipe.axis === 'x' && Math.abs(dx) > threshold) {
+        setPane(dx < 0 ? Math.min(swipe.startPane + 1, 2) : Math.max(swipe.startPane - 1, 0))
+      }
+
+      swipeRef.current = { active: false, pointerId: null, x: 0, y: 0, axis: null, startPane: paneRef.current }
+      cleanup()
+    }
+
+    function onPointerCancel(e) {
+      const swipe = swipeRef.current
+      if (e.pointerId !== swipe.pointerId) return
+      swipeRef.current = { active: false, pointerId: null, x: 0, y: 0, axis: null, startPane: paneRef.current }
+      cleanup()
+    }
+
+    vp.addEventListener('pointerdown', onPointerDown)
     return () => {
-      vp.removeEventListener('scroll', onScroll)
-      if (raf) cancelAnimationFrame(raf)
+      vp.removeEventListener('pointerdown', onPointerDown)
+      cleanup()
     }
   }, [isMobile])
 
   const goToPane = (i) => {
-    const vp = viewportRef.current
-    if (vp) vp.scrollTo({ left: i * vp.clientWidth, behavior: 'smooth' })
-    else setPane(i)
+    setPane(i)
   }
 
   return (
@@ -130,6 +181,7 @@ export default function Layout({ mainContent, rightSidebar }) {
       <div
         ref={viewportRef}
         className={isMobile ? 'pane-viewport' : ''}
+        style={isMobile ? { '--pane': pane } : undefined}
       >
       <center>
         <table width="95%" cellPadding="8" cellSpacing="6" border="0">
