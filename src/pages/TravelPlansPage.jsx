@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../Layout'
+import TravelStopsEditor from '../components/TravelStopsEditor'
+import { normalizeStopsForSave } from '../components/travelStops'
 import { useAuth } from '../auth/useAuth'
 
 const formatDate = (iso) => {
@@ -44,7 +46,7 @@ function NewPlanForm({ onCreated }) {
   const [title, setTitle] = useState('')
   const [destination, setDestination] = useState('')
   const [body, setBody] = useState('')
-  const [stopsJson, setStopsJson] = useState('')
+  const [stops, setStops] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -52,7 +54,7 @@ function NewPlanForm({ onCreated }) {
     setTitle('')
     setDestination('')
     setBody('')
-    setStopsJson('')
+    setStops([])
     setError('')
   }
 
@@ -63,14 +65,11 @@ function NewPlanForm({ onCreated }) {
       return
     }
     let parsedStops = null
-    if (stopsJson.trim()) {
-      try {
-        parsedStops = JSON.parse(stopsJson)
-        if (!Array.isArray(parsedStops)) throw new Error('Stops must be a JSON array.')
-      } catch (err) {
-        setError(`Invalid stops JSON: ${err.message}`)
-        return
-      }
+    try {
+      parsedStops = normalizeStopsForSave(stops)
+    } catch (err) {
+      setError(err.message)
+      return
     }
     setSubmitting(true)
     setError('')
@@ -158,17 +157,7 @@ function NewPlanForm({ onCreated }) {
                 />
               </label>
               <br />
-              <label className="travel-label">
-                <font face="Impact" size="3" color="#FFFF00">
-                  STOPS (JSON, optional)
-                </font>
-                <textarea
-                  value={stopsJson}
-                  rows={8}
-                  onChange={(e) => setStopsJson(e.target.value)}
-                  placeholder='[{"name":"...","lat":37.78,"lng":-122.4}]'
-                />
-              </label>
+              <TravelStopsEditor stops={stops} onChange={setStops} />
               {error && (
                 <div className="travel-error">
                   <font face="Comic Sans MS" size="2" color="#FF00FF">

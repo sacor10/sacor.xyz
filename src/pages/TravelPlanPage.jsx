@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import Layout from '../Layout'
 import MarkdownView from '../components/MarkdownView'
 import ItineraryMap from '../components/ItineraryMap'
+import TravelStopsEditor from '../components/TravelStopsEditor'
+import { normalizeStopsForSave, stopsToDraft } from '../components/travelStops'
 import { useAuth } from '../auth/useAuth'
 
 const mapsUrl = (stop) =>
@@ -94,11 +96,7 @@ function EditForm({ plan, ownerHash, onCancel, onSaved }) {
   const [title, setTitle] = useState(plan.title || '')
   const [destination, setDestination] = useState(plan.destination || '')
   const [body, setBody] = useState(plan.body || '')
-  const [stopsJson, setStopsJson] = useState(
-    Array.isArray(plan.stops) && plan.stops.length > 0
-      ? JSON.stringify(plan.stops, null, 2)
-      : '',
-  )
+  const [stops, setStops] = useState(stopsToDraft(plan.stops))
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -109,14 +107,11 @@ function EditForm({ plan, ownerHash, onCancel, onSaved }) {
       return
     }
     let parsedStops = null
-    if (stopsJson.trim()) {
-      try {
-        parsedStops = JSON.parse(stopsJson)
-        if (!Array.isArray(parsedStops)) throw new Error('Stops must be a JSON array.')
-      } catch (err) {
-        setError(`Invalid stops JSON: ${err.message}`)
-        return
-      }
+    try {
+      parsedStops = normalizeStopsForSave(stops)
+    } catch (err) {
+      setError(err.message)
+      return
     }
     setSubmitting(true)
     setError('')
@@ -201,17 +196,7 @@ function EditForm({ plan, ownerHash, onCancel, onSaved }) {
                 />
               </label>
               <br />
-              <label className="travel-label">
-                <font face="Impact" size="3" color="#FFFF00">
-                  STOPS (JSON, optional)
-                </font>
-                <textarea
-                  value={stopsJson}
-                  rows={8}
-                  onChange={(e) => setStopsJson(e.target.value)}
-                  placeholder='[{"name":"...","lat":37.78,"lng":-122.4}]'
-                />
-              </label>
+              <TravelStopsEditor stops={stops} onChange={setStops} />
               {error && (
                 <div className="travel-error">
                   <font face="Comic Sans MS" size="2" color="#FF00FF">
@@ -781,7 +766,7 @@ export default function TravelPlanPage() {
                   <tr>
                     <td>
                       <font face="Comic Sans MS" size="2" color="#FFFFFF">
-                        Copy this prompt, replace the trip description at the bottom, and paste the JSON the model returns into the STOPS field of a new plan (the model will also produce title / destination / body — paste those into matching fields).
+                        Copy this prompt, replace the trip description at the bottom, and use IMPORT FROM JSON on the Travel Plans page for the full response. To update map stops only, paste the response's stops array into Advanced JSON.
                       </font>
                       <br />
                       <br />
