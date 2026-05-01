@@ -215,7 +215,7 @@ export default function Layout({ mainContent, rightSidebar }) {
           <tbody>
             <tr valign="top">
               {/* ========== LEFT NAV SIDEBAR ========== */}
-              <td width="18%" bgcolor="#000080" className="left-sidebar">
+              <td width="18%" className="left-sidebar">
                 <div className="sticky-pane">
                   <center>
                     <font face="Impact" size="5" color="#FFFF00">

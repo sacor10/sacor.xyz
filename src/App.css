@@ -39,10 +39,21 @@
   margin-top: 10px;
 }
 
-/* ---- Left nav ---- */
+/* ---- Left nav ----
+   Table cells stretch to the row height; keep the td visually empty so only
+   the inner .sticky-pane (content-sized) shows the navy block, border, and padding. */
 .geocities .left-sidebar {
+  background: transparent;
+  border: none;
+  padding: 0;
+  vertical-align: top;
+}
+
+.geocities .left-sidebar > .sticky-pane {
+  background-color: #000080;
   border: 5px ridge #00FFFF;
   padding: 8px;
+  box-sizing: border-box;
 }
 
 .geocities .navbtn {
