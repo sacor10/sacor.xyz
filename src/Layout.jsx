@@ -51,8 +51,19 @@ export default function Layout({ mainContent, rightSidebar }) {
     const vp = viewportRef.current
     if (!vp) return
 
-    const startedOnMap = (target) =>
-      target instanceof Element && !!target.closest('.itinerary-map-zone, .leaflet-container')
+    const pointerInMapZone = (e) => {
+      if (e.target instanceof Element && e.target.closest('.itinerary-map-zone, .leaflet-container')) {
+        return true
+      }
+      const zones = document.querySelectorAll('.itinerary-map-zone, .leaflet-container')
+      for (const zone of zones) {
+        const r = zone.getBoundingClientRect()
+        if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+          return true
+        }
+      }
+      return false
+    }
 
     const cleanup = () => {
       window.removeEventListener('pointermove', onPointerMove)
@@ -60,9 +71,14 @@ export default function Layout({ mainContent, rightSidebar }) {
       window.removeEventListener('pointercancel', onPointerCancel)
     }
 
+    const resetSwipe = () => {
+      swipeRef.current = { active: false, pointerId: null, x: 0, y: 0, axis: null, startPane: paneRef.current }
+      cleanup()
+    }
+
     const onPointerDown = (e) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return
-      if (startedOnMap(e.target)) return
+      if (pointerInMapZone(e)) return
 
       swipeRef.current = {
         active: true,
@@ -81,6 +97,11 @@ export default function Layout({ mainContent, rightSidebar }) {
       const swipe = swipeRef.current
       if (!swipe.active || e.pointerId !== swipe.pointerId) return
 
+      if (pointerInMapZone(e)) {
+        resetSwipe()
+        return
+      }
+
       const dx = e.clientX - swipe.x
       const dy = e.clientY - swipe.y
       if (swipe.axis === null && Math.max(Math.abs(dx), Math.abs(dy)) > 10) {
@@ -95,21 +116,24 @@ export default function Layout({ mainContent, rightSidebar }) {
       const swipe = swipeRef.current
       if (!swipe.active || e.pointerId !== swipe.pointerId) return
 
+      if (pointerInMapZone(e)) {
+        resetSwipe()
+        return
+      }
+
       const dx = e.clientX - swipe.x
       const threshold = Math.min(60, window.innerWidth * 0.25)
       if (swipe.axis === 'x' && Math.abs(dx) > threshold) {
         setPane(dx < 0 ? Math.min(swipe.startPane + 1, 2) : Math.max(swipe.startPane - 1, 0))
       }
 
-      swipeRef.current = { active: false, pointerId: null, x: 0, y: 0, axis: null, startPane: paneRef.current }
-      cleanup()
+      resetSwipe()
     }
 
     function onPointerCancel(e) {
       const swipe = swipeRef.current
       if (e.pointerId !== swipe.pointerId) return
-      swipeRef.current = { active: false, pointerId: null, x: 0, y: 0, axis: null, startPane: paneRef.current }
-      cleanup()
+      resetSwipe()
     }
 
     vp.addEventListener('pointerdown', onPointerDown)
