@@ -501,6 +501,16 @@
   border: 1px solid #FF00FF;
 }
 
+@media (min-width: 769px) {
+  .geocities .sticky-pane {
+    position: sticky;
+    top: 50vh;
+    transform: translateY(-50%);
+    max-height: 100vh;
+    overflow-y: auto;
+  }
+}
+
 /* === Mobile swipeable panes === */
 @media (max-width: 768px) {
   .geocities .header-table { width: 100% !important; }

@@ -216,39 +216,41 @@ export default function Layout({ mainContent, rightSidebar }) {
             <tr valign="top">
               {/* ========== LEFT NAV SIDEBAR ========== */}
               <td width="18%" bgcolor="#000080" className="left-sidebar">
-                <center>
-                  <font face="Impact" size="5" color="#FFFF00">
-                    <span className="blink">~ NAVIGATE ~</span>
-                  </font>
-                  <br />
-                  <br />
-                  <img
-                    src="/generated-assets/construction-v2.png"
-                    alt="construction worker"
-                    width="90"
-                    height="90"
-                    border="3"
-                    className="ridge-pink"
-                  />
-                  <br />
-                  <br />
-                  <div className="header-account">
-                    <GoogleSignInButton />
-                  </div>
-                  <br />
-                </center>
+                <div className="sticky-pane">
+                  <center>
+                    <font face="Impact" size="5" color="#FFFF00">
+                      <span className="blink">~ NAVIGATE ~</span>
+                    </font>
+                    <br />
+                    <br />
+                    <img
+                      src="/generated-assets/construction-v2.png"
+                      alt="construction worker"
+                      width="90"
+                      height="90"
+                      border="3"
+                      className="ridge-pink"
+                    />
+                    <br />
+                    <br />
+                    <div className="header-account">
+                      <GoogleSignInButton />
+                    </div>
+                    <br />
+                  </center>
 
-                <table width="100%" cellPadding="0" cellSpacing="6" border="0">
-                  <tbody>
-                    {navLinks.map((nav) => (
-                      <tr key={nav.label}>
-                        <td className="navbtn">
-                          <Link to={nav.to}>&#9733; {nav.label} &#9733;</Link>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                  <table width="100%" cellPadding="0" cellSpacing="6" border="0">
+                    <tbody>
+                      {navLinks.map((nav) => (
+                        <tr key={nav.label}>
+                          <td className="navbtn">
+                            <Link to={nav.to}>&#9733; {nav.label} &#9733;</Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </td>
 
               {/* ========== MAIN + RIGHT CONTENT ========== */}
@@ -257,7 +259,7 @@ export default function Layout({ mainContent, rightSidebar }) {
               </td>
 
               <td width="26%">
-                {rightSidebar}
+                <div className="sticky-pane">{rightSidebar}</div>
               </td>
             </tr>
           </tbody>
