@@ -366,36 +366,26 @@ export default function MtsPage() {
   useEffect(() => {
     let cancelled = false
     setStatus('loading')
-
-    function tryFetch(n) {
-      fetch(CONFIG_URL)
-        .then((r) => {
-          if (!r.ok) throw new Error(`config ${r.status}`)
-          return r.json()
-        })
-        .then((cfg) => {
-          if (cancelled) return
-          const id = extractYouTubeId(cfg.youtubeLiveUrl)
-          setEpisode(cfg.episode ?? null)
-          setSubhead(cfg.subheadOverride ?? null)
-          if (id) {
-            setVideoId(id)
-            setStatus('ready')
-          } else {
-            setStatus('offline')
-          }
-        })
-        .catch(() => {
-          if (cancelled) return
-          if (n < 2) {
-            setTimeout(() => tryFetch(n + 1), 1000 * Math.pow(2, n))
-          } else {
-            setStatus('error')
-          }
-        })
-    }
-
-    tryFetch(0)
+    fetch(CONFIG_URL)
+      .then((r) => {
+        if (!r.ok) throw new Error(`config ${r.status}`)
+        return r.json()
+      })
+      .then((cfg) => {
+        if (cancelled) return
+        const id = extractYouTubeId(cfg.youtubeLiveUrl)
+        setEpisode(cfg.episode ?? null)
+        setSubhead(cfg.subheadOverride ?? null)
+        if (id) {
+          setVideoId(id)
+          setStatus('ready')
+        } else {
+          setStatus('offline')
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setStatus('error')
+      })
     return () => {
       cancelled = true
     }
