@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Layout from '../Layout'
 import TravelItineraryEditor from '../components/TravelItineraryEditor'
 import TravelStopsEditor from '../components/TravelStopsEditor'
@@ -351,6 +351,7 @@ function PlanSection({ title, plans, emptyText }) {
 }
 
 function PlansList({ canCreateTravelPlans }) {
+  const navigate = useNavigate()
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
 
@@ -368,6 +369,11 @@ function PlansList({ canCreateTravelPlans }) {
       setError(err.message)
       setData({ ownedPlans: [], sharedPlans: [] })
     }
+  }
+
+  const handlePlanCreatedOrImported = (plan) => {
+    navigate(planHref(plan))
+    void load()
   }
 
   useEffect(() => {
@@ -403,11 +409,11 @@ function PlansList({ canCreateTravelPlans }) {
     <>
       {canCreateTravelPlans && (
         <>
-          <NewPlanForm onCreated={load} />
+          <NewPlanForm onCreated={handlePlanCreatedOrImported} />
 
           <br />
 
-          <ImportPlanButton onImported={load} />
+          <ImportPlanButton onImported={handlePlanCreatedOrImported} />
 
           <br />
         </>

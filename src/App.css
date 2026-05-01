@@ -385,10 +385,84 @@
   border-bottom-color: #404040;
 }
 
+.geocities .travel-stop-finder {
+  margin: 6px 0 4px;
+}
+
+.geocities .travel-stop-finder-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.geocities .travel-stop-finder-form .travel-label {
+  flex: 1 1 220px;
+  margin: 6px 0;
+}
+
+.geocities .travel-stop-finder-results {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.geocities .travel-stop-finder-result {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  padding: 6px 8px;
+  background: #000000;
+  color: #FFFF00;
+  border: 3px ridge #FF00FF;
+  cursor: crosshair;
+  font-family: "Comic Sans MS", "Trebuchet MS", sans-serif;
+}
+
+.geocities .travel-stop-finder-result:hover {
+  background: #FF00FF;
+  color: #FFFF00;
+  border-style: ridge;
+  border-color: #00FFFF;
+}
+
+.geocities .travel-stop-finder-result-name {
+  font-family: Impact, "Arial Black", sans-serif;
+  font-size: 14px;
+  color: #00FFFF;
+}
+
+.geocities .travel-stop-finder-result:hover .travel-stop-finder-result-name {
+  color: #FFFF00;
+}
+
+.geocities .travel-stop-finder-result-sub {
+  font-size: 11px;
+  color: #FFFFFF;
+}
+
+.geocities .travel-stop-finder-result:hover .travel-stop-finder-result-sub {
+  color: #FFFFFF;
+}
+.geocities .travel-stop-finder-attribution {
+  margin-top: 4px;
+  text-align: right;
+}
+
 @media (max-width: 640px) {
   .geocities .travel-stop-grid {
     grid-template-columns: 1fr;
     gap: 0;
+  }
+
+  .geocities .travel-stop-finder-form {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 
