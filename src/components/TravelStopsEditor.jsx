@@ -159,7 +159,16 @@ function StopFinder({ onPick }) {
           ))}
           <div className="travel-stop-finder-attribution">
             <font face="Comic Sans MS" size="1" color="#C0C0C0">
-              Results © OpenStreetMap contributors
+              Place results{' '}
+              <a
+                href="https://developers.google.com/maps/documentation/places/web-service/policies"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#CCCCFF' }}
+              >
+                Powered by Google
+              </a>
+              .
             </font>
           </div>
         </div>

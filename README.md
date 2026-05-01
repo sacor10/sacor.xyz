@@ -66,8 +66,18 @@ The site supports Google sign-in. Emails listed in `TRAVEL_PLAN_EMAILS` can crea
    openssl rand -hex 32
    ```
 7. For Travel Plan invite emails, set `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `SITE_URL` (for production, `https://sacor.xyz`). Invite emails are sent server-side from Netlify Functions.
-8. Mirror the required vars into Netlify (Site settings &rarr; Environment variables) for production: `VITE_GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_ID`, `TRAVEL_PLAN_EMAILS`, `SESSION_SECRET`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `SITE_URL`.
+8. Mirror the required vars into Netlify (Site settings &rarr; Environment variables) for production: `VITE_GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_ID`, `TRAVEL_PLAN_EMAILS`, `SESSION_SECRET`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SITE_URL`, and **`GOOGLE_PLACES_API_KEY`** (see Travel Plans place search below).
 9. Redeploy the site after changing `VITE_GOOGLE_CLIENT_ID`; Vite bakes `VITE_` env vars into the frontend bundle at build time.
+
+### Travel Plans place search
+
+The itinerary **FIND A PLACE** control calls Google Places API (New) [Text Search](https://developers.google.com/maps/documentation/places/web-service/text-search) via a Netlify proxy so no API keys are exposed in the browser.
+
+1. Use the same (or linked) GCP project where you configured OAuth credentials, enable **[Places API (New)](https://console.cloud.google.com/apis/library/places.googleapis.com)** and ensure billing is active.
+2. Create an **API key** (preferably restricted so only Places API (New) is allowed).
+3. Set `GOOGLE_PLACES_API_KEY` in `.env` for `netlify dev` and add it to Netlify environment variables.
+
+**Endpoint:** `GET /.netlify/functions/geocode?q=...&limit=...` → `{ results: [{ id, name, lat, lng, type, address }] }`. Omitting the API key yields `503`; follow [Places policies](https://developers.google.com/maps/documentation/places/web-service/policies) for attribution shown in the editor.
 
 ### Endpoints
 
@@ -76,3 +86,4 @@ The site supports Google sign-in. Emails listed in `TRAVEL_PLAN_EMAILS` can crea
 - `POST /.netlify/functions/auth-logout` &mdash; clears the session cookie.
 - `GET|POST|PUT|DELETE /.netlify/functions/travel-plans[?id=...&owner=...]` &mdash; CRUD for owned and shared travel plans. Owned plans live under the creator's user hash; shared access uses recipient indexes plus the canonical owner plan. Saves require a matching `version` and return `409` for stale edits.
 - `GET|POST|DELETE /.netlify/functions/travel-plan-sharing?id=...` &mdash; owner-only share management. Adds/removes collaborator emails, stores saved contacts, and sends first-share invite emails through Resend.
+- `GET /.netlify/functions/geocode?q=...` &mdash; server-side Places Text Search proxy for Travel Plan stops (requires `GOOGLE_PLACES_API_KEY`).
