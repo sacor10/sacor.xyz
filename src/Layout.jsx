@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import './App.css'
 import GoogleSignInButton from './auth/GoogleSignInButton'
 import { useAuth } from './auth/useAuth'
@@ -33,6 +33,8 @@ const PANE_LABELS = ['Show navigation', 'Show main content', 'Show sidebar']
 
 export default function Layout({ mainContent, rightSidebar }) {
   const isMobile = useMediaQuery('(max-width: 768px)')
+  const location = useLocation()
+  const swipeDisabled = location.pathname.startsWith('/travel-plans/')
   const [pane, setPane] = useState(1)
   const { canAccessTravelPlans } = useAuth()
   const navLinks = canAccessTravelPlans
@@ -48,6 +50,7 @@ export default function Layout({ mainContent, rightSidebar }) {
 
   useEffect(() => {
     if (!isMobile) return
+    if (swipeDisabled) return
     const vp = viewportRef.current
     if (!vp) return
 
@@ -141,7 +144,7 @@ export default function Layout({ mainContent, rightSidebar }) {
       vp.removeEventListener('pointerdown', onPointerDown)
       cleanup()
     }
-  }, [isMobile])
+  }, [isMobile, swipeDisabled])
 
   const goToPane = (i) => {
     setPane(i)
