@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import Layout from '../Layout'
 import MarkdownView from '../components/MarkdownView'
@@ -460,6 +460,16 @@ export default function TravelPlanPage() {
   const [shareOpen, setShareOpen] = useState(false)
   const [copyStatus, setCopyStatus] = useState('')
 
+  const editFormScrollRef = useRef(null)
+  const exportPanelScrollRef = useRef(null)
+  const sharePanelScrollRef = useRef(null)
+  const deleteErrorScrollRef = useRef(null)
+
+  const prevEditingRef = useRef(false)
+  const prevExportOpenRef = useRef(false)
+  const prevShareOpenRef = useRef(false)
+  const prevDeleteErrorRef = useRef('')
+
   const ownerHashParam = searchParams.get('owner') || ''
   const plan = result?.plan ?? null
   const fetchError = result?.error ?? ''
@@ -501,6 +511,35 @@ export default function TravelPlanPage() {
       setDeleting(false)
     }
   }
+
+  useLayoutEffect(() => {
+    if (editing && !prevEditingRef.current) {
+      editFormScrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+    prevEditingRef.current = editing
+  }, [editing])
+
+  useLayoutEffect(() => {
+    if (exportOpen && !prevExportOpenRef.current) {
+      exportPanelScrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+    prevExportOpenRef.current = exportOpen
+  }, [exportOpen])
+
+  useLayoutEffect(() => {
+    if (shareOpen && plan?.isOwner && !prevShareOpenRef.current) {
+      sharePanelScrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+    prevShareOpenRef.current = shareOpen
+  }, [shareOpen, plan?.isOwner])
+
+  useLayoutEffect(() => {
+    const err = deleteError || ''
+    if (err && !prevDeleteErrorRef.current) {
+      deleteErrorScrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+    prevDeleteErrorRef.current = err
+  }, [deleteError])
 
   const showPlanActions =
     Boolean(plan) &&
@@ -603,15 +642,17 @@ export default function TravelPlanPage() {
     )
   } else if (editing) {
     body = (
-      <EditForm
-        plan={plan}
-        ownerHash={ownerHashParam || (plan.isShared ? plan.ownerHash : '')}
-        onCancel={() => setEditing(false)}
-        onSaved={(updated) => {
-          setResult({ plan: updated })
-          setEditing(false)
-        }}
-      />
+      <div ref={editFormScrollRef}>
+        <EditForm
+          plan={plan}
+          ownerHash={ownerHashParam || (plan.isShared ? plan.ownerHash : '')}
+          onCancel={() => setEditing(false)}
+          onSaved={(updated) => {
+            setResult({ plan: updated })
+            setEditing(false)
+          }}
+        />
+      </div>
     )
   } else {
     const hasStops = Array.isArray(plan.stops) && plan.stops.length > 0
@@ -711,17 +752,17 @@ export default function TravelPlanPage() {
 
         <center>{actionButtonsRow}</center>
         {deleteError && (
-          <center>
+          <center ref={deleteErrorScrollRef}>
             <font face="Comic Sans MS" size="2" color="#FF00FF">
               {deleteError}
             </font>
           </center>
         )}
         {shareOpen && plan.isOwner && (
-          <>
+          <div ref={sharePanelScrollRef}>
             <br />
             <SharePanel plan={plan} />
-          </>
+          </div>
         )}
         {exportOpen && (() => {
           const promptText = buildPromptFromPlan(plan)
@@ -734,7 +775,7 @@ export default function TravelPlanPage() {
             }
           }
           return (
-            <>
+            <div ref={exportPanelScrollRef}>
               <br />
               <table width="100%" cellPadding="10" cellSpacing="0" border="0" className="postbox travel-form" bgcolor="#000000">
                 <tbody>
@@ -777,7 +818,7 @@ export default function TravelPlanPage() {
                   </tr>
                 </tbody>
               </table>
-            </>
+            </div>
           )
         })()}
       </>
