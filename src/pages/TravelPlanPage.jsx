@@ -231,17 +231,22 @@ function SharePanel({ plan }) {
   useEffect(() => {
     let cancelled = false
     ;(async () => {
+      setLoading(true)
       try {
-        const res = await fetch(
-          `/.netlify/functions/travel-plan-sharing?id=${encodeURIComponent(plan.id)}`,
-          { credentials: 'same-origin' },
-        )
-        const data = await res.json().catch(() => ({}))
-        if (!res.ok) throw new Error(data.error || `Share info failed (${res.status})`)
+        const shareUrl = `/.netlify/functions/travel-plan-sharing?id=${encodeURIComponent(plan.id)}`
+        const contactsUrl = '/.netlify/functions/travel-plan-sharing?only=contacts'
+        const [shareRes, contactsRes] = await Promise.all([
+          fetch(shareUrl, { credentials: 'same-origin' }),
+          fetch(contactsUrl, { credentials: 'same-origin' }),
+        ])
+        const shareData = await shareRes.json().catch(() => ({}))
+        const contactsData = await contactsRes.json().catch(() => ({}))
+        if (!shareRes.ok) throw new Error(shareData.error || `Share info failed (${shareRes.status})`)
+        if (!contactsRes.ok) throw new Error(contactsData.error || `Contacts failed (${contactsRes.status})`)
         if (cancelled) return
         setState({
-          collaborators: data.collaborators || [],
-          contacts: data.contacts || [],
+          collaborators: shareData.collaborators || [],
+          contacts: contactsData.contacts || [],
         })
         setError('')
       } catch (err) {
@@ -389,6 +394,10 @@ function SharePanel({ plan }) {
                     <br />
                     <font face="Impact" size="3" color="#FFFF00">
                       SAVED CONTACTS
+                    </font>
+                    <br />
+                    <font face="Comic Sans MS" size="2" color="#AAAAAA">
+                      Same list for every plan on this Google account—click a chip to drop it into the box above.
                     </font>
                     <div className="share-chip-row">
                       {state.contacts.map((email) => (

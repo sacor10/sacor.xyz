@@ -9,6 +9,7 @@ import {
 
 const planKey = (prefix, id) => `${prefix}/plans/${id}`
 const sharedIndexKey = (recipientHash) => `shared/${recipientHash}/index`
+/** One blob per signed-in owner account (`users/<hash>/contacts`), shared by all owned travel plans */
 const contactsKey = (prefix) => `${prefix}/contacts`
 
 const json = (data, init = {}) =>
@@ -180,6 +181,10 @@ const sharingPayload = async (store, prefix, plan) => ({
   contacts: await loadContacts(store, prefix),
 })
 
+const planCollaboratorsPayload = (plan) => ({
+  collaborators: plan.collaborators,
+})
+
 export default async (req) => {
   const auth = requireTravelAccess(req)
   if (auth.error) return auth.error
@@ -199,12 +204,18 @@ export default async (req) => {
     return json({ contacts: next })
   }
 
+  if (req.method === 'GET' && url.searchParams.get('only') === 'contacts') {
+    if (!canCreateTravelPlans(sessionEmail)) return json({ error: 'Forbidden' }, { status: 403 })
+    const prefix = userKeyPrefix(sessionEmail)
+    return json({ contacts: await loadContacts(store, prefix) })
+  }
+
   const loaded = await loadOwnerPlan(store, sessionEmail, id)
   if (loaded.error) return loaded.error
   const { plan, prefix } = loaded
 
   if (req.method === 'GET') {
-    return json(await sharingPayload(store, prefix, plan))
+    return json(planCollaboratorsPayload(plan))
   }
 
   if (req.method === 'POST') {
