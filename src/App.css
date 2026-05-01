@@ -262,7 +262,8 @@
 
 /* === Travel plan form === */
 .geocities .travel-form input[type="text"],
-.geocities .travel-form textarea {
+.geocities .travel-form textarea,
+.geocities .travel-form select {
   width: 100%;
   background: #000000;
   color: #00FF00;
@@ -278,6 +279,10 @@
   font-size: 13px;
   line-height: 1.4;
   resize: vertical;
+}
+
+.geocities .travel-form select {
+  cursor: crosshair;
 }
 
 .geocities .travel-label {
@@ -332,6 +337,17 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+
+.geocities .travel-itinerary-list-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.geocities .travel-itinerary-list-actions {
+  margin-bottom: 10px;
 }
 
 .geocities .mini-btn:disabled {

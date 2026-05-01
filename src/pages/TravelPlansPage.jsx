@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../Layout'
+import TravelItineraryEditor from '../components/TravelItineraryEditor'
 import TravelStopsEditor from '../components/TravelStopsEditor'
 import { normalizeStopsForSave } from '../components/travelStops'
 import { useAuth } from '../auth/useAuth'
@@ -145,17 +146,7 @@ function NewPlanForm({ onCreated }) {
                 />
               </label>
               <br />
-              <label className="travel-label">
-                <font face="Impact" size="3" color="#FFFF00">
-                  ITINERARY (markdown)
-                </font>
-                <textarea
-                  value={body}
-                  rows={18}
-                  onChange={(e) => setBody(e.target.value)}
-                  placeholder="Paste the markdown itinerary here..."
-                />
-              </label>
+              <TravelItineraryEditor value={body} onChange={setBody} />
               <br />
               <TravelStopsEditor stops={stops} onChange={setStops} />
               {error && (

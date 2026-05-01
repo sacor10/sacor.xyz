@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import Layout from '../Layout'
 import MarkdownView from '../components/MarkdownView'
 import ItineraryMap from '../components/ItineraryMap'
+import TravelItineraryEditor from '../components/TravelItineraryEditor'
 import TravelStopsEditor from '../components/TravelStopsEditor'
 import { normalizeStopsForSave, stopsToDraft } from '../components/travelStops'
 import { useAuth } from '../auth/useAuth'
@@ -185,16 +186,7 @@ function EditForm({ plan, ownerHash, onCancel, onSaved }) {
                 />
               </label>
               <br />
-              <label className="travel-label">
-                <font face="Impact" size="3" color="#FFFF00">
-                  ITINERARY (markdown)
-                </font>
-                <textarea
-                  value={body}
-                  rows={20}
-                  onChange={(e) => setBody(e.target.value)}
-                />
-              </label>
+              <TravelItineraryEditor value={body} onChange={setBody} />
               <br />
               <TravelStopsEditor stops={stops} onChange={setStops} />
               {error && (
