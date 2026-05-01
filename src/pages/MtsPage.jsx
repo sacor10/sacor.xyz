@@ -140,7 +140,7 @@ function loadYouTubeApi() {
   document.head.appendChild(s)
 }
 
-function Player({ status, videoId, subhead }) {
+function Player({ status, videoId, subhead, onRetry }) {
   const containerRef = useRef(null)
 
   useEffect(() => {
@@ -305,6 +305,21 @@ function Player({ status, videoId, subhead }) {
                     mts.now
                   </a>{' '}
                   directly!!!
+                  <br />
+                  <br />
+                  <button
+                    onClick={onRetry}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      font: 'inherit',
+                      color: 'inherit',
+                      padding: 0,
+                    }}
+                  >
+                    <span className="navbtn-link">&#9733; TRY AGAIN &#9733;</span>
+                  </button>
                 </font>
               )}
               {status === 'offline' && (
@@ -346,37 +361,51 @@ export default function MtsPage() {
   const [videoId, setVideoId] = useState(null)
   const [episode, setEpisode] = useState(null)
   const [subhead, setSubhead] = useState(null)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     let cancelled = false
-    fetch(CONFIG_URL)
-      .then((r) => {
-        if (!r.ok) throw new Error(`config ${r.status}`)
-        return r.json()
-      })
-      .then((cfg) => {
-        if (cancelled) return
-        const id = extractYouTubeId(cfg.youtubeLiveUrl)
-        setEpisode(cfg.episode ?? null)
-        setSubhead(cfg.subheadOverride ?? null)
-        if (id) {
-          setVideoId(id)
-          setStatus('ready')
-        } else {
-          setStatus('offline')
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setStatus('error')
-      })
+    setStatus('loading')
+
+    function tryFetch(n) {
+      fetch(CONFIG_URL)
+        .then((r) => {
+          if (!r.ok) throw new Error(`config ${r.status}`)
+          return r.json()
+        })
+        .then((cfg) => {
+          if (cancelled) return
+          const id = extractYouTubeId(cfg.youtubeLiveUrl)
+          setEpisode(cfg.episode ?? null)
+          setSubhead(cfg.subheadOverride ?? null)
+          if (id) {
+            setVideoId(id)
+            setStatus('ready')
+          } else {
+            setStatus('offline')
+          }
+        })
+        .catch(() => {
+          if (cancelled) return
+          if (n < 2) {
+            setTimeout(() => tryFetch(n + 1), 1000 * Math.pow(2, n))
+          } else {
+            setStatus('error')
+          }
+        })
+    }
+
+    tryFetch(0)
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [attempt])
+
+  const handleRetry = () => setAttempt((a) => a + 1)
 
   return (
     <Layout
-      mainContent={<Player status={status} videoId={videoId} subhead={subhead} />}
+      mainContent={<Player status={status} videoId={videoId} subhead={subhead} onRetry={handleRetry} />}
       rightSidebar={<Sidebar episode={episode} onAir={status === 'ready'} />}
     />
   )
