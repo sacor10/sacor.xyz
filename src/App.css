@@ -346,6 +346,12 @@
   flex-wrap: wrap;
 }
 
+.geocities .travel-stops-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin: 8px 0 0;
+}
+
 .geocities .travel-stop-card,
 .geocities .travel-stops-json {
   border: 3px ridge #00FFFF;

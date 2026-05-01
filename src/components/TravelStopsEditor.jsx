@@ -434,6 +434,14 @@ export default function TravelStopsEditor({ stops = [], onChange }) {
               </div>
             )
           })}
+
+          <div className="travel-stops-footer">
+            <span className="travel-stops-actions">
+              <button type="button" className="mini-btn" onClick={addStop}>
+                ADD STOP
+              </button>
+            </span>
+          </div>
         </>
       )}
 

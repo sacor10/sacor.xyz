@@ -74,8 +74,8 @@ The site supports Google sign-in. Emails listed in `TRAVEL_PLAN_EMAILS` can crea
 The itinerary **FIND A PLACE** control calls Google Places API (New) [Text Search](https://developers.google.com/maps/documentation/places/web-service/text-search) via a Netlify proxy so no API keys are exposed in the browser.
 
 1. Use the same (or linked) GCP project where you configured OAuth credentials, enable **[Places API (New)](https://console.cloud.google.com/apis/library/places.googleapis.com)** and ensure billing is active.
-2. Create an **API key** (preferably restricted so only Places API (New) is allowed).
-3. Set `GOOGLE_PLACES_API_KEY` in `.env` for `netlify dev` and add it to Netlify environment variables.
+2. Create a **second API key used only by Netlify Functions** (do **not** reuse your OAuth/Web client secrets). Restrict it under **API restrictions** to **Places API (Under “Places APIs (New)” / Places API)**. Under **Application restrictions**, choose **None** — not “HTTP referrers”. Referrer-locked keys are for browser Maps/JS requests; server-side `fetch` to Places has **no Referer**, so Google returns `Requests from referer <empty> are blocked.`
+3. Set `GOOGLE_PLACES_API_KEY` in `.env` for `netlify dev` and add it to Netlify environment variables, then redeploy.
 
 **Endpoint:** `POST /.netlify/functions/geocode` with JSON `{ "q": "<search text>", "limit": 5 }` → `{ results: [{ id, name, lat, lng, type, address }] }`. (A `GET` with `?q=` is supported for debugging if the incoming URL includes query params.) Responses use `Cache-Control: no-store` so each query is fresh. Omitting the API key yields `503`; follow [Places policies](https://developers.google.com/maps/documentation/places/web-service/policies) for attribution shown in the editor.
 
