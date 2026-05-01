@@ -11,14 +11,18 @@ export async function searchPlaces(query, { signal, limit = 5 } = {}) {
     return { results: [] }
   }
 
-  const params = new URLSearchParams({ q: trimmed })
-  if (Number.isFinite(limit)) {
-    params.set('limit', String(Math.min(10, Math.max(1, Math.trunc(Number(limit))))))
-  }
+  const safeLimit = Number.isFinite(limit)
+    ? Math.min(10, Math.max(1, Math.trunc(Number(limit))))
+    : 5
 
-  const res = await fetch(`${GEOCODE_FN}?${params}`, {
-    method: 'GET',
-    headers: { Accept: 'application/json' },
+  const res = await fetch(GEOCODE_FN, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ q: trimmed, limit: safeLimit }),
+    cache: 'no-store',
     signal,
   })
 

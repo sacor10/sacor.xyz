@@ -9,8 +9,8 @@ const FIELD_MASK =
 const MAX_QUERY_LEN = 200
 const DEFAULT_LIMIT = 5
 const MAX_LIMIT = 10
-/** Places content: avoid long public caching per Maps platform policies */
-const CACHE_CONTROL_JSON = 'private, max-age=120'
+/** Matches other JSON proxies (stocks-quote); prevents CDN/browser serving one response for many queries */
+const CACHE_CONTROL_JSON = 'no-store'
 
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -20,6 +20,24 @@ const json = (data, status = 200) =>
       'Cache-Control': CACHE_CONTROL_JSON,
     },
   })
+
+/**
+ * Incoming Request URLs can be relative; without a base URL, query params are lost → same results for every query.
+ */
+const requestSearchParams = (req) => {
+  const raw = typeof req.url === 'string' ? req.url : ''
+  try {
+    return new URL(raw).searchParams
+  } catch {
+    const host = typeof req.headers.get === 'function' ? req.headers.get('host') || 'localhost' : 'localhost'
+    const protoHdr =
+      typeof req.headers.get === 'function'
+        ? req.headers.get('x-forwarded-proto')?.split(',')[0]?.trim() || ''
+        : ''
+    const proto = /^https?$/i.test(protoHdr) ? protoHdr.toLowerCase() : 'https'
+    return new URL(raw, `${proto}://${host}`).searchParams
+  }
+}
 
 /** First language tag from Accept-Language suitable for Places languageCode */
 const languageFromAccept = (hdr) => {
@@ -90,7 +108,25 @@ async function geocodePlaces({ q, limit, apiKey, languageCode }) {
 }
 
 export default async (req) => {
-  if (req.method !== 'GET') {
+  let q = ''
+  let requested = NaN
+
+  if (req.method === 'POST') {
+    let payload
+    try {
+      payload = await req.json()
+    } catch {
+      return json({ error: 'Request body must be JSON.' }, 400)
+    }
+    const rawQ = typeof payload?.q === 'string' ? payload.q : ''
+    q = rawQ.trim()
+    requested = Number(payload?.limit)
+  } else if (req.method === 'GET') {
+    const params = requestSearchParams(req)
+    const qRaw = typeof params.get('q') === 'string' ? params.get('q') : ''
+    q = qRaw.trim()
+    requested = Number(params.get('limit'))
+  } else {
     return json({ error: 'Method not allowed' }, 405)
   }
 
@@ -102,19 +138,17 @@ export default async (req) => {
     )
   }
 
-  const url = new URL(req.url)
-  const qRaw = typeof url.searchParams.get('q') === 'string' ? url.searchParams.get('q') : ''
-  const q = qRaw.trim()
   if (!q) {
-    return json({ error: 'Query parameter "q" is required.' }, 400)
+    return json({ error: 'Query "q" is required.' }, 400)
   }
   if (q.length > MAX_QUERY_LEN) {
     return json({ error: `Query must be at most ${MAX_QUERY_LEN} characters.` }, 400)
   }
 
-  const limitNum = Number(url.searchParams.get('limit'))
-  const requested = Number.isFinite(limitNum) ? Math.trunc(limitNum) : DEFAULT_LIMIT
-  const limit = Math.min(MAX_LIMIT, Math.max(1, requested))
+  const limit = Math.min(
+    MAX_LIMIT,
+    Math.max(1, Number.isFinite(requested) ? Math.trunc(requested) : DEFAULT_LIMIT),
+  )
 
   const acceptLang = typeof req.headers.get === 'function' ? req.headers.get('accept-language') : ''
   const languageCode = languageFromAccept(acceptLang)

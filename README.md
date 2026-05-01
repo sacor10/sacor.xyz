@@ -77,7 +77,7 @@ The itinerary **FIND A PLACE** control calls Google Places API (New) [Text Searc
 2. Create an **API key** (preferably restricted so only Places API (New) is allowed).
 3. Set `GOOGLE_PLACES_API_KEY` in `.env` for `netlify dev` and add it to Netlify environment variables.
 
-**Endpoint:** `GET /.netlify/functions/geocode?q=...&limit=...` → `{ results: [{ id, name, lat, lng, type, address }] }`. Omitting the API key yields `503`; follow [Places policies](https://developers.google.com/maps/documentation/places/web-service/policies) for attribution shown in the editor.
+**Endpoint:** `POST /.netlify/functions/geocode` with JSON `{ "q": "<search text>", "limit": 5 }` → `{ results: [{ id, name, lat, lng, type, address }] }`. (A `GET` with `?q=` is supported for debugging if the incoming URL includes query params.) Responses use `Cache-Control: no-store` so each query is fresh. Omitting the API key yields `503`; follow [Places policies](https://developers.google.com/maps/documentation/places/web-service/policies) for attribution shown in the editor.
 
 ### Endpoints
 
@@ -86,4 +86,4 @@ The itinerary **FIND A PLACE** control calls Google Places API (New) [Text Searc
 - `POST /.netlify/functions/auth-logout` &mdash; clears the session cookie.
 - `GET|POST|PUT|DELETE /.netlify/functions/travel-plans[?id=...&owner=...]` &mdash; CRUD for owned and shared travel plans. Owned plans live under the creator's user hash; shared access uses recipient indexes plus the canonical owner plan. Saves require a matching `version` and return `409` for stale edits.
 - `GET|POST|DELETE /.netlify/functions/travel-plan-sharing?id=...` &mdash; owner-only share management. Adds/removes collaborator emails, stores saved contacts, and sends first-share invite emails through Resend.
-- `GET /.netlify/functions/geocode?q=...` &mdash; server-side Places Text Search proxy for Travel Plan stops (requires `GOOGLE_PLACES_API_KEY`).
+- `POST /.netlify/functions/geocode` (`{ q, limit }`) &mdash; server-side Places Text Search proxy for Travel Plan stops (requires `GOOGLE_PLACES_API_KEY`). `GET` with `q` is accepted for manual checks.
