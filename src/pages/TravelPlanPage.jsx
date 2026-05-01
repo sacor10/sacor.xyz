@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import Layout from '../Layout'
 import MarkdownView from '../components/MarkdownView'
 import ItineraryMap from '../components/ItineraryMap'
@@ -43,6 +43,12 @@ const downloadPlanAsJson = (plan) => {
   URL.revokeObjectURL(url)
 }
 
+const planQuery = (id, ownerHash) => {
+  const params = new URLSearchParams({ id })
+  if (ownerHash) params.set('owner', ownerHash)
+  return params.toString()
+}
+
 const buildPromptFromPlan = (plan) => {
   const example = {
     title: plan.title,
@@ -84,7 +90,7 @@ NEW PLAN REQUEST
 Generate a plan for: <DESCRIBE YOUR TRIP HERE — e.g. "a 2-day food-focused trip to Lisbon">`
 }
 
-function EditForm({ plan, onCancel, onSaved }) {
+function EditForm({ plan, ownerHash, onCancel, onSaved }) {
   const [title, setTitle] = useState(plan.title || '')
   const [destination, setDestination] = useState(plan.destination || '')
   const [body, setBody] = useState(plan.body || '')
@@ -116,16 +122,25 @@ function EditForm({ plan, onCancel, onSaved }) {
     setError('')
     try {
       const res = await fetch(
-        `/.netlify/functions/travel-plans?id=${encodeURIComponent(plan.id)}`,
+        `/.netlify/functions/travel-plans?${planQuery(plan.id, ownerHash)}`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
-          body: JSON.stringify({ title, destination, body, stops: parsedStops }),
+          body: JSON.stringify({
+            title,
+            destination,
+            body,
+            stops: parsedStops,
+            version: plan.version,
+          }),
         },
       )
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
+        if (res.status === 409) {
+          throw new Error(data.error || 'This plan changed while you were editing. Reload and try again.')
+        }
         throw new Error(data.error || `Save failed (${res.status})`)
       }
       const updated = await res.json()
@@ -222,6 +237,239 @@ function EditForm({ plan, onCancel, onSaved }) {
   )
 }
 
+function SharePanel({ plan }) {
+  const [state, setState] = useState({ collaborators: [], contacts: [] })
+  const [emails, setEmails] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch(
+          `/.netlify/functions/travel-plan-sharing?id=${encodeURIComponent(plan.id)}`,
+          { credentials: 'same-origin' },
+        )
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data.error || `Share info failed (${res.status})`)
+        if (cancelled) return
+        setState({
+          collaborators: data.collaborators || [],
+          contacts: data.contacts || [],
+        })
+        setError('')
+      } catch (err) {
+        if (!cancelled) setError(err.message)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [plan.id])
+
+  const addContactToBox = (email) => {
+    const existing = emails.trim()
+    setEmails(existing ? `${existing}\n${email}` : email)
+  }
+
+  const handleShare = async (e) => {
+    e.preventDefault()
+    setSubmitting(true)
+    setMessage('')
+    setError('')
+    try {
+      const res = await fetch(
+        `/.netlify/functions/travel-plan-sharing?id=${encodeURIComponent(plan.id)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ emails }),
+        },
+      )
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || `Share failed (${res.status})`)
+      setState({
+        collaborators: data.collaborators || [],
+        contacts: data.contacts || [],
+      })
+      const results = data.results || []
+      const shared = results.filter((r) => r.status === 'shared')
+      const already = results.filter((r) => r.status === 'already_shared')
+      const failedMail = results.filter((r) => r.status === 'shared' && r.emailStatus === 'failed')
+      const invalid = results.filter((r) => r.status === 'invalid' || r.status === 'self')
+      const parts = []
+      if (shared.length > 0) parts.push(`Shared with ${shared.length} account(s).`)
+      if (already.length > 0) parts.push(`${already.length} already had access.`)
+      if (failedMail.length > 0) {
+        const reasons = [...new Set(failedMail.map((r) => r.error).filter(Boolean))]
+        const reasonText = reasons.length > 0 ? ` Reason: ${reasons.join('; ')}.` : ''
+        parts.push(`${failedMail.length} invite email(s) failed, but access was granted.${reasonText}`)
+      }
+      if (invalid.length > 0) parts.push(`${invalid.length} address(es) skipped.`)
+      setMessage(parts.join(' ') || 'No changes made.')
+      if (shared.length > 0) setEmails('')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const removeCollaborator = async (email) => {
+    if (!window.confirm(`Remove access for ${email}?`)) return
+    setMessage('')
+    setError('')
+    try {
+      const res = await fetch(
+        `/.netlify/functions/travel-plan-sharing?id=${encodeURIComponent(plan.id)}&email=${encodeURIComponent(email)}`,
+        { method: 'DELETE', credentials: 'same-origin' },
+      )
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || `Remove failed (${res.status})`)
+      setState({
+        collaborators: data.collaborators || [],
+        contacts: data.contacts || [],
+      })
+      setMessage(`Removed access for ${email}.`)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const removeContact = async (email) => {
+    setMessage('')
+    setError('')
+    try {
+      const res = await fetch(
+        `/.netlify/functions/travel-plan-sharing?contact=${encodeURIComponent(email)}`,
+        { method: 'DELETE', credentials: 'same-origin' },
+      )
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || `Remove contact failed (${res.status})`)
+      setState((current) => ({ ...current, contacts: data.contacts || [] }))
+      setMessage(`Removed ${email} from saved contacts.`)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  return (
+    <table width="100%" cellPadding="10" cellSpacing="0" border="0" className="postbox travel-form" bgColor="#000000">
+      <tbody>
+        <tr>
+          <td align="center" bgColor="#00FF00" className="section-bar-sm">
+            <font face="Impact" size="4" color="#000000">
+              ~ SHARE THIS PLAN ~
+            </font>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <font face="Comic Sans MS" size="2" color="#FFFFFF">
+              Add Google account email addresses. People you share with can edit this same saved plan.
+            </font>
+            <br />
+            <br />
+            {loading ? (
+              <font face="Comic Sans MS" size="2" color="#FFFFFF">
+                loading share info...
+              </font>
+            ) : (
+              <>
+                <form onSubmit={handleShare}>
+                  <label className="travel-label">
+                    <font face="Impact" size="3" color="#FFFF00">
+                      EMAILS
+                    </font>
+                    <textarea
+                      value={emails}
+                      rows={4}
+                      onChange={(e) => setEmails(e.target.value)}
+                      placeholder="friend@gmail.com, cousin@example.com"
+                    />
+                  </label>
+                  <center>
+                    <button type="submit" className="dl-btn" disabled={submitting}>
+                      {submitting ? 'SHARING...' : 'SHARE PLAN'}
+                    </button>
+                  </center>
+                </form>
+
+                {state.contacts.length > 0 && (
+                  <>
+                    <br />
+                    <font face="Impact" size="3" color="#FFFF00">
+                      SAVED CONTACTS
+                    </font>
+                    <div className="share-chip-row">
+                      {state.contacts.map((email) => (
+                        <span key={email} className="share-chip">
+                          <button type="button" onClick={() => addContactToBox(email)}>
+                            {email}
+                          </button>
+                          <button type="button" aria-label={`Remove ${email}`} onClick={() => removeContact(email)}>
+                            x
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                <br />
+                <font face="Impact" size="3" color="#FFFF00">
+                  COLLABORATORS
+                </font>
+                {state.collaborators.length === 0 ? (
+                  <div>
+                    <font face="Comic Sans MS" size="2" color="#FFFFFF">
+                      Nobody else has access yet.
+                    </font>
+                  </div>
+                ) : (
+                  <div className="share-list">
+                    {state.collaborators.map((email) => (
+                      <div key={email} className="share-row">
+                        <font face="Courier New" size="2" color="#00FF00">
+                          {email}
+                        </font>
+                        <button type="button" className="mini-btn" onClick={() => removeCollaborator(email)}>
+                          REMOVE
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {message && (
+              <div className="travel-note">
+                <font face="Comic Sans MS" size="2" color="#FFFF00">
+                  {message}
+                </font>
+              </div>
+            )}
+            {error && (
+              <div className="travel-error">
+                <font face="Comic Sans MS" size="2" color="#FF00FF">
+                  {error}
+                </font>
+              </div>
+            )}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  )
+}
+
 const rightSidebar = (
   <>
     <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox">
@@ -252,6 +500,7 @@ const rightSidebar = (
 
 export default function TravelPlanPage() {
   const { id } = useParams()
+  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { loading: authLoading, canAccessTravelPlans } = useAuth()
   const [result, setResult] = useState(null)
@@ -259,8 +508,10 @@ export default function TravelPlanPage() {
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
   const [exportOpen, setExportOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const [copyStatus, setCopyStatus] = useState('')
 
+  const ownerHashParam = searchParams.get('owner') || ''
   const plan = result?.plan ?? null
   const fetchError = result?.error ?? ''
   const loading = canAccessTravelPlans && result === null
@@ -271,7 +522,7 @@ export default function TravelPlanPage() {
     ;(async () => {
       try {
         const res = await fetch(
-          `/.netlify/functions/travel-plans?id=${encodeURIComponent(id)}`,
+          `/.netlify/functions/travel-plans?${planQuery(id, ownerHashParam)}`,
           { credentials: 'same-origin' },
         )
         if (!res.ok) throw new Error(`Load failed (${res.status})`)
@@ -284,14 +535,14 @@ export default function TravelPlanPage() {
     return () => {
       cancelled = true
     }
-  }, [id, authLoading, canAccessTravelPlans])
+  }, [id, ownerHashParam, authLoading, canAccessTravelPlans])
 
   const handleDelete = async () => {
     if (!window.confirm('Delete this travel plan? This cannot be undone.')) return
     setDeleting(true)
     try {
       const res = await fetch(
-        `/.netlify/functions/travel-plans?id=${encodeURIComponent(id)}`,
+        `/.netlify/functions/travel-plans?${planQuery(id, ownerHashParam)}`,
         { method: 'DELETE', credentials: 'same-origin' },
       )
       if (!res.ok) throw new Error(`Delete failed (${res.status})`)
@@ -339,6 +590,7 @@ export default function TravelPlanPage() {
     body = (
       <EditForm
         plan={plan}
+        ownerHash={ownerHashParam || (plan.isShared ? plan.ownerHash : '')}
         onCancel={() => setEditing(false)}
         onSaved={(updated) => {
           setResult({ plan: updated })
@@ -409,7 +661,29 @@ export default function TravelPlanPage() {
                 <font face="Courier New" size="2" color="#FFFF00">
                   {plan.destination || 'no destination'} &nbsp;&bull;&nbsp; updated{' '}
                   {formatDate(plan.updatedAt)}
+                  {plan.updatedBy && (
+                    <>
+                      {' '}
+                      by {plan.updatedBy}
+                    </>
+                  )}
                 </font>
+                {plan.isShared && (
+                  <>
+                    <br />
+                    <font face="Comic Sans MS" size="2" color="#00FF00">
+                      shared by {plan.ownerEmail}
+                    </font>
+                  </>
+                )}
+                {plan.isOwner && plan.collaboratorCount > 0 && (
+                  <>
+                    <br />
+                    <font face="Comic Sans MS" size="2" color="#00FF00">
+                      shared with {plan.collaboratorCount} collaborator(s)
+                    </font>
+                  </>
+                )}
                 <br />
                 <br />
                 <MarkdownView>{plan.body}</MarkdownView>
@@ -424,15 +698,19 @@ export default function TravelPlanPage() {
           <button type="button" className="navbtn-link" onClick={() => setEditing(true)}>
             &#9733; EDIT &#9733;
           </button>
-          &nbsp;&nbsp;
-          <button
-            type="button"
-            className="navbtn-link"
-            onClick={handleDelete}
-            disabled={deleting}
-          >
-            &#9733; {deleting ? 'DELETING...' : 'DELETE'} &#9733;
-          </button>
+          {plan.isOwner && (
+            <>
+              &nbsp;&nbsp;
+              <button
+                type="button"
+                className="navbtn-link"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                &#9733; {deleting ? 'DELETING...' : 'DELETE'} &#9733;
+              </button>
+            </>
+          )}
           &nbsp;&nbsp;
           <button
             type="button"
@@ -452,6 +730,18 @@ export default function TravelPlanPage() {
           >
             &#9733; {exportOpen ? 'HIDE PROMPT' : 'EXPORT AS PROMPT'} &#9733;
           </button>
+          {plan.isOwner && (
+            <>
+              &nbsp;&nbsp;
+              <button
+                type="button"
+                className="navbtn-link"
+                onClick={() => setShareOpen((v) => !v)}
+              >
+                &#9733; {shareOpen ? 'HIDE SHARE' : 'SHARE'} &#9733;
+              </button>
+            </>
+          )}
         </center>
         {deleteError && (
           <center>
@@ -459,6 +749,12 @@ export default function TravelPlanPage() {
               {deleteError}
             </font>
           </center>
+        )}
+        {shareOpen && plan.isOwner && (
+          <>
+            <br />
+            <SharePanel plan={plan} />
+          </>
         )}
         {exportOpen && (() => {
           const promptText = buildPromptFromPlan(plan)

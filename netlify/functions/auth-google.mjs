@@ -1,5 +1,6 @@
 import {
   canAccessTravelPlans,
+  canCreateTravelPlans,
   isOwnerEmail,
   normalizeEmail,
   signSession,
@@ -68,6 +69,7 @@ export default async (req) => {
     {
       email,
       canAccessTravelPlans: canAccessTravelPlans(email),
+      canCreateTravelPlans: canCreateTravelPlans(email),
       isOwner: isOwnerEmail(email),
     },
     {

@@ -292,6 +292,64 @@
   margin: 8px 0;
 }
 
+.geocities .travel-note {
+  border: 2px ridge #FFFF00;
+  background: #000000;
+  padding: 6px 10px;
+  margin: 8px 0;
+}
+
+.geocities .share-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.geocities .share-chip {
+  display: inline-flex;
+  align-items: center;
+  background: #000080;
+  border: 3px ridge #00FFFF;
+}
+
+.geocities .share-chip button,
+.geocities .mini-btn {
+  background: #C0C0C0;
+  border-top: 2px solid #FFFFFF;
+  border-left: 2px solid #FFFFFF;
+  border-right: 2px solid #404040;
+  border-bottom: 2px solid #404040;
+  color: #000080;
+  cursor: crosshair;
+  font-family: "Arial Black", Impact, sans-serif;
+  font-size: 11px;
+  padding: 3px 7px;
+}
+
+.geocities .share-chip button:hover,
+.geocities .mini-btn:hover {
+  background: #FF00FF;
+  color: #FFFF00;
+  border-top-color: #404040;
+  border-left-color: #404040;
+  border-right-color: #FFFFFF;
+  border-bottom-color: #FFFFFF;
+}
+
+.geocities .share-list {
+  margin-top: 8px;
+}
+
+.geocities .share-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  border-top: 1px solid #333333;
+  padding: 7px 0;
+}
+
 /* === Markdown rendering === */
 .geocities .markdown-body {
   background: #000000;

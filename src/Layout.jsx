@@ -182,7 +182,7 @@ export default function Layout({ mainContent, rightSidebar }) {
                   align="right"
                 />
                 <h1 className="glow">
-                  <blink>SACOR&rsquo;S SPACE</blink>
+                  <span className="blink">SACOR&rsquo;S SPACE</span>
                 </h1>
                 <font face="Comic Sans MS" size="4" color="#00FFFF">
                   ~*~ DO WHAT YOU CAN, WITH WHAT YOU HAVE, WHERE YOU ARE ~*~ WE HAVE FALLEN HEIRS TO THE MOST GLORIOUS HERITAGE A PEOPLE EVER RECEIVED ~*~
@@ -218,7 +218,7 @@ export default function Layout({ mainContent, rightSidebar }) {
               <td width="18%" bgColor="#000080" className="left-sidebar">
                 <center>
                   <font face="Impact" size="5" color="#FFFF00">
-                    <blink>~ NAVIGATE ~</blink>
+                    <span className="blink">~ NAVIGATE ~</span>
                   </font>
                   <br />
                   <br />

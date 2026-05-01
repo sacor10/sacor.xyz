@@ -7,7 +7,7 @@ Personal homepage with a loud late-90s/GeoCities aesthetic. Built with React 19 
 Most pages are static React (home, blog index/post, contact, guestbook, MTS, webring, YtMp4). Two pages need backend setup to work end-to-end:
 
 - `/stocks` — candlestick chart + live price ticker (see below).
-- `/travel-plans` — allowlisted markdown CRUD (see below).
+- `/travel-plans` — private and shared markdown itinerary CRUD (see below).
 
 ## Scripts
 
@@ -50,7 +50,7 @@ The `/stocks` page renders a candlestick chart with hourly OHLC data plus a live
 
 ## Account / Google Sign-In
 
-The site supports Google sign-in. By default any signed-in user gets a no-op session; only emails listed in `TRAVEL_PLAN_EMAILS` can see the **Travel Plans** menu and use the `/travel-plans` CRUD endpoints. The server checks that allowlist on every protected request, so removing an email takes effect without waiting for old sessions to expire.
+The site supports Google sign-in. Emails listed in `TRAVEL_PLAN_EMAILS` can create and manage their own Travel Plans; other signed-in Google accounts can access plans shared with that exact email address.
 
 ### One-time setup
 
@@ -60,17 +60,19 @@ The site supports Google sign-in. By default any signed-in user gets a no-op ses
    - `http://localhost:8888` (Netlify Dev)
    - `https://sacor.xyz` (production)
 4. Copy the Client ID into both `VITE_GOOGLE_CLIENT_ID` (frontend) and `GOOGLE_CLIENT_ID` (backend, used to verify the `aud` claim). They are the same value &mdash; the `VITE_` prefix exposes it to the browser bundle.
-5. Set `TRAVEL_PLAN_EMAILS` to a comma-separated list of exact Google account emails that should unlock Travel Plans, for example `you@example.com,friend@example.com`. `OWNER_EMAIL` still works as a temporary single-account fallback, but `TRAVEL_PLAN_EMAILS` is preferred.
+5. Set `TRAVEL_PLAN_EMAILS` to a comma-separated list of exact Google account emails that can create and manage Travel Plans, for example `you@example.com,friend@example.com`. `OWNER_EMAIL` still works as a temporary single-account fallback, but `TRAVEL_PLAN_EMAILS` is preferred.
 6. Generate a session secret and set `SESSION_SECRET`:
    ```sh
    openssl rand -hex 32
    ```
-7. Mirror the required vars into Netlify (Site settings &rarr; Environment variables) for production: `VITE_GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_ID`, `TRAVEL_PLAN_EMAILS`, and `SESSION_SECRET`.
-8. Redeploy the site after changing `VITE_GOOGLE_CLIENT_ID`; Vite bakes `VITE_` env vars into the frontend bundle at build time.
+7. For Travel Plan invite emails, set `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `SITE_URL` (for production, `https://sacor.xyz`). Invite emails are sent server-side from Netlify Functions.
+8. Mirror the required vars into Netlify (Site settings &rarr; Environment variables) for production: `VITE_GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_ID`, `TRAVEL_PLAN_EMAILS`, `SESSION_SECRET`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `SITE_URL`.
+9. Redeploy the site after changing `VITE_GOOGLE_CLIENT_ID`; Vite bakes `VITE_` env vars into the frontend bundle at build time.
 
 ### Endpoints
 
 - `POST /.netlify/functions/auth-google` &mdash; verifies a Google ID token and sets the session cookie.
-- `GET  /.netlify/functions/auth-me` &mdash; returns `{ user: { email, canAccessTravelPlans, isOwner } | null, googleClientId }`. The `googleClientId` is echoed so the frontend can render the Google button without a separate config fetch.
+- `GET  /.netlify/functions/auth-me` &mdash; returns `{ user: { email, canAccessTravelPlans, canCreateTravelPlans, isOwner } | null, googleClientId }`. The `googleClientId` is echoed so the frontend can render the Google button without a separate config fetch.
 - `POST /.netlify/functions/auth-logout` &mdash; clears the session cookie.
-- `GET|POST|PUT|DELETE /.netlify/functions/travel-plans[?id=...]` &mdash; CRUD for travel plans, allowlisted accounts only. Plans live in the Netlify Blobs `travel-plans` store as JSON (`{ id, title, destination, body, createdAt, updatedAt }`, where `body` is markdown), with a separate `index` blob holding the summary list for the index view.
+- `GET|POST|PUT|DELETE /.netlify/functions/travel-plans[?id=...&owner=...]` &mdash; CRUD for owned and shared travel plans. Owned plans live under the creator's user hash; shared access uses recipient indexes plus the canonical owner plan. Saves require a matching `version` and return `409` for stale edits.
+- `GET|POST|DELETE /.netlify/functions/travel-plan-sharing?id=...` &mdash; owner-only share management. Adds/removes collaborator emails, stores saved contacts, and sends first-share invite emails through Resend.

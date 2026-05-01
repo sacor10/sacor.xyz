@@ -289,20 +289,104 @@ function ImportPlanButton({ onImported }) {
   )
 }
 
-function PlansList() {
-  const [plans, setPlans] = useState(null)
+const planHref = (plan) => {
+  const base = `/travel-plans/${encodeURIComponent(plan.id)}`
+  return plan.access === 'shared' && plan.ownerHash
+    ? `${base}?owner=${encodeURIComponent(plan.ownerHash)}`
+    : base
+}
+
+function PlanSection({ title, plans, emptyText }) {
+  return (
+    <>
+      <center>
+        <table width="100%" cellPadding="0" cellSpacing="0" border="0">
+          <tbody>
+            <tr>
+              <td align="center" bgColor="#FF00FF" className="section-bar">
+                <font face="Impact" size="5" color="#FFFF00">
+                  <blink>{title}</blink>
+                </font>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </center>
+
+      <br />
+
+      {plans.length === 0 && (
+        <table width="100%" cellPadding="14" cellSpacing="0" border="0" className="postbox" bgColor="#000000">
+          <tbody>
+            <tr>
+              <td align="center">
+                <font face="Comic Sans MS" size="3" color="#FFFFFF">
+                  {emptyText}
+                </font>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      )}
+
+      {plans.map((plan) => (
+        <div key={`${plan.ownerHash || 'mine'}:${plan.id}`}>
+          <table width="100%" cellPadding="10" cellSpacing="0" border="0" className="postbox">
+            <tbody>
+              <tr valign="top">
+                <td>
+                  <Link to={planHref(plan)} className="cyan-link">
+                    <font face="Impact" size="5" color="#00FFFF">
+                      &#9733; {plan.title} &#9733;
+                    </font>
+                  </Link>
+                  <br />
+                  <font face="Courier New" size="2" color="#FFFF00">
+                    {plan.destination || 'no destination'} &nbsp;&bull;&nbsp; updated{' '}
+                    {formatDate(plan.updatedAt)}
+                    {plan.updatedBy && (
+                      <>
+                        {' '}
+                        by {plan.updatedBy}
+                      </>
+                    )}
+                  </font>
+                  {plan.access === 'shared' && (
+                    <>
+                      <br />
+                      <font face="Comic Sans MS" size="2" color="#00FF00">
+                        shared by {plan.ownerEmail}
+                      </font>
+                    </>
+                  )}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <br />
+        </div>
+      ))}
+    </>
+  )
+}
+
+function PlansList({ canCreateTravelPlans }) {
+  const [data, setData] = useState(null)
   const [error, setError] = useState('')
 
   const load = async () => {
     try {
       const res = await fetch('/.netlify/functions/travel-plans', { credentials: 'same-origin' })
       if (!res.ok) throw new Error(`Load failed (${res.status})`)
-      const data = await res.json()
-      setPlans(data.plans || [])
+      const payload = await res.json()
+      setData({
+        ownedPlans: payload.ownedPlans || payload.plans || [],
+        sharedPlans: payload.sharedPlans || [],
+      })
       setError('')
     } catch (err) {
       setError(err.message)
-      setPlans([])
+      setData({ ownedPlans: [], sharedPlans: [] })
     }
   }
 
@@ -314,14 +398,17 @@ function PlansList() {
           credentials: 'same-origin',
         })
         if (!res.ok) throw new Error(`Load failed (${res.status})`)
-        const data = await res.json()
+        const payload = await res.json()
         if (cancelled) return
-        setPlans(data.plans || [])
+        setData({
+          ownedPlans: payload.ownedPlans || payload.plans || [],
+          sharedPlans: payload.sharedPlans || [],
+        })
         setError('')
       } catch (err) {
         if (cancelled) return
         setError(err.message)
-        setPlans([])
+        setData({ ownedPlans: [], sharedPlans: [] })
       }
     })()
     return () => {
@@ -329,31 +416,39 @@ function PlansList() {
     }
   }, [])
 
+  const ownedPlans = data?.ownedPlans || []
+  const sharedPlans = data?.sharedPlans || []
+
   return (
     <>
-      <NewPlanForm onCreated={load} />
+      {canCreateTravelPlans && (
+        <>
+          <NewPlanForm onCreated={load} />
 
-      <br />
+          <br />
 
-      <ImportPlanButton onImported={load} />
+          <ImportPlanButton onImported={load} />
 
-      <br />
+          <br />
+        </>
+      )}
 
-      <center>
-        <table width="100%" cellPadding="0" cellSpacing="0" border="0">
-          <tbody>
-            <tr>
-              <td align="center" bgColor="#FF00FF" className="section-bar">
-                <font face="Impact" size="5" color="#FFFF00">
-                  <blink>~*~ SAVED ITINERARIES ~*~</blink>
-                </font>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </center>
-
-      <br />
+      {!canCreateTravelPlans && (
+        <>
+          <table width="100%" cellPadding="14" cellSpacing="0" border="0" className="postbox" bgColor="#000000">
+            <tbody>
+              <tr>
+                <td align="center">
+                  <font face="Comic Sans MS" size="3" color="#FFFFFF">
+                    You can open and edit plans that have been shared with this Google account.
+                  </font>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <br />
+        </>
+      )}
 
       {error && (
         <div className="travel-error">
@@ -363,51 +458,36 @@ function PlansList() {
         </div>
       )}
 
-      {plans === null && (
+      {data === null && (
         <font face="Comic Sans MS" size="3" color="#FFFFFF">
           loading...
         </font>
       )}
 
-      {plans && plans.length === 0 && (
-        <table width="100%" cellPadding="14" cellSpacing="0" border="0" className="postbox" bgColor="#000000">
-          <tbody>
-            <tr>
-              <td align="center">
-                <font face="Comic Sans MS" size="3" color="#FFFFFF">
-                  No saved trips yet. Click <b className="lime">+ NEW TRAVEL PLAN</b> above to add
-                  your first itinerary.
-                </font>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      )}
+      {data && (
+        <>
+          {canCreateTravelPlans && (
+            <>
+              <PlanSection
+                title="~*~ YOUR ITINERARIES ~*~"
+                plans={ownedPlans}
+                emptyText="No saved trips yet. Click + NEW TRAVEL PLAN above to add your first itinerary."
+              />
+              <br />
+            </>
+          )}
 
-      {plans &&
-        plans.map((plan) => (
-          <div key={plan.id}>
-            <table width="100%" cellPadding="10" cellSpacing="0" border="0" className="postbox">
-              <tbody>
-                <tr valign="top">
-                  <td>
-                    <Link to={`/travel-plans/${plan.id}`} className="cyan-link">
-                      <font face="Impact" size="5" color="#00FFFF">
-                        &#9733; {plan.title} &#9733;
-                      </font>
-                    </Link>
-                    <br />
-                    <font face="Courier New" size="2" color="#FFFF00">
-                      {plan.destination || 'no destination'} &nbsp;&bull;&nbsp; updated{' '}
-                      {formatDate(plan.updatedAt)}
-                    </font>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <br />
-          </div>
-        ))}
+          <PlanSection
+            title="~*~ SHARED WITH YOU ~*~"
+            plans={sharedPlans}
+            emptyText={
+              canCreateTravelPlans
+                ? 'No one has shared a travel plan with you yet.'
+                : 'No shared travel plans yet. Ask the owner to share a plan with this Google email address.'
+            }
+          />
+        </>
+      )}
     </>
   )
 }
@@ -459,7 +539,7 @@ const rightSidebar = (
 )
 
 export default function TravelPlansPage() {
-  const { loading, canAccessTravelPlans } = useAuth()
+  const { loading, canAccessTravelPlans, canCreateTravelPlans } = useAuth()
 
   const mainContent = (
     <>
@@ -475,7 +555,11 @@ export default function TravelPlansPage() {
 
       <br />
 
-      {canAccessTravelPlans ? <PlansList /> : <GatedMessage loading={loading} />}
+      {canAccessTravelPlans ? (
+        <PlansList canCreateTravelPlans={canCreateTravelPlans} />
+      ) : (
+        <GatedMessage loading={loading} />
+      )}
     </>
   )
 

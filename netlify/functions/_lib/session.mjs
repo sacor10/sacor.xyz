@@ -22,16 +22,29 @@ export function canAccessTravelPlans(email) {
   return !!normalizeEmail(email)
 }
 
+export function canCreateTravelPlans(email) {
+  return isOwnerEmail(email)
+}
+
 export function isOwnerEmail(email) {
   const normalized = normalizeEmail(email)
   return !!normalized && getTravelPlanEmails().includes(normalized)
 }
 
-export function userKeyPrefix(email) {
+export function userHash(email) {
   const normalized = normalizeEmail(email)
-  if (!normalized) throw new Error('userKeyPrefix requires an email')
-  const hash = createHash('sha256').update(normalized).digest('hex')
-  return `users/${hash}`
+  if (!normalized) throw new Error('userHash requires an email')
+  return createHash('sha256').update(normalized).digest('hex')
+}
+
+export function userKeyPrefix(email) {
+  return `users/${userHash(email)}`
+}
+
+export function userKeyPrefixFromHash(hash) {
+  const normalized = String(hash || '').trim().toLowerCase()
+  if (!/^[a-f0-9]{64}$/.test(normalized)) return null
+  return `users/${normalized}`
 }
 
 const getSecret = () => {
@@ -69,6 +82,7 @@ export function verifySession(token) {
   return {
     email,
     canAccessTravelPlans: canAccessTravelPlans(email),
+    canCreateTravelPlans: canCreateTravelPlans(email),
     isOwner: isOwnerEmail(email),
   }
 }
