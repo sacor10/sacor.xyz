@@ -513,9 +513,9 @@ const rightSidebar = (
         <tr>
           <td bgcolor="#000000">
             <font face="Comic Sans MS" size="2" color="#FFFFFF">
-              Paste a markdown itinerary (e.g. one Claude generated for you) and the page will
-              render it with full Geocities glory. Plans are private to your Google account &mdash;
-              export and import as JSON to move them between accounts.
+              Drop in a Markdown itinerary&mdash;a trip outline from Claude, ChatGPT, or your own notes&mdash;
+              and this site paints it up in maximal Geocities flair. Saved plans stay private to the Google
+              account you're signed into. Use JSON export/import to move plans between accounts.
             </font>
           </td>
         </tr>
