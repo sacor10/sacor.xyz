@@ -4,12 +4,13 @@ Personal homepage with a loud late-90s/GeoCities aesthetic. Built with React 19 
 
 ## Pages
 
-Most pages are static React (home, blog index/post, contact, guestbook, MTS, webring, YtMp4). Two pages need backend setup to work end-to-end:
+Most pages are static React (home, blog index/post, contact, guestbook, MTS, webring, YtMp4). A few pages need backend setup to work end-to-end:
 
 - `/stocks` — candlestick chart + live price ticker (see below).
 - `/travel-plans` — private and shared markdown itinerary CRUD (see below).
 
 - `/instagram-downloader` - public Instagram Reel/post downloader backed by a separate Node API (see below).
+- `/x-downloader` - public X/Twitter post video downloader backed by a separate Node API (see below).
 
 ## Scripts
 
@@ -18,6 +19,7 @@ Most pages are static React (home, blog index/post, contact, guestbook, MTS, web
 - `npm run build` / `npm run preview` / `npm run lint`.
 
 - `npm --prefix services/instagram-downloader run dev` - local Instagram downloader API on `http://localhost:8787`.
+- `npm --prefix services/x-downloader run dev` - local X/Twitter downloader API on `http://localhost:8788`.
 
 ## Live Stocks (`/stocks`)
 
@@ -80,6 +82,35 @@ The `/instagram-downloader` page posts public Instagram Reel/post URLs to a dedi
 
 - `GET /healthz` - returns `{ ok: true }`.
 - `POST /download` with JSON `{ "url": "https://www.instagram.com/reel/..." }` - returns one MP4 for a single public video or one ZIP for multiple public videos. Photo-only, private, login-required, or invalid URLs return JSON errors.
+
+## X Downloader
+
+The `/x-downloader` page posts public X/Twitter status URLs to a dedicated Node service. It follows the Instagram downloader service shape so larger multi-video ZIP responses do not run through Netlify Functions.
+
+### Running locally
+
+1. Install the service dependencies:
+   ```sh
+   npm --prefix services/x-downloader install
+   ```
+2. Start the API:
+   ```sh
+   npm --prefix services/x-downloader run dev
+   ```
+3. In another terminal, run the site with `npm run dev` or `npx netlify dev` and visit `/x-downloader`.
+
+### Config
+
+- `VITE_X_DOWNLOADER_API_URL` - browser-facing API base URL.
+- `SITE_ORIGINS` - comma-separated CORS allowlist for the API.
+- `PORT` - API port, default `8788`.
+- `MAX_ITEMS` - maximum videos per post, default `20`.
+- `EXTRACT_TIMEOUT_MS`, `MEDIA_TIMEOUT_MS`, `MAX_VIDEO_BYTES` - downloader guardrails.
+
+### API
+
+- `GET /healthz` - returns `{ ok: true }`.
+- `POST /download` with JSON `{ "url": "https://x.com/user/status/123..." }` - returns one MP4 for a single public video or one ZIP for multiple public videos. Image-only, private, login-required, or invalid URLs return JSON errors.
 
 ## Account / Google Sign-In
 

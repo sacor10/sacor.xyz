@@ -9,7 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "instagram-api": "npm --prefix services/instagram-downloader run dev",
-    "instagram-api:test": "npm --prefix services/instagram-downloader test"
+    "instagram-api:test": "npm --prefix services/instagram-downloader test",
+    "x-api": "npm --prefix services/x-downloader run dev",
+    "x-api:test": "npm --prefix services/x-downloader test"
   },
   "dependencies": {
     "@netlify/blobs": "^8.1.0",

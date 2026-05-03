@@ -5,7 +5,12 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', '_patch_css.js', 'services/instagram-downloader/node_modules']),
+  globalIgnores([
+    'dist',
+    '_patch_css.js',
+    'services/instagram-downloader/node_modules',
+    'services/x-downloader/node_modules',
+  ]),
   {
     files: ['**/*.{js,jsx}'],
     extends: [
@@ -27,7 +32,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['services/instagram-downloader/**/*.js'],
+    files: ['services/{instagram,x}-downloader/**/*.js'],
     languageOptions: {
       globals: {
         ...globals.node,

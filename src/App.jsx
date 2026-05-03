@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import HomePage from './pages/HomePage'
 import YtMp4Page from './pages/YtMp4Page'
 import InstagramDownloaderPage from './pages/InstagramDownloaderPage'
+import XDownloaderPage from './pages/XDownloaderPage'
 import MtsPage from './pages/MtsPage'
 import WebringPage from './pages/WebringPage'
 import BlogIndexPage from './pages/BlogIndexPage'
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/ytmp4" element={<YtMp4Page />} />
           <Route path="/instagram-downloader" element={<InstagramDownloaderPage />} />
+          <Route path="/x-downloader" element={<XDownloaderPage />} />
           <Route path="/mts" element={<MtsPage />} />
           <Route path="/webring" element={<WebringPage />} />
           <Route path="/blog" element={<BlogIndexPage />} />
