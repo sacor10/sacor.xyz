@@ -114,7 +114,7 @@ The `/x-downloader` page posts public X/Twitter status URLs to a dedicated Node 
 
 ## Account / Google Sign-In
 
-The site supports Google sign-in. Emails listed in `TRAVEL_PLAN_EMAILS` can create and manage their own Travel Plans; other signed-in Google accounts can access plans shared with that exact email address.
+The site supports Google sign-in. Any signed-in Google account can create and manage its own Travel Plans, and can also access plans shared with that exact email address.
 
 ### One-time setup
 
@@ -124,13 +124,13 @@ The site supports Google sign-in. Emails listed in `TRAVEL_PLAN_EMAILS` can crea
    - `http://localhost:8888` (Netlify Dev)
    - `https://sacor.xyz` (production)
 4. Copy the Client ID into both `VITE_GOOGLE_CLIENT_ID` (frontend) and `GOOGLE_CLIENT_ID` (backend, used to verify the `aud` claim). They are the same value &mdash; the `VITE_` prefix exposes it to the browser bundle.
-5. Set `TRAVEL_PLAN_EMAILS` to a comma-separated list of exact Google account emails that can create and manage Travel Plans, for example `you@example.com,friend@example.com`. `OWNER_EMAIL` still works as a temporary single-account fallback, but `TRAVEL_PLAN_EMAILS` is preferred.
+5. Optional: set `TRAVEL_PLAN_EMAILS` to a comma-separated list of exact Google account emails to mark as site owner accounts, for example `you@example.com,friend@example.com`. `OWNER_EMAIL` still works as a temporary single-account fallback, but `TRAVEL_PLAN_EMAILS` is preferred. These vars are not required for normal Travel Plan creation.
 6. Generate a session secret and set `SESSION_SECRET`:
    ```sh
    openssl rand -hex 32
    ```
 7. For Travel Plan invite emails, set `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `SITE_URL` (for production, `https://sacor.xyz`). Invite emails are sent server-side from Netlify Functions.
-8. Mirror the required vars into Netlify (Site settings &rarr; Environment variables) for production: `VITE_GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_ID`, `TRAVEL_PLAN_EMAILS`, `SESSION_SECRET`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SITE_URL`, and **`GOOGLE_PLACES_API_KEY`** (see Travel Plans place search below).
+8. Mirror the required vars into Netlify (Site settings &rarr; Environment variables) for production: `VITE_GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_ID`, `SESSION_SECRET`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SITE_URL`, and **`GOOGLE_PLACES_API_KEY`** (see Travel Plans place search below). Add `TRAVEL_PLAN_EMAILS` only if you want owner-account markers.
 9. Redeploy the site after changing `VITE_GOOGLE_CLIENT_ID`; Vite bakes `VITE_` env vars into the frontend bundle at build time.
 
 ### Travel Plans place search

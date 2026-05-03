@@ -7,9 +7,9 @@ import {
   userKeyPrefix,
   userKeyPrefixFromHash,
 } from './_lib/session.mjs'
-import { sfStops } from '../../src/data/sfTrip.js'
+import { nycBroadwayStops } from '../../src/data/nycBroadwayTrip.js'
 
-const SEED_PLAN_ID = 'sf-long-weekend-demo'
+const SEED_PLAN_ID = 'nyc-broadway-night-demo'
 const indexKey = (prefix) => `${prefix}/index`
 const planKey = (prefix, id) => `${prefix}/plans/${id}`
 const sharedIndexKey = (recipientHash) => `shared/${recipientHash}/index`
@@ -62,9 +62,15 @@ const uniqueEmails = (emails) => {
 
 const buildSeedMarkdown = (stops) => {
   const lines = [
-    '# SF Long Weekend',
+    '# NYC Broadway Night',
     '',
-    'A scenic one-day loop hitting San Francisco\'s classic landmarks. Edit or delete this demo plan whenever you want - it only seeds once your itinerary list is empty.',
+    'A quick Midtown evening: leave the hotel room, walk to a Broadway show, then settle into dinner after curtain call. Edit or delete this demo plan whenever you want - it only seeds once your itinerary list is empty.',
+    '',
+    '## Timing',
+    '',
+    '- 5:30 PM - Freshen up at the hotel and get ready to walk over.',
+    '- 7:00 PM - Arrive for the Broadway show with time to find seats.',
+    '- 10:00 PM - Head to dinner nearby after the show lets out.',
     '',
     '## Stops',
     '',
@@ -176,10 +182,10 @@ const seedIfEmpty = async (store, prefix, list, ownerEmail, ownerHash) => {
   const now = new Date().toISOString()
   const plan = {
     id: SEED_PLAN_ID,
-    title: 'SF Long Weekend',
-    destination: 'San Francisco, CA',
-    body: buildSeedMarkdown(sfStops),
-    stops: sfStops,
+    title: 'NYC Broadway Night',
+    destination: 'New York, NY',
+    body: buildSeedMarkdown(nycBroadwayStops),
+    stops: nycBroadwayStops,
     createdAt: now,
     updatedAt: now,
     updatedBy: ownerEmail,

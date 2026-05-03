@@ -53,7 +53,7 @@ export function AuthProvider({ children }) {
         email: data.email,
         canAccessTravelPlans,
         canCreateTravelPlans,
-        isOwner: canCreateTravelPlans,
+        isOwner: !!data.isOwner,
       })
     } catch {
       setUser(null)
@@ -119,7 +119,7 @@ export function AuthProvider({ children }) {
     isSignedIn: !!user,
     isOwner: !!user?.isOwner,
     canAccessTravelPlans: !!(user?.canAccessTravelPlans || user?.isOwner),
-    canCreateTravelPlans: !!(user?.canCreateTravelPlans || user?.isOwner),
+    canCreateTravelPlans: !!user?.canCreateTravelPlans,
     gisReady,
     clientId,
     signOut,

@@ -23,7 +23,7 @@ export function canAccessTravelPlans(email) {
 }
 
 export function canCreateTravelPlans(email) {
-  return isOwnerEmail(email)
+  return !!normalizeEmail(email)
 }
 
 export function isOwnerEmail(email) {
