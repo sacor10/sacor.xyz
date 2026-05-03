@@ -512,10 +512,6 @@ export default function TravelPlanPage() {
     }
   }, [id, ownerHashParam, authLoading, canAccessTravelPlans])
 
-  useEffect(() => {
-    if (!editing) setEditBusy(false)
-  }, [editing])
-
   const handleDelete = async () => {
     if (!window.confirm('Delete this travel plan? This cannot be undone.')) return
     setDeleting(true)
@@ -666,10 +662,14 @@ export default function TravelPlanPage() {
         <EditForm
           plan={plan}
           ownerHash={ownerHashParam || (plan.isShared ? plan.ownerHash : '')}
-          onCancel={() => setEditing(false)}
+          onCancel={() => {
+            setEditBusy(false)
+            setEditing(false)
+          }}
           onBusyChange={setEditBusy}
           onSaved={(updated) => {
             setResult({ plan: updated })
+            setEditBusy(false)
             setEditing(false)
           }}
         />

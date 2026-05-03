@@ -10,6 +10,7 @@ const baseNavLinks = [
   { label: 'BLOG POSTS', to: '/blog' },
   { label: 'QUOTES',     to: '/quotes' },
   { label: 'DOWNLOADS',  to: '/ytmp4' },
+  { label: 'INSTA DL',   to: '/instagram-downloader' },
   { label: 'MTS LIVE',   to: '/mts' },
   { label: 'LIVE STOCKS', to: '/stocks' },
   { label: 'GUESTBOOK',  to: '/guestbook' },

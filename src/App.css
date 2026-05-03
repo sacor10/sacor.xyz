@@ -235,6 +235,72 @@
   border-bottom-color: #FFFFFF;
 }
 
+/* ---- Instagram downloader page ---- */
+.geocities .igdl-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.geocities .igdl-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.geocities .igdl-form input[type="url"] {
+  width: 100%;
+  box-sizing: border-box;
+  background: #000000;
+  color: #00FF00;
+  border: 3px inset #FFFF00;
+  font-family: "Courier New", monospace;
+  font-size: 15px;
+  padding: 8px;
+}
+
+.geocities .igdl-form input[type="url"]:disabled {
+  color: #808080;
+}
+
+.geocities .igdl-submit {
+  background: #C0C0C0;
+  border-top: 5px solid #FFFFFF;
+  border-left: 5px solid #FFFFFF;
+  border-right: 5px solid #404040;
+  border-bottom: 5px solid #404040;
+  color: #000080;
+  cursor: crosshair;
+  font-family: Impact, "Arial Black", sans-serif;
+  font-size: 24px;
+  padding: 12px 28px;
+}
+
+.geocities .igdl-submit:hover:not(:disabled) {
+  background: #FF00FF;
+  color: #FFFF00;
+  border-top-color: #404040;
+  border-left-color: #404040;
+  border-right-color: #FFFFFF;
+  border-bottom-color: #FFFFFF;
+}
+
+.geocities .igdl-submit:disabled {
+  color: #808080;
+  cursor: default;
+}
+
+.geocities .igdl-status {
+  background: #000000;
+  border: 3px ridge #00FFFF;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.geocities .igdl-status-error {
+  border-color: #FF00FF;
+}
+
 /* === Account / sign-in === */
 .geocities .header-account {
   margin-top: 10px;

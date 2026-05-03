@@ -121,6 +121,7 @@ const rightSidebar = (
               <ul className="favlinks">
                 <li><Link to="/blog">Slop Blog Archive</Link></li>
                 <li><Link to="/ytmp4">Downloadable EXEs</Link></li>
+                <li><Link to="/instagram-downloader">Instagram Video Downloader</Link></li>
                 <li><a href="https://github.com/sacor10/" target="_blank" rel="noopener noreferrer">My GitHub Dungeon</a></li>
                 <li><Link to="/webring">Parasitic Webring VIRUS &#9733;</Link></li>
                 <li><a href="https://sonicretro.org" target="_blank" rel="noopener noreferrer">Fan Pages</a></li>

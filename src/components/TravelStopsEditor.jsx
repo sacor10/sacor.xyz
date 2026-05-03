@@ -184,14 +184,6 @@ export default function TravelStopsEditor({ stops = [], onChange }) {
   const [jsonMessage, setJsonMessage] = useState('')
   const [viewModes, setViewModes] = useState(() => stops.map(initialViewMode))
 
-  useEffect(() => {
-    setViewModes((prev) => {
-      if (prev.length === stops.length) return prev
-      const next = stops.map((stop, i) => prev[i] ?? initialViewMode(stop))
-      return next
-    })
-  }, [stops])
-
   const setViewModeAt = (index, mode) => {
     setViewModes((prev) => {
       const next = [...prev]

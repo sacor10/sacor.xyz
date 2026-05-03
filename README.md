@@ -9,11 +9,15 @@ Most pages are static React (home, blog index/post, contact, guestbook, MTS, web
 - `/stocks` — candlestick chart + live price ticker (see below).
 - `/travel-plans` — private and shared markdown itinerary CRUD (see below).
 
+- `/instagram-downloader` - public Instagram Reel/post downloader backed by a separate Node API (see below).
+
 ## Scripts
 
 - `npm run dev` — Vite dev server (no Netlify Functions; `/stocks` and `/travel-plans` won't work).
 - `npx netlify dev` — Vite + Functions on `http://localhost:8888`.
 - `npm run build` / `npm run preview` / `npm run lint`.
+
+- `npm --prefix services/instagram-downloader run dev` - local Instagram downloader API on `http://localhost:8787`.
 
 ## Live Stocks (`/stocks`)
 
@@ -47,6 +51,35 @@ The `/stocks` page renders a candlestick chart with hourly OHLC data plus a live
 
 - `GET /.netlify/functions/substack-feed` &mdash; merged Substack RSS feed used by the blog index, sorted newest-first (30-minute in-memory cache, returns the previous payload on upstream failure). The list of source feeds is hard-coded in [`netlify/functions/substack-feed.mjs`](netlify/functions/substack-feed.mjs).
 - `GET|POST|DELETE /.netlify/functions/hit` &mdash; the GeoCities-style hit counter, backed by the Netlify Blobs `hits` store. `GET` reads the current count, `POST` increments, `DELETE` resets to 0.
+
+## Instagram Downloader
+
+The `/instagram-downloader` page posts public Instagram Reel/post URLs to a dedicated Node service instead of a Netlify Function. This avoids Netlify's synchronous function response and duration limits for multi-video ZIP downloads.
+
+### Running locally
+
+1. Install the service dependencies:
+   ```sh
+   npm --prefix services/instagram-downloader install
+   ```
+2. Start the API:
+   ```sh
+   npm --prefix services/instagram-downloader run dev
+   ```
+3. In another terminal, run the site with `npm run dev` or `npx netlify dev` and visit `/instagram-downloader`.
+
+### Config
+
+- `VITE_INSTAGRAM_DOWNLOADER_API_URL` - browser-facing API base URL.
+- `SITE_ORIGINS` - comma-separated CORS allowlist for the API.
+- `PORT` - API port, default `8787`.
+- `MAX_ITEMS` - maximum videos per post, default `20`.
+- `EXTRACT_TIMEOUT_MS`, `MEDIA_TIMEOUT_MS`, `MAX_VIDEO_BYTES` - downloader guardrails.
+
+### API
+
+- `GET /healthz` - returns `{ ok: true }`.
+- `POST /download` with JSON `{ "url": "https://www.instagram.com/reel/..." }` - returns one MP4 for a single public video or one ZIP for multiple public videos. Photo-only, private, login-required, or invalid URLs return JSON errors.
 
 ## Account / Google Sign-In
 
