@@ -5,6 +5,7 @@ import MtsPage from './pages/MtsPage'
 import WebringPage from './pages/WebringPage'
 import BlogIndexPage from './pages/BlogIndexPage'
 import BlogPostPage from './pages/BlogPostPage'
+import QuotesPage from './pages/QuotesPage'
 import ContactPage from './pages/ContactPage'
 import GuestbookPage from './pages/GuestbookPage'
 import StocksPage from './pages/StocksPage'
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="/webring" element={<WebringPage />} />
           <Route path="/blog" element={<BlogIndexPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
+          <Route path="/quotes" element={<QuotesPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/guestbook" element={<GuestbookPage />} />
           <Route path="/stocks" element={<StocksPage />} />

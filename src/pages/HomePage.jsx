@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom'
 import Layout from '../Layout'
 import HitCounter from '../components/HitCounter'
+import { pinnedQuotes } from '../data/quotes'
 
 const ROOSEVELT_CHANNEL_ID = 'UCrrkptlW7UtbiUHFjdsfKPg'
+const quotePreview = pinnedQuotes.slice(0, 3)
 
 const rightSidebar = (
   <>
@@ -47,7 +49,7 @@ const rightSidebar = (
 
     <br />
 
-    {/* RANDOM THOUGHT */}
+    {/* QUOTES FROM OTHERS */}
     <table
       width="100%"
       cellPadding="8"
@@ -60,7 +62,7 @@ const rightSidebar = (
         <tr>
           <td align="center" bgcolor="#FFFF00" className="section-bar-sm">
             <font face="Impact" size="4" color="#000000">
-              ~ THOUGHT OF THE DAY ~
+              ~ QUOTES FROM OTHERS ~
             </font>
           </td>
         </tr>
@@ -68,15 +70,27 @@ const rightSidebar = (
           <td bgcolor="#000000">
             <marquee behavior="scroll" direction="up" scrollamount="2" height="80">
               <font face="Comic Sans MS" size="3" color="#00FFFF">
-                &quot;Tum tum is full.&quot;
-                <br />
-                <br />
-                &quot;There is no more infnantile mindset than the belief that one day the hard work will just be over or that nothing but pleasure and hedonistic relaxation await.&quot;
-                <br />
-                <br />
-                &quot;Let me know when you get home safe.&quot;
+                {quotePreview.map((quote, index) => (
+                  <span key={quote.id}>
+                    <span style={{ whiteSpace: 'pre-line' }}>&quot;{quote.text}&quot;</span>
+                    <br />
+                    <font face="Courier New" size="2" color="#FFFF00">
+                      - {quote.speaker}
+                    </font>
+                    {index < quotePreview.length - 1 && (
+                      <>
+                        <br />
+                        <br />
+                      </>
+                    )}
+                  </span>
+                ))}
               </font>
             </marquee>
+            <br />
+            <center>
+              <Link to="/quotes" className="navbtn-link">&#9733; MORE QUOTES &#9733;</Link>
+            </center>
           </td>
         </tr>
       </tbody>

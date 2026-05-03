@@ -8,6 +8,7 @@ const baseNavLinks = [
   { label: 'HOME',       to: '/' },
   { label: 'ABOUT ME',   to: '/#about-me' },
   { label: 'BLOG POSTS', to: '/blog' },
+  { label: 'QUOTES',     to: '/quotes' },
   { label: 'DOWNLOADS',  to: '/ytmp4' },
   { label: 'MTS LIVE',   to: '/mts' },
   { label: 'LIVE STOCKS', to: '/stocks' },
@@ -30,6 +31,7 @@ function useMediaQuery(query) {
 }
 
 const PANE_LABELS = ['Show navigation', 'Show main content', 'Show sidebar']
+const ownerNavIndex = baseNavLinks.findIndex((nav) => nav.label === 'GUESTBOOK')
 
 export default function Layout({ mainContent, rightSidebar }) {
   const isMobile = useMediaQuery('(max-width: 768px)')
@@ -38,7 +40,7 @@ export default function Layout({ mainContent, rightSidebar }) {
   const [pane, setPane] = useState(1)
   const { canAccessTravelPlans } = useAuth()
   const navLinks = canAccessTravelPlans
-    ? [...baseNavLinks.slice(0, 6), ownerNavLink, ...baseNavLinks.slice(6)]
+    ? [...baseNavLinks.slice(0, ownerNavIndex), ownerNavLink, ...baseNavLinks.slice(ownerNavIndex)]
     : baseNavLinks
   const viewportRef = useRef(null)
   const paneRef = useRef(pane)
