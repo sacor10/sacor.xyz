@@ -25,7 +25,7 @@ export const quotes = [
   },
   {
     id: 'one-with-everything-yet-all-without-the-one',
-    text: 'With life we find over and over again a connection to the past that helps us define the future. Those departed are one with everything, yet all who remain behind them are without. To celebrate a good life is to celebrate an impact that was profound enough to cause you to change the way you behave. That person is with you. You are never without. The feeling of loss is a sadness that is, for the self, felt for the closed door that once was open to it. Over time, the door is appropriately shut, but only opened when you are gently pushed towards it. Opening and revealing an idea, a thought, or a memory that comfortingly soothes the process of making your decision. That is that person working through you. You need to listen.',
+    text: 'With life we find over and over again a connection to the past that helps us define the future. Those departed are one with everything, yet all who remain behind them are without. To celebrate a good life is to celebrate an impact that was profound enough to cause you to change the way you behave. That person is with you. You are never without. The feeling of loss is a sadness that is, for the self, felt for the closed door that once was open to it. Over time, you are able to accept the fact that the door is shut, but you now have an instinct for the door to be opened when you are gently pushed towards it. Opening and revealing an idea, a thought, or a memory that comfortingly soothes the process of making your decision. That is that person working through you. You need to listen.',
     speaker: 'me',
     date: 'Undated',
     source: 'Saved quote',
