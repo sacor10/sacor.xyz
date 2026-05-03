@@ -15,7 +15,7 @@ export const quotes = [
   },
   {
     id: 'hard-work-is-not-over',
-    text: 'There is no more infnantile mindset than the belief that one day the hard work will just be over or that nothing but pleasure and hedonistic relaxation await.',
+    text: 'There is no more infantile mindset than the belief that one day the hard work will just be over or that nothing but pleasure and hedonistic relaxation await.',
     speaker: 'Anonymous',
     date: 'February 1824',
     source: 'Saved quote',
