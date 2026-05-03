@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import Layout from '../Layout'
 import HitCounter from '../components/HitCounter'
 import StockChart from '../components/StockChart'
+import { useAuth } from '../auth/useAuth'
 
 const QUICK_PICKS = ['GLD', 'GDX', 'BTC-USD', 'NVDA']
+const MAX_PINNED_SYMBOLS = 20
 const POLL_MS = 3000
 const SYMBOL_RE = /^[A-Z.-]{1,8}$/
 
@@ -19,6 +21,17 @@ const formatChange = (price, pct) => {
 const formatTime = (ts) => {
   if (!ts) return '--'
   return new Date(ts * 1000).toLocaleTimeString()
+}
+
+const normalizePinnedSymbols = (items) => {
+  const symbols = []
+  for (const item of Array.isArray(items) ? items : []) {
+    const next = String(item ?? '').trim().toUpperCase()
+    if (!SYMBOL_RE.test(next) || symbols.includes(next)) continue
+    symbols.push(next)
+    if (symbols.length >= MAX_PINNED_SYMBOLS) break
+  }
+  return symbols
 }
 
 function Sidebar() {
@@ -95,11 +108,43 @@ function Sidebar() {
 }
 
 export default function StocksPage() {
+  const { loading: authLoading, isSignedIn } = useAuth()
   const [symbol, setSymbol] = useState('GLD')
   const [input, setInput] = useState('GLD')
+  const [pinnedSymbols, setPinnedSymbols] = useState(QUICK_PICKS)
+  const [pinsError, setPinsError] = useState('')
+  const [pinsSaving, setPinsSaving] = useState(false)
   const [history, setHistory] = useState({ symbol: null, bars: [], status: 'loading' })
   const [quoteData, setQuoteData] = useState({ symbol: null, quote: null, error: null })
   const pollRef = useRef(null)
+
+  useEffect(() => {
+    if (authLoading) return
+    if (!isSignedIn) return
+
+    let cancelled = false
+    fetch('/.netlify/functions/stocks-pins', { credentials: 'same-origin' })
+      .then(async (r) => {
+        const body = await r.json().catch(() => ({}))
+        if (!r.ok) throw new Error(body?.error || `pins ${r.status}`)
+        return body
+      })
+      .then((data) => {
+        if (cancelled) return
+        const symbols = normalizePinnedSymbols(data?.symbols)
+        setPinnedSymbols(symbols.length > 0 ? symbols : QUICK_PICKS)
+        setPinsError('')
+      })
+      .catch(() => {
+        if (cancelled) return
+        setPinnedSymbols((current) => (current.length > 0 ? current : QUICK_PICKS))
+        setPinsError('Could not load saved pins. Using defaults for now.')
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [authLoading, isSignedIn])
 
   useEffect(() => {
     let cancelled = false
@@ -160,6 +205,42 @@ export default function StocksPage() {
   const bars = history.symbol === symbol ? history.bars : []
   const quote = quoteData.symbol === symbol ? quoteData.quote : null
   const quoteError = quoteData.symbol === symbol ? quoteData.error : null
+  const quickPicks = isSignedIn ? pinnedSymbols : QUICK_PICKS
+  const quickPickRows = []
+  for (let i = 0; i < quickPicks.length; i += 4) {
+    quickPickRows.push(quickPicks.slice(i, i + 4))
+  }
+
+  const savePinnedSymbols = async (items) => {
+    const symbols = normalizePinnedSymbols(items)
+    if (symbols.length === 0) {
+      setPinsError('Keep at least one pinned stock.')
+      return
+    }
+
+    setPinnedSymbols(symbols)
+    if (!isSignedIn) return
+
+    setPinsSaving(true)
+    setPinsError('')
+    try {
+      const res = await fetch('/.netlify/functions/stocks-pins', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ symbols }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data?.error || `Save failed (${res.status})`)
+      const saved = normalizePinnedSymbols(data?.symbols)
+      setPinnedSymbols(saved.length > 0 ? saved : symbols)
+      setPinsError('')
+    } catch (err) {
+      setPinsError(err.message || 'Could not save pins. Your changes are still shown here.')
+    } finally {
+      setPinsSaving(false)
+    }
+  }
 
   const submit = (e) => {
     e.preventDefault()
@@ -172,6 +253,37 @@ export default function StocksPage() {
   const pickSymbol = (s) => {
     setInput(s)
     setSymbol(s)
+  }
+
+  const pinCurrentSymbol = () => {
+    const next = symbol.trim().toUpperCase()
+    if (pinnedSymbols.includes(next)) {
+      setPinsError(`${next} is already pinned.`)
+      return
+    }
+    if (pinnedSymbols.length >= MAX_PINNED_SYMBOLS) {
+      setPinsError(`You can pin up to ${MAX_PINNED_SYMBOLS} stocks.`)
+      return
+    }
+    savePinnedSymbols([...pinnedSymbols, next])
+  }
+
+  const removePinnedSymbol = (s) => {
+    if (pinnedSymbols.length <= 1) {
+      setPinsError('Keep at least one pinned stock.')
+      return
+    }
+    savePinnedSymbols(pinnedSymbols.filter((item) => item !== s))
+  }
+
+  const movePinnedSymbol = (index, direction) => {
+    const nextIndex = index + direction
+    if (nextIndex < 0 || nextIndex >= pinnedSymbols.length) return
+    const next = [...pinnedSymbols]
+    const current = next[index]
+    next[index] = next[nextIndex]
+    next[nextIndex] = current
+    savePinnedSymbols(next)
   }
 
   const changePositive = (quote?.change ?? 0) >= 0
@@ -245,31 +357,101 @@ export default function StocksPage() {
                 >
                   &#9733; GO &#9733;
                 </button>
+                {isSignedIn && (
+                  <>
+                    &nbsp;
+                    <button
+                      type="button"
+                      className="navbtn-link"
+                      style={{ cursor: pinsSaving ? 'wait' : 'pointer' }}
+                      disabled={pinsSaving}
+                      onClick={pinCurrentSymbol}
+                    >
+                      &#9733; PIN {symbol} &#9733;
+                    </button>
+                  </>
+                )}
               </form>
               <br />
               <font face="Comic Sans MS" size="2" color="#FFFFFF">
-                Quick picks:
+                {isSignedIn ? 'Pinned stocks:' : 'Quick picks:'}
               </font>
               <br />
               <table cellPadding="0" cellSpacing="6" border="0">
                 <tbody>
-                  <tr>
-                    {QUICK_PICKS.map((s) => (
-                      <td key={s} className="navbtn">
-                        <a
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            pickSymbol(s)
-                          }}
-                        >
-                          &#9733; {s} &#9733;
-                        </a>
-                      </td>
-                    ))}
-                  </tr>
+                  {quickPickRows.map((row, rowIndex) => (
+                    <tr key={row.join('|')}>
+                      {row.map((s, rowSymbolIndex) => {
+                        const i = rowIndex * 4 + rowSymbolIndex
+                        return (
+                          <td key={s} className="navbtn">
+                            <a
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                pickSymbol(s)
+                              }}
+                            >
+                              &#9733; {s} &#9733;
+                            </a>
+                            {isSignedIn && (
+                              <>
+                                <br />
+                                <button
+                                  type="button"
+                                  className="navbtn-link"
+                                  style={{
+                                    cursor: pinsSaving || i === 0 ? 'default' : 'pointer',
+                                    padding: '2px 6px',
+                                  }}
+                                  disabled={pinsSaving || i === 0}
+                                  onClick={() => movePinnedSymbol(i, -1)}
+                                >
+                                  &#9664;
+                                </button>
+                                &nbsp;
+                                <button
+                                  type="button"
+                                  className="navbtn-link"
+                                  style={{
+                                    cursor: pinsSaving || pinnedSymbols.length <= 1 ? 'default' : 'pointer',
+                                    padding: '2px 6px',
+                                  }}
+                                  disabled={pinsSaving || pinnedSymbols.length <= 1}
+                                  onClick={() => removePinnedSymbol(s)}
+                                >
+                                  &#10005;
+                                </button>
+                                &nbsp;
+                                <button
+                                  type="button"
+                                  className="navbtn-link"
+                                  style={{
+                                    cursor: pinsSaving || i === pinnedSymbols.length - 1 ? 'default' : 'pointer',
+                                    padding: '2px 6px',
+                                  }}
+                                  disabled={pinsSaving || i === pinnedSymbols.length - 1}
+                                  onClick={() => movePinnedSymbol(i, 1)}
+                                >
+                                  &#9654;
+                                </button>
+                              </>
+                            )}
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
                 </tbody>
               </table>
+              {isSignedIn && (pinsError || pinsSaving) && (
+                <>
+                  <br />
+                  <font face="Comic Sans MS" size="2" color={pinsError ? '#FF00FF' : '#00FFFF'}>
+                    {pinsError || 'Saving pinned stocks...'}
+                  </font>
+                </>
+              )}
             </td>
           </tr>
         </tbody>

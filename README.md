@@ -48,6 +48,7 @@ The `/stocks` page renders a candlestick chart with hourly OHLC data plus a live
 
 - `GET /.netlify/functions/stocks-history?symbol=AAPL` &mdash; ~1 month of hourly OHLC bars (5-minute in-memory cache).
 - `GET /.netlify/functions/stocks-quote?symbol=AAPL` &mdash; current price, change, change %, timestamp.
+- `GET|PUT /.netlify/functions/stocks-pins` &mdash; signed-in user's pinned stock symbols, backed by Netlify Blobs.
 
 ## Other Endpoints
 
