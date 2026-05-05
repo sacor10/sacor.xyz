@@ -35,10 +35,11 @@ function useMediaQuery(query) {
 const PANE_LABELS = ['Show navigation', 'Show main content', 'Show sidebar']
 const ownerNavIndex = baseNavLinks.findIndex((nav) => nav.label === 'GUESTBOOK')
 
+const LOCKED_ZONE_SELECTOR = '.itinerary-map-zone, .leaflet-container, .stock-chart-zone'
+
 export default function Layout({ mainContent, rightSidebar }) {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const location = useLocation()
-  const swipeDisabled = location.pathname.startsWith('/travel-plans/')
   const [pane, setPane] = useState(1)
   const { canAccessTravelPlans } = useAuth()
   const navLinks = canAccessTravelPlans
@@ -46,6 +47,7 @@ export default function Layout({ mainContent, rightSidebar }) {
     : baseNavLinks
   const viewportRef = useRef(null)
   const paneRef = useRef(pane)
+  const pathRef = useRef(location.pathname)
   const swipeRef = useRef({ active: false, pointerId: null, x: 0, y: 0, axis: null, startPane: 1 })
 
   useEffect(() => {
@@ -53,16 +55,19 @@ export default function Layout({ mainContent, rightSidebar }) {
   }, [pane])
 
   useEffect(() => {
+    pathRef.current = location.pathname
+  }, [location.pathname])
+
+  useEffect(() => {
     if (!isMobile) return
-    if (swipeDisabled) return
     const vp = viewportRef.current
     if (!vp) return
 
-    const pointerInMapZone = (e) => {
-      if (e.target instanceof Element && e.target.closest('.itinerary-map-zone, .leaflet-container')) {
+    const pointerInLockedZone = (e) => {
+      if (e.target instanceof Element && e.target.closest(LOCKED_ZONE_SELECTOR)) {
         return true
       }
-      const zones = document.querySelectorAll('.itinerary-map-zone, .leaflet-container')
+      const zones = document.querySelectorAll(LOCKED_ZONE_SELECTOR)
       for (const zone of zones) {
         const r = zone.getBoundingClientRect()
         if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
@@ -85,7 +90,9 @@ export default function Layout({ mainContent, rightSidebar }) {
 
     const onPointerDown = (e) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return
-      if (pointerInMapZone(e)) return
+      if (pointerInLockedZone(e)) return
+      const onTravelPlan = pathRef.current.startsWith('/travel-plans/')
+      if (onTravelPlan && paneRef.current !== 0) return
 
       swipeRef.current = {
         active: true,
@@ -104,7 +111,7 @@ export default function Layout({ mainContent, rightSidebar }) {
       const swipe = swipeRef.current
       if (!swipe.active || e.pointerId !== swipe.pointerId) return
 
-      if (pointerInMapZone(e)) {
+      if (pointerInLockedZone(e)) {
         resetSwipe()
         return
       }
@@ -123,7 +130,7 @@ export default function Layout({ mainContent, rightSidebar }) {
       const swipe = swipeRef.current
       if (!swipe.active || e.pointerId !== swipe.pointerId) return
 
-      if (pointerInMapZone(e)) {
+      if (pointerInLockedZone(e)) {
         resetSwipe()
         return
       }
@@ -148,7 +155,7 @@ export default function Layout({ mainContent, rightSidebar }) {
       vp.removeEventListener('pointerdown', onPointerDown)
       cleanup()
     }
-  }, [isMobile, swipeDisabled])
+  }, [isMobile])
 
   const goToPane = (i) => {
     setPane(i)
@@ -261,6 +268,18 @@ export default function Layout({ mainContent, rightSidebar }) {
 
               {/* ========== MAIN + RIGHT CONTENT ========== */}
               <td width="56%" bgcolor="#2E0854" className="main-content" valign="top">
+                {isMobile && (
+                  <center className="mobile-menu-bar">
+                    <button
+                      type="button"
+                      className="mobile-menu-btn"
+                      onClick={() => goToPane(0)}
+                      aria-label="Show navigation menu"
+                    >
+                      &#9776; MENU
+                    </button>
+                  </center>
+                )}
                 {mainContent}
               </td>
 
