@@ -241,13 +241,6 @@ export default function TravelStopsEditor({ stops = [], onChange }) {
     setViewModeAt(index, 'advanced')
   }
 
-  const toggleAdvanced = () => {
-    setJsonError('')
-    setJsonMessage('')
-    if (!advancedOpen) setJsonText(JSON.stringify(stopsForJsonDraft(stops), null, 2))
-    setAdvancedOpen(!advancedOpen)
-  }
-
   const applyJson = () => {
     setJsonError('')
     setJsonMessage('')
@@ -270,10 +263,21 @@ export default function TravelStopsEditor({ stops = [], onChange }) {
       onChange(nextStops)
       setViewModes(nextStops.map(initialViewMode))
       setJsonMessage(`Applied ${nextStops.length} stop${nextStops.length === 1 ? '' : 's'}.`)
+      setAdvancedOpen(false)
     } catch (err) {
       setJsonError(err.message)
+    }
+  }
+
+  const toggleAdvanced = () => {
+    if (advancedOpen) {
+      applyJson()
       return
     }
+    setJsonError('')
+    setJsonMessage('')
+    setJsonText(JSON.stringify(stopsForJsonDraft(stops), null, 2))
+    setAdvancedOpen(true)
   }
 
   return (
