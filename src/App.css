@@ -734,11 +734,30 @@
     background: #4B0082;
   }
 
-  /* Map is its own touch zone — browser must route all touches starting
-     on the map to Leaflet, never to ancestor scroll/pane behavior. */
+  /* Map and chart are their own touch zones — the browser must route all
+     touches starting on them to the inner widget, never to ancestor
+     scroll/pane behavior. */
   .geocities .itinerary-map-zone,
-  .geocities .leaflet-container {
+  .geocities .leaflet-container,
+  .geocities .stock-chart-zone {
     touch-action: none !important;
     overscroll-behavior: contain;
+  }
+
+  .geocities .mobile-menu-bar {
+    margin: 0 0 8px;
+  }
+  .geocities .mobile-menu-btn {
+    background: #000080;
+    color: #FFFF00;
+    border: 3px ridge #FF00FF;
+    font-family: "Impact", "Arial Black", sans-serif;
+    font-size: 16px;
+    padding: 6px 16px;
+    cursor: crosshair;
+  }
+  .geocities .mobile-menu-btn:active {
+    background: #4B0082;
+    color: #00FFFF;
   }
 }

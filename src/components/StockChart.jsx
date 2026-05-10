@@ -76,7 +76,8 @@ export default function StockChart({ bars, livePrice }) {
   return (
     <div
       ref={containerRef}
-      style={{ width: '100%', height: '360px', backgroundColor: '#000000' }}
+      className="stock-chart-zone"
+      style={{ width: '100%', height: '360px', backgroundColor: '#000000', touchAction: 'none' }}
     />
   )
 }
