@@ -1,31 +1,11 @@
 import { useState } from 'react'
+import JSZip from 'jszip'
 import Layout from '../Layout'
 
-const API_BASE = (import.meta.env.VITE_X_DOWNLOADER_API_URL || 'http://localhost:8788')
-  .replace(/\/+$/, '')
-
+const API_ENDPOINT = '/.netlify/functions/x-download'
 const DEFAULT_ERROR = 'No downloadable public X/Twitter videos were found for that URL.'
 
-function getDownloadFilename(disposition) {
-  if (!disposition) return 'x-download'
-
-  const utf8 = disposition.match(/filename\*=UTF-8''([^;]+)/i)
-  if (utf8?.[1]) {
-    try {
-      return decodeURIComponent(utf8[1].trim())
-    } catch {
-      return utf8[1].trim()
-    }
-  }
-
-  const quoted = disposition.match(/filename="([^"]+)"/i)
-  if (quoted?.[1]) return quoted[1].trim()
-
-  const plain = disposition.match(/filename=([^;]+)/i)
-  return plain?.[1]?.trim() || 'x-download'
-}
-
-async function readDownloadError(response) {
+async function readJsonError(response) {
   const body = await response.json().catch(() => null)
   return body?.message || body?.error || DEFAULT_ERROR
 }
@@ -39,6 +19,17 @@ function saveBlob(blob, filename) {
   link.click()
   link.remove()
   window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+}
+
+async function fetchVideoBlob(url) {
+  const res = await fetch(url, { credentials: 'omit' })
+  if (!res.ok) throw new Error(`Could not fetch video (HTTP ${res.status}).`)
+  return res.blob()
+}
+
+function zipBaseName(filename) {
+  const trimmed = filename.replace(/\.mp4$/i, '').replace(/-\d+$/, '')
+  return `${trimmed || 'x-videos'}-videos.zip`
 }
 
 function Sidebar() {
@@ -132,24 +123,45 @@ export default function XDownloaderPage() {
     }
 
     setStatus('loading')
-    setMessage('Finding public videos and preparing your download...')
+    setMessage('Finding public videos...')
 
     try {
-      const response = await fetch(`${API_BASE}/download`, {
+      const response = await fetch(API_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: targetUrl }),
       })
 
       if (!response.ok) {
-        throw new Error(await readDownloadError(response))
+        throw new Error(await readJsonError(response))
       }
 
-      const filename = getDownloadFilename(response.headers.get('Content-Disposition'))
-      const blob = await response.blob()
-      saveBlob(blob, filename)
+      const { videos } = await response.json()
+      if (!Array.isArray(videos) || videos.length === 0) {
+        throw new Error(DEFAULT_ERROR)
+      }
+
+      if (videos.length === 1) {
+        setMessage(`Downloading ${videos[0].filename}...`)
+        const blob = await fetchVideoBlob(videos[0].url)
+        saveBlob(blob, videos[0].filename)
+        setStatus('success')
+        setMessage(`Download started: ${videos[0].filename}`)
+        return
+      }
+
+      const zip = new JSZip()
+      for (let i = 0; i < videos.length; i += 1) {
+        setMessage(`Downloading ${i + 1} of ${videos.length}...`)
+        const blob = await fetchVideoBlob(videos[i].url)
+        zip.file(videos[i].filename, blob)
+      }
+      setMessage(`Packing ${videos.length} videos into a ZIP...`)
+      const zipBlob = await zip.generateAsync({ type: 'blob' })
+      const zipName = zipBaseName(videos[0].filename)
+      saveBlob(zipBlob, zipName)
       setStatus('success')
-      setMessage(`Download started: ${filename}`)
+      setMessage(`Download started: ${zipName}`)
     } catch (error) {
       setStatus('error')
       setMessage(error?.message || DEFAULT_ERROR)
@@ -241,7 +253,7 @@ export default function XDownloaderPage() {
 
       <center>
         <font face="Comic Sans MS" size="2" color="#888888">
-          Powered by yt-dlp &nbsp;&#9733;&nbsp; Public X/Twitter media only &nbsp;&#9733;&nbsp;
+          Public X/Twitter media only &nbsp;&#9733;&nbsp;
           <a href="mailto:vestibule@sacor.xyz">report bugs here</a>
         </font>
       </center>

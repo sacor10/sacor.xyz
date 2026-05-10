@@ -86,32 +86,30 @@ The `/instagram-downloader` page posts public Instagram Reel/post URLs to a dedi
 
 ## X Downloader
 
-The `/x-downloader` page posts public X/Twitter status URLs to a dedicated Node service. It follows the Instagram downloader service shape so larger multi-video ZIP responses do not run through Netlify Functions.
+The `/x-downloader` page is served entirely by Netlify: the React page calls `/.netlify/functions/x-download`, which resolves the post via X's public syndication endpoint and returns JSON metadata. The browser then fetches each MP4 directly from `videos.twimg.com` and (for multi-video posts) zips them client-side with [JSZip](https://stuk.github.io/jszip/).
+
+This sidesteps the Lambda 6 MB response cap and the function timeout — bytes never pass through the function.
 
 ### Running locally
 
-1. Install the service dependencies:
-   ```sh
-   npm --prefix services/x-downloader install
-   ```
-2. Start the API:
-   ```sh
-   npm --prefix services/x-downloader run dev
-   ```
-3. In another terminal, run the site with `npm run dev` or `npx netlify dev` and visit `/x-downloader`.
+1. `npx netlify dev` from the repo root.
+2. Visit `http://localhost:8888/x-downloader`.
 
-### Config
+No service or env var setup is required.
 
-- `VITE_X_DOWNLOADER_API_URL` - browser-facing API base URL.
-- `SITE_ORIGINS` - comma-separated CORS allowlist for the API.
-- `PORT` - API port, default `8788`.
-- `MAX_ITEMS` - maximum videos per post, default `20`.
-- `EXTRACT_TIMEOUT_MS`, `MEDIA_TIMEOUT_MS`, `MAX_VIDEO_BYTES` - downloader guardrails.
+### Endpoint
 
-### API
+- `POST /.netlify/functions/x-download` with JSON `{ "url": "https://x.com/user/status/123..." }` — returns `{ "videos": [{ "url", "filename", "width", "height" }] }` for public posts. Image-only, private, login-required, or invalid URLs return `{ code, message }` with an appropriate status.
 
-- `GET /healthz` - returns `{ ok: true }`.
-- `POST /download` with JSON `{ "url": "https://x.com/user/status/123..." }` - returns one MP4 for a single public video or one ZIP for multiple public videos. Image-only, private, login-required, or invalid URLs return JSON errors.
+### Known limits
+
+- The syndication endpoint covers normal public posts and reposts. Protected accounts, Communities-only posts, age-restricted media, Spaces, and some live videos won't resolve and surface as `no_videos` (404).
+- The undocumented syndication `token` algorithm has been stable for years but could break without notice — treat extractor breakage as a maintenance risk.
+- The browser ZIP path requires `videos.twimg.com` to permit cross-origin GETs (currently does). Single-video downloads also fetch the blob in the browser; if Twitter ever locks CORS, the page will need a fallback.
+
+### Legacy local Express service
+
+`services/x-downloader/` still contains the original yt-dlp-backed Express service, with its own `npm --prefix services/x-downloader run dev` script. It's not used by the deployed site and is kept around for local experimentation only.
 
 ## Account / Google Sign-In
 
