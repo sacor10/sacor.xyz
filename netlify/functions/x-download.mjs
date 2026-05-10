@@ -106,6 +106,7 @@ function collectVideos(payload, statusId, titleHint) {
       : ''
     out.push({
       url: best.url,
+      proxyUrl: `/.netlify/functions/x-video?url=${encodeURIComponent(best.url)}`,
       filename: `${titleBase}${suffix}.mp4`,
       width,
       height,

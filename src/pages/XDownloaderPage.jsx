@@ -143,7 +143,7 @@ export default function XDownloaderPage() {
 
       if (videos.length === 1) {
         setMessage(`Downloading ${videos[0].filename}...`)
-        const blob = await fetchVideoBlob(videos[0].url)
+        const blob = await fetchVideoBlob(videos[0].proxyUrl || videos[0].url)
         saveBlob(blob, videos[0].filename)
         setStatus('success')
         setMessage(`Download started: ${videos[0].filename}`)
@@ -153,7 +153,7 @@ export default function XDownloaderPage() {
       const zip = new JSZip()
       for (let i = 0; i < videos.length; i += 1) {
         setMessage(`Downloading ${i + 1} of ${videos.length}...`)
-        const blob = await fetchVideoBlob(videos[i].url)
+        const blob = await fetchVideoBlob(videos[i].proxyUrl || videos[i].url)
         zip.file(videos[i].filename, blob)
       }
       setMessage(`Packing ${videos.length} videos into a ZIP...`)
