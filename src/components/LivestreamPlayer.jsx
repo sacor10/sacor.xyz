@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react'
+
 export function LivestreamPlayer({
   src,
   title,
@@ -6,8 +8,27 @@ export function LivestreamPlayer({
   expandLabel = 'STRETCH PLAYER',
   collapseLabel = 'SHRINK PLAYER',
 }) {
+  const frameWrapRef = useRef(null)
   const buttonLabel = isExpanded ? collapseLabel : expandLabel
   const tableClassName = 'bevelbox livestream-player' + (isExpanded ? ' livestream-player-expanded' : '')
+
+  useEffect(() => {
+    if (!isExpanded) return
+
+    const frameWrap = frameWrapRef.current
+    if (!frameWrap) return
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const frame = requestAnimationFrame(() => {
+      frameWrap.scrollIntoView({
+        block: 'center',
+        inline: 'nearest',
+        behavior: prefersReducedMotion ? 'auto' : 'smooth',
+      })
+    })
+
+    return () => cancelAnimationFrame(frame)
+  }, [isExpanded])
 
   return (
     <table
@@ -32,7 +53,7 @@ export function LivestreamPlayer({
                 &#9733; {buttonLabel} &#9733;
               </button>
             </div>
-            <div className="livestream-frame-wrap">
+            <div className="livestream-frame-wrap" ref={frameWrapRef}>
               <iframe
                 className="livestream-frame"
                 src={src}

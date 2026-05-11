@@ -6,7 +6,7 @@ import { LivestreamPlayer, LivestreamWideNotice } from '../components/Livestream
 import { pinnedQuotes } from '../data/quotes'
 
 const ROOSEVELT_CHANNEL_ID = 'UCrrkptlW7UtbiUHFjdsfKPg'
-const ROOSEVELT_STREAM_SRC = `https://www.youtube.com/embed/live_stream?channel=${ROOSEVELT_CHANNEL_ID}&autoplay=1&mute=1&modestbranding=1&rel=0&playsinline=1`
+const ROOSEVELT_STREAM_SRC = `https://www.youtube.com/embed/live_stream?channel=${ROOSEVELT_CHANNEL_ID}&autoplay=1&mute=0&modestbranding=1&rel=0&playsinline=1`
 const quotePreview = pinnedQuotes.slice(0, 3)
 
 const rightSidebar = (
