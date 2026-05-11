@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 
 export function LivestreamPlayer({
   src,
@@ -9,8 +9,51 @@ export function LivestreamPlayer({
   collapseLabel = 'SHRINK PLAYER',
 }) {
   const frameWrapRef = useRef(null)
+  const iframeRef = useRef(null)
   const buttonLabel = isExpanded ? collapseLabel : expandLabel
   const tableClassName = 'bevelbox livestream-player' + (isExpanded ? ' livestream-player-expanded' : '')
+  const playerSrc = useMemo(() => {
+    if (typeof window === 'undefined') return src
+
+    try {
+      const url = new URL(src)
+      url.searchParams.set('origin', window.location.origin)
+      return url.toString()
+    } catch {
+      return src
+    }
+  }, [src])
+
+  const sendYoutubeCommand = useCallback((func, args = []) => {
+    iframeRef.current?.contentWindow?.postMessage(
+      JSON.stringify({ event: 'command', func, args }),
+      'https://www.youtube.com'
+    )
+  }, [])
+
+  const requestPlayback = useCallback((withSound = false) => {
+    sendYoutubeCommand('playVideo')
+    if (withSound) {
+      sendYoutubeCommand('setVolume', [100])
+      sendYoutubeCommand('unMute')
+    }
+  }, [sendYoutubeCommand])
+
+  const handleToggleExpanded = () => {
+    requestPlayback(true)
+    onToggleExpanded()
+  }
+
+  useEffect(() => {
+    const withSound = isExpanded
+    const attempts = [150, 500, 1000, 1800].map((delay) => (
+      window.setTimeout(() => requestPlayback(withSound), delay)
+    ))
+
+    return () => {
+      attempts.forEach((attempt) => window.clearTimeout(attempt))
+    }
+  }, [isExpanded, playerSrc, requestPlayback])
 
   useEffect(() => {
     if (!isExpanded) return
@@ -48,20 +91,22 @@ export function LivestreamPlayer({
                 className="navbtn-link livestream-toggle"
                 aria-pressed={isExpanded}
                 aria-label={`${buttonLabel} for ${title}`}
-                onClick={onToggleExpanded}
+                onClick={handleToggleExpanded}
               >
                 &#9733; {buttonLabel} &#9733;
               </button>
             </div>
             <div className="livestream-frame-wrap" ref={frameWrapRef}>
               <iframe
+                ref={iframeRef}
                 className="livestream-frame"
-                src={src}
+                src={playerSrc}
                 title={title}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 referrerPolicy="strict-origin-when-cross-origin"
                 allowFullScreen
                 frameBorder="0"
+                onLoad={() => requestPlayback(isExpanded)}
               />
             </div>
           </td>

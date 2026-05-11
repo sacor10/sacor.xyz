@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Layout from '../Layout'
 import { LivestreamPlayer, LivestreamWideNotice } from '../components/LivestreamPlayer'
 
-const MTS_STREAM_SRC = 'https://www.youtube.com/embed/aW3t8CxWmjI?autoplay=1&mute=0&modestbranding=1&rel=0&playsinline=1'
+const MTS_STREAM_SRC = 'https://www.youtube.com/embed/aW3t8CxWmjI?autoplay=1&mute=1&enablejsapi=1&modestbranding=1&rel=0&playsinline=1'
 
 function Sidebar() {
   return (
