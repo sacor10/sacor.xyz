@@ -37,7 +37,7 @@ const ownerNavIndex = baseNavLinks.findIndex((nav) => nav.label === 'GUESTBOOK')
 
 const LOCKED_ZONE_SELECTOR = '.itinerary-map-zone, .leaflet-container, .stock-chart-zone'
 
-export default function Layout({ mainContent, rightSidebar }) {
+export default function Layout({ mainContent, rightSidebar, pageWideContent = null }) {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const location = useLocation()
   const [pane, setPane] = useState(1)
@@ -214,6 +214,24 @@ export default function Layout({ mainContent, rightSidebar }) {
       </center>
 
       <br />
+
+      {pageWideContent && (
+        <>
+          <center className="page-wide-mount">
+            <table width="95%" cellPadding="0" cellSpacing="0" border="0">
+              <tbody>
+                <tr>
+                  <td bgcolor="#2E0854" className="page-wide-content" valign="top">
+                    {pageWideContent}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </center>
+
+          <br />
+        </>
+      )}
 
       {/* ============ MAIN 3-COLUMN LAYOUT ============ */}
       <div

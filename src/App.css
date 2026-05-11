@@ -99,6 +99,54 @@
   vertical-align: top;
 }
 
+.geocities .page-wide-content {
+  box-sizing: border-box;
+}
+
+.geocities .livestream-player {
+  table-layout: fixed;
+}
+
+.geocities .livestream-player-expanded {
+  border-width: 3px;
+  padding: 0;
+}
+
+.geocities .livestream-player-expanded .livestream-toolbar {
+  margin: 4px 0;
+}
+
+.geocities .livestream-player-expanded .livestream-frame-wrap {
+  border-width: 2px;
+}
+
+.geocities .livestream-toolbar {
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.geocities .livestream-toggle {
+  cursor: crosshair;
+}
+
+.geocities .livestream-frame-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000000;
+  border: 3px inset #00FFFF;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.geocities .livestream-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
 .geocities .hero-glow {
   filter: drop-shadow(0 0 6px #FF00FF);
 }
@@ -689,6 +737,7 @@
 /* === Mobile swipeable panes === */
 @media (max-width: 768px) {
   .geocities .header-table { width: 100% !important; }
+  .geocities .page-wide-mount > table { width: 100% !important; }
 
   .geocities .pane-viewport {
     overflow: hidden;

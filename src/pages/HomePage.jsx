@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../Layout'
 import HitCounter from '../components/HitCounter'
+import { LivestreamPlayer, LivestreamWideNotice } from '../components/LivestreamPlayer'
 import { pinnedQuotes } from '../data/quotes'
 
 const ROOSEVELT_CHANNEL_ID = 'UCrrkptlW7UtbiUHFjdsfKPg'
+const ROOSEVELT_STREAM_SRC = `https://www.youtube.com/embed/live_stream?channel=${ROOSEVELT_CHANNEL_ID}&autoplay=1&mute=1&modestbranding=1&rel=0&playsinline=1`
 const quotePreview = pinnedQuotes.slice(0, 3)
 
 const rightSidebar = (
@@ -153,8 +156,9 @@ const rightSidebar = (
   </>
 )
 
-const mainContent = (
-  <>
+function MainContent({ isStreamExpanded, onToggleStream }) {
+  return (
+    <>
     <center>
       <font face="Impact" size="6" color="#00FFFF" className="hero-glow">
         this is Sacor.xyz
@@ -235,37 +239,19 @@ const mainContent = (
 
     <br />
 
-    <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox" bgcolor="#000000">
-      <tbody>
-        <tr>
-          <td bgcolor="#000000" align="center">
-            <div
-              style={{
-                position: 'relative',
-                width: '100%',
-                paddingTop: '56.25%',
-              }}
-            >
-              <iframe
-                src={`https://www.youtube.com/embed/live_stream?channel=${ROOSEVELT_CHANNEL_ID}&autoplay=1&mute=1&modestbranding=1&rel=0&playsinline=1`}
-                title="Theodore Roosevelt Memorial Live"
-                allow="autoplay; encrypted-media; picture-in-picture"
-                allowFullScreen
-                frameBorder="0"
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '100%',
-                  border: 0,
-                }}
-              />
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    {isStreamExpanded ? (
+      <LivestreamWideNotice
+        title="Theodore Roosevelt Memorial Live"
+        onCollapse={onToggleStream}
+      />
+    ) : (
+      <LivestreamPlayer
+        src={ROOSEVELT_STREAM_SRC}
+        title="Theodore Roosevelt Memorial Live"
+        isExpanded={false}
+        onToggleExpanded={onToggleStream}
+      />
+    )}
 
     <br />
 
@@ -281,8 +267,32 @@ const mainContent = (
 
     <br />
   </>
-)
+  )
+}
 
 export default function HomePage() {
-  return <Layout mainContent={mainContent} rightSidebar={rightSidebar} />
+  const [isStreamExpanded, setIsStreamExpanded] = useState(false)
+  const toggleStream = () => setIsStreamExpanded((expanded) => !expanded)
+
+  return (
+    <Layout
+      mainContent={
+        <MainContent
+          isStreamExpanded={isStreamExpanded}
+          onToggleStream={toggleStream}
+        />
+      }
+      rightSidebar={rightSidebar}
+      pageWideContent={
+        isStreamExpanded ? (
+          <LivestreamPlayer
+            src={ROOSEVELT_STREAM_SRC}
+            title="Theodore Roosevelt Memorial Live"
+            isExpanded
+            onToggleExpanded={toggleStream}
+          />
+        ) : null
+      }
+    />
+  )
 }

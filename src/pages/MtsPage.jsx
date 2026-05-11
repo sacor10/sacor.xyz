@@ -1,4 +1,8 @@
+import { useState } from 'react'
 import Layout from '../Layout'
+import { LivestreamPlayer, LivestreamWideNotice } from '../components/LivestreamPlayer'
+
+const MTS_STREAM_SRC = 'https://www.youtube.com/embed/aW3t8CxWmjI?autoplay=1&mute=1&modestbranding=1&rel=0&playsinline=1'
 
 function Sidebar() {
   return (
@@ -103,7 +107,7 @@ function Sidebar() {
   )
 }
 
-function Player() {
+function Player({ isStreamExpanded, onToggleStream }) {
   return (
     <>
       <center>
@@ -154,7 +158,7 @@ function Player() {
             <tr>
               <td align="center" bgcolor="#00FFFF" className="section-bar">
                 <font face="Impact" size="4" color="#000000">
-                  ~ WHERE TO WATCH ~
+                  ~ THE LIVE FEED ~
                 </font>
               </td>
             </tr>
@@ -164,40 +168,44 @@ function Player() {
 
       <br />
 
-      <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="bevelbox" bgcolor="#000000">
-        <tbody>
-          <tr>
-            <td bgcolor="#000000" align="center">
-              <font face="Comic Sans MS" size="3" color="#00FFFF">
-                MTS goes live <b className="hotpink">09:00 PT weekdays</b>!!!
-                <br />
-                <br />
-                <font color="#FFFF00">Watch the simulcast at:</font>
-                <br />
-                <br />
-                <a
-                  href="https://www.mts.now/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="navbtn-link"
-                >
-                  &#9733; mts.now &#9733;
-                </a>
-                <br />
-                <br />
-                <a
-                  href="https://x.com/MTSlive"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="navbtn-link"
-                >
-                  &#9733; @MTSlive on X &#9733;
-                </a>
-              </font>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      {isStreamExpanded ? (
+        <LivestreamWideNotice title="MTS Livestream" onCollapse={onToggleStream} />
+      ) : (
+        <LivestreamPlayer
+          src={MTS_STREAM_SRC}
+          title="MTS Livestream"
+          isExpanded={false}
+          onToggleExpanded={onToggleStream}
+        />
+      )}
+
+      <br />
+
+      <center>
+        <font face="Comic Sans MS" size="3" color="#00FFFF">
+          MTS goes live <b className="hotpink">09:00 PT weekdays</b>!!!
+          <br />
+          <br />
+          <a
+            href="https://www.mts.now/"
+            target="_blank"
+            rel="noreferrer"
+            className="navbtn-link"
+          >
+            &#9733; mts.now &#9733;
+          </a>
+          <br />
+          <br />
+          <a
+            href="https://x.com/MTSlive"
+            target="_blank"
+            rel="noreferrer"
+            className="navbtn-link"
+          >
+            &#9733; @MTSlive on X &#9733;
+          </a>
+        </font>
+      </center>
 
       <br />
 
@@ -214,10 +222,28 @@ function Player() {
 }
 
 export default function MtsPage() {
+  const [isStreamExpanded, setIsStreamExpanded] = useState(false)
+  const toggleStream = () => setIsStreamExpanded((expanded) => !expanded)
+
   return (
     <Layout
-      mainContent={<Player />}
+      mainContent={
+        <Player
+          isStreamExpanded={isStreamExpanded}
+          onToggleStream={toggleStream}
+        />
+      }
       rightSidebar={<Sidebar />}
+      pageWideContent={
+        isStreamExpanded ? (
+          <LivestreamPlayer
+            src={MTS_STREAM_SRC}
+            title="MTS Livestream"
+            isExpanded
+            onToggleExpanded={toggleStream}
+          />
+        ) : null
+      }
     />
   )
 }
