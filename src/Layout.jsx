@@ -12,6 +12,7 @@ const baseNavLinks = [
   { label: 'DOWNLOADS',  to: '/ytmp4' },
   { label: 'INSTA DL',   to: '/instagram-downloader' },
   { label: 'X DL',       to: '/x-downloader' },
+  { label: 'TIKTOK DL',  to: '/tiktok-downloader' },
   { label: 'MTS LIVE',   to: '/mts' },
   { label: 'LIVE STOCKS', to: '/stocks' },
   { label: 'GUESTBOOK',  to: '/guestbook' },
