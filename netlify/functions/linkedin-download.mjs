@@ -1,12 +1,33 @@
 /**
- * Resolves video URLs for a public LinkedIn post via the public embed endpoint
- * (https://www.linkedin.com/embed/feed/update/urn:li:<urnType>:<id>), then
- * returns JSON metadata. The browser fetches the MP4(s) via the licdn proxy —
- * keeping bytes out of the function lets us stay under the 6 MB Lambda cap.
+ * Resolves video URLs for a public LinkedIn post.
+ *
+ * LinkedIn does not expose a public JSON API, so we try several strategies in
+ * sequence and stop at the first one that yields an MP4:
+ *
+ *   1. Fetch the canonical /posts/<slug> URL (if the user gave us one) with a
+ *      social-preview User-Agent. LinkedIn emits Open Graph video meta tags
+ *      for Slackbot/Twitterbot to enable link previews, and these point at
+ *      the public MP4 on dms.licdn.com.
+ *   2. Fetch the embed endpoint (/embed/feed/update/urn:li:<urnType>:<id>)
+ *      with a desktop Chrome UA; try ugcPost and activity URN types.
+ *   3. For each fetched HTML response, look for video stream URLs three ways:
+ *      a. og:video / og:video:secure_url meta tags
+ *      b. JSON blobs in <code>/<script> tags with progressiveStreams
+ *      c. Flat regex over the raw HTML for *.licdn.com/...mp4 URLs
+ *
+ * Returns JSON metadata; the browser fetches the actual MP4 via the licdn
+ * proxy function to keep bytes out of the Lambda response.
+ *
+ * Append ?debug=1 to the function URL to receive a diagnostic JSON of every
+ * extraction attempt instead of the normal response. Useful when LinkedIn
+ * changes its HTML and the extractor stops finding videos.
  */
-const EMBED_HOST = 'https://www.linkedin.com'
-const USER_AGENT =
+const LINKEDIN_HOST = 'https://www.linkedin.com'
+const DESKTOP_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
+// Slackbot is the most permissive preview-bot UA for LinkedIn — it reliably
+// receives the OG-tag share preview HTML without the full app shell.
+const PREVIEW_UA = 'Slackbot 1.0 (+https://api.slack.com/robots)'
 const FETCH_TIMEOUT_MS = 8000
 
 const SLUG_RE = /-(ugcPost|activity)-(\d{19})(?:-[A-Za-z0-9_-]{1,8})?$/
@@ -43,7 +64,9 @@ function validateLinkedInUrl(input) {
   }
   const urnMatch = parsed.pathname.match(URN_RE)
   if (urnMatch) {
-    return { urnType: urnMatch[1], id: urnMatch[2], slug: null, author: null }
+    return {
+      urnType: urnMatch[1], id: urnMatch[2], slug: null, author: null, canonicalUrl: null,
+    }
   }
   const slugMatch = parsed.pathname.match(SLUG_RE)
   if (slugMatch) {
@@ -52,7 +75,11 @@ function validateLinkedInUrl(input) {
     const slugRaw = postsMatch
       ? postsMatch[2].replace(SLUG_RE, '')
       : null
-    return { urnType: slugMatch[1], id: slugMatch[2], slug: slugRaw, author }
+    return {
+      urnType: slugMatch[1], id: slugMatch[2], slug: slugRaw, author,
+      // Preserve the original /posts/... URL — OG tags only exist on the canonical page
+      canonicalUrl: `https://www.linkedin.com${parsed.pathname}`,
+    }
   }
   return { error: errorBody('invalid_url', 'Use a LinkedIn /posts/... or /feed/update/urn:li:... URL.', 400) }
 }
@@ -77,6 +104,32 @@ function decodeHtmlEntities(s) {
     .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
     .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
     .replace(/&amp;/g, '&')
+}
+
+function extractOgVideo(html) {
+  // LinkedIn emits og:video / og:video:url / og:video:secure_url with the
+  // canonical MP4. Width/height come from og:video:width and og:video:height.
+  const tags = {}
+  const metaRe = /<meta\b[^>]*>/gi
+  let tag
+  while ((tag = metaRe.exec(html)) !== null) {
+    const m = tag[0]
+    const propMatch = m.match(/\b(?:property|name)=["']([^"']+)["']/i)
+    const contentMatch = m.match(/\bcontent=["']([^"']*)["']/i)
+    if (!propMatch || !contentMatch) continue
+    const prop = propMatch[1].toLowerCase()
+    if (prop.startsWith('og:video') || prop === 'og:image') {
+      tags[prop] = decodeHtmlEntities(contentMatch[1])
+    }
+  }
+  const url = tags['og:video:secure_url'] || tags['og:video:url'] || tags['og:video']
+  if (!url || !/\.mp4/i.test(url)) return []
+  return [{
+    url,
+    width: Number(tags['og:video:width']) || null,
+    height: Number(tags['og:video:height']) || null,
+    bitrate: 0,
+  }]
 }
 
 function extractEmbeddedJsonBlobs(html) {
@@ -145,8 +198,18 @@ function collectMp4Streams(node, out, seen) {
   }
 }
 
+function extractFromJsonBlobs(html) {
+  const blobs = extractEmbeddedJsonBlobs(html)
+  const collected = []
+  const seen = new Set()
+  for (const blob of blobs) collectMp4Streams(blob, collected, seen)
+  return collected
+}
+
 function fallbackHtmlMp4Scan(html) {
-  const re = /https:\/\/(?:dms|media|static)\.licdn\.com\/[^\s"'<>]+?\.mp4(?:\?[^\s"'<>]*)?/g
+  // Any *.licdn.com host plus loose path/query — playlist URLs and direct mp4s
+  // both end in `.mp4` somewhere in the path before query params.
+  const re = /https:\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)*\.licdn\.com\/[^\s"'<>]+?\.mp4(?:\?[^\s"'<>]*)?/gi
   const seen = new Set()
   const out = []
   let m
@@ -154,7 +217,7 @@ function fallbackHtmlMp4Scan(html) {
     const url = m[0]
     if (seen.has(url)) continue
     seen.add(url)
-    const dimMatch = url.match(/[-_](\d{3,4})[xX](\d{3,4})/)
+    const dimMatch = url.match(/[-_/](\d{3,4})[xX](\d{3,4})[-_/]/)
     out.push({
       url,
       width: dimMatch ? Number(dimMatch[1]) : null,
@@ -165,48 +228,75 @@ function fallbackHtmlMp4Scan(html) {
   return out
 }
 
-function pickBestStreams(streams) {
-  if (streams.length === 0) return []
-  const sorted = [...streams].sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0))
-  return [sorted[0]]
+function findAllVideosInHtml(html) {
+  const og = extractOgVideo(html)
+  const blobs = extractFromJsonBlobs(html)
+  const flat = fallbackHtmlMp4Scan(html)
+  const seen = new Set()
+  const merged = []
+  for (const stream of [...og, ...blobs, ...flat]) {
+    if (seen.has(stream.url)) continue
+    seen.add(stream.url)
+    merged.push(stream)
+  }
+  return { og, blobs, flat, merged }
 }
 
-async function fetchEmbed(urnType, id) {
-  const url = `${EMBED_HOST}/embed/feed/update/urn:li:${urnType}:${id}`
+async function fetchHtml(url, userAgent, label) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
   try {
     const res = await fetch(url, {
       headers: {
-        'User-Agent': USER_AGENT,
+        'User-Agent': userAgent,
         'Accept-Language': 'en-US,en;q=0.9',
         Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       },
       signal: controller.signal,
+      redirect: 'follow',
     })
-    if (res.status === 404) return { notFound: true }
-    if (!res.ok) return { upstreamStatus: res.status }
     const html = await res.text()
-    return { html }
-  } catch {
-    return { upstreamStatus: 502 }
+    return {
+      label,
+      url,
+      ua: userAgent,
+      status: res.status,
+      ok: res.ok,
+      htmlLength: html.length,
+      html,
+    }
+  } catch (err) {
+    return { label, url, ua: userAgent, status: 0, ok: false, error: String(err?.message || err) }
   } finally {
     clearTimeout(timer)
   }
 }
 
-function findVideosInHtml(html) {
-  const blobs = extractEmbeddedJsonBlobs(html)
-  const collected = []
-  const seen = new Set()
-  for (const blob of blobs) collectMp4Streams(blob, collected, seen)
-  if (collected.length === 0) {
-    return fallbackHtmlMp4Scan(html)
+function pickBestStreams(streams) {
+  if (streams.length === 0) return []
+  // Prefer the highest bitrate; if no bitrate info, the first stream wins.
+  const sorted = [...streams].sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0))
+  return [sorted[0]]
+}
+
+function buildAttempts(validated) {
+  const attempts = []
+  if (validated.canonicalUrl) {
+    attempts.push({ url: validated.canonicalUrl, ua: PREVIEW_UA, label: 'canonical+slackbot' })
   }
-  return collected
+  const altUrn = validated.urnType === 'ugcPost' ? 'activity' : 'ugcPost'
+  attempts.push(
+    { url: `${LINKEDIN_HOST}/embed/feed/update/urn:li:${validated.urnType}:${validated.id}`, ua: DESKTOP_UA, label: `embed-${validated.urnType}` },
+    { url: `${LINKEDIN_HOST}/embed/feed/update/urn:li:${altUrn}:${validated.id}`, ua: DESKTOP_UA, label: `embed-${altUrn}` },
+    { url: `${LINKEDIN_HOST}/embed/feed/update/urn:li:${validated.urnType}:${validated.id}`, ua: PREVIEW_UA, label: `embed-${validated.urnType}+slackbot` },
+  )
+  return attempts
 }
 
 export default async (req) => {
+  const incoming = new URL(req.url)
+  const debugMode = incoming.searchParams.get('debug') === '1'
+
   if (req.method !== 'POST') {
     return errorBody('method_not_allowed', 'Use POST.', 405)
   }
@@ -221,38 +311,58 @@ export default async (req) => {
   const validated = validateLinkedInUrl(payload?.url)
   if (validated.error) return validated.error
 
-  // Try the URN type from the URL first, fall back to the other.
-  const primary = validated.urnType
-  const fallback = primary === 'ugcPost' ? 'activity' : 'ugcPost'
+  const attempts = buildAttempts(validated)
+  const trace = []
+  let winningStreams = []
 
-  let result = await fetchEmbed(primary, validated.id)
-  let foundStreams = []
-  if (result.html) {
-    foundStreams = findVideosInHtml(result.html)
+  for (const attempt of attempts) {
+    const fetched = await fetchHtml(attempt.url, attempt.ua, attempt.label)
+    const traceEntry = {
+      label: fetched.label,
+      url: fetched.url,
+      status: fetched.status,
+      ok: fetched.ok,
+      htmlLength: fetched.htmlLength || 0,
+      error: fetched.error || null,
+      ogCount: 0,
+      blobCount: 0,
+      flatCount: 0,
+      sample: null,
+    }
+    if (fetched.ok && fetched.html) {
+      const { og, blobs, flat, merged } = findAllVideosInHtml(fetched.html)
+      traceEntry.ogCount = og.length
+      traceEntry.blobCount = blobs.length
+      traceEntry.flatCount = flat.length
+      if (debugMode) {
+        traceEntry.sample = fetched.html.slice(0, 4000)
+      }
+      if (merged.length > 0) {
+        winningStreams = merged
+        trace.push(traceEntry)
+        break
+      }
+    }
+    trace.push(traceEntry)
   }
-  if (foundStreams.length === 0 && !result.upstreamStatus) {
-    const alt = await fetchEmbed(fallback, validated.id)
-    if (alt.html) {
-      foundStreams = findVideosInHtml(alt.html)
-      if (foundStreams.length > 0) result = alt
-    } else if (alt.notFound && result.notFound) {
-      return errorBody('no_videos', 'No public LinkedIn video was found for that URL.', 404)
-    } else if (alt.upstreamStatus && !result.html) {
+
+  if (winningStreams.length === 0) {
+    console.error('[linkedin-download] no videos found', JSON.stringify({
+      input: payload?.url,
+      validated: { urnType: validated.urnType, id: validated.id, slug: validated.slug },
+      trace,
+    }))
+    if (debugMode) {
+      return json({ code: 'no_videos', trace }, 200)
+    }
+    const anyFetchOk = trace.some((t) => t.ok)
+    if (!anyFetchOk) {
       return errorBody('extract_failed', 'Could not read public LinkedIn media for that URL.', 502)
     }
-  }
-
-  if (result.notFound && foundStreams.length === 0) {
-    return errorBody('no_videos', 'No public LinkedIn video was found for that URL.', 404)
-  }
-  if (result.upstreamStatus && foundStreams.length === 0) {
-    return errorBody('extract_failed', 'Could not read public LinkedIn media for that URL.', 502)
-  }
-  if (foundStreams.length === 0) {
     return errorBody('no_videos', 'No public LinkedIn video was found for that URL.', 404)
   }
 
-  const best = pickBestStreams(foundStreams)
+  const best = pickBestStreams(winningStreams)
   const authorPart = validated.author ? sanitizeFilenamePart(validated.author, '') : ''
   const slugPart = validated.slug ? sanitizeFilenamePart(validated.slug, '') : ''
   const joined = [authorPart, slugPart].filter(Boolean).join('-')
@@ -270,5 +380,8 @@ export default async (req) => {
     }
   })
 
+  if (debugMode) {
+    return json({ videos, trace })
+  }
   return json({ videos })
 }
