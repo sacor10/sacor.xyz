@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Layout from '../Layout'
+import { downloadBlob, saveOrShareBlob } from '../lib/download'
 
 const API_BASE = (import.meta.env.VITE_INSTAGRAM_DOWNLOADER_API_URL || 'http://localhost:8787')
   .replace(/\/+$/, '')
@@ -28,17 +29,6 @@ function getDownloadFilename(disposition) {
 async function readDownloadError(response) {
   const body = await response.json().catch(() => null)
   return body?.message || body?.error || DEFAULT_ERROR
-}
-
-function saveBlob(blob, filename) {
-  const objectUrl = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = objectUrl
-  link.download = filename
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
 }
 
 function Sidebar() {
@@ -147,9 +137,22 @@ export default function InstagramDownloaderPage() {
 
       const filename = getDownloadFilename(response.headers.get('Content-Disposition'))
       const blob = await response.blob()
-      saveBlob(blob, filename)
-      setStatus('success')
-      setMessage(`Download started: ${filename}`)
+      const isZip = /\.zip$/i.test(filename) || blob.type === 'application/zip'
+      if (isZip) {
+        downloadBlob(blob, filename)
+        setStatus('success')
+        setMessage(`Download started: ${filename}`)
+      } else {
+        const result = await saveOrShareBlob(blob, filename)
+        setStatus('success')
+        setMessage(
+          result === 'shared'
+            ? `Saved ${filename} via share sheet.`
+            : result === 'cancelled'
+              ? 'Share cancelled.'
+              : `Download started: ${filename}`,
+        )
+      }
     } catch (error) {
       setStatus('error')
       setMessage(error?.message || DEFAULT_ERROR)

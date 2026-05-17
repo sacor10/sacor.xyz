@@ -222,6 +222,7 @@ export default async (req) => {
   const height = itemStruct.video?.height || null
 
   let proxyUrl = `/.netlify/functions/tiktok-video?url=${encodeURIComponent(videoUrl)}`
+  proxyUrl += `&filename=${encodeURIComponent(filename)}`
   if (result.chainToken) {
     proxyUrl += `&tct=${encodeURIComponent(result.chainToken)}`
   }
