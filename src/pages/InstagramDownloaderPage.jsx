@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import Layout from '../Layout'
-import { downloadBlob, saveOrShareBlob } from '../lib/download'
+import { downloadBlob } from '../lib/download'
 
 const API_BASE = (import.meta.env.VITE_INSTAGRAM_DOWNLOADER_API_URL || 'http://localhost:8787')
   .replace(/\/+$/, '')
@@ -137,22 +137,9 @@ export default function InstagramDownloaderPage() {
 
       const filename = getDownloadFilename(response.headers.get('Content-Disposition'))
       const blob = await response.blob()
-      const isZip = /\.zip$/i.test(filename) || blob.type === 'application/zip'
-      if (isZip) {
-        downloadBlob(blob, filename)
-        setStatus('success')
-        setMessage(`Download started: ${filename}`)
-      } else {
-        const result = await saveOrShareBlob(blob, filename)
-        setStatus('success')
-        setMessage(
-          result === 'shared'
-            ? `Saved ${filename} via share sheet.`
-            : result === 'cancelled'
-              ? 'Share cancelled.'
-              : `Download started: ${filename}`,
-        )
-      }
+      downloadBlob(blob, filename)
+      setStatus('success')
+      setMessage(`Download started: ${filename}`)
     } catch (error) {
       setStatus('error')
       setMessage(error?.message || DEFAULT_ERROR)

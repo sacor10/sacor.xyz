@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import JSZip from 'jszip'
 import Layout from '../Layout'
-import { downloadBlob, fetchVideoBlob, saveOrShareBlob } from '../lib/download'
+import { downloadBlob, fetchVideoBlob } from '../lib/download'
 
 const API_ENDPOINT = '/.netlify/functions/linkedin-download'
 const DEFAULT_ERROR = 'No downloadable public LinkedIn video was found for that URL.'
@@ -127,15 +127,9 @@ export default function LinkedInDownloaderPage() {
       if (videos.length === 1) {
         setMessage(`Downloading ${videos[0].filename}...`)
         const blob = await fetchVideoBlob(videos[0].proxyUrl || videos[0].url)
-        const result = await saveOrShareBlob(blob, videos[0].filename)
+        downloadBlob(blob, videos[0].filename)
         setStatus('success')
-        setMessage(
-          result === 'shared'
-            ? `Saved ${videos[0].filename} via share sheet.`
-            : result === 'cancelled'
-              ? 'Share cancelled.'
-              : `Download started: ${videos[0].filename}`,
-        )
+        setMessage(`Download started: ${videos[0].filename}`)
         return
       }
 
