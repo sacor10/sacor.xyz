@@ -85,9 +85,14 @@ export default async (req) => {
   }
 
   const headers = new Headers()
-  headers.set('Content-Type', upstream.headers.get('content-type') || 'video/mp4')
+  headers.set('Content-Type', 'video/mp4')
   if (contentLengthHeader) headers.set('Content-Length', contentLengthHeader)
   headers.set('Cache-Control', 'no-store')
+  const filenameParam = incoming.searchParams.get('filename')
+  const safeName = filenameParam
+    ? filenameParam.replace(/[^\w.\-]+/g, '_').slice(0, 120) || 'x-video.mp4'
+    : 'x-video.mp4'
+  headers.set('Content-Disposition', `attachment; filename="${safeName}"`)
 
   return new Response(upstream.body, { status: 200, headers })
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Layout from '../Layout'
+import { fetchVideoBlob, saveOrShareBlob } from '../lib/download'
 
 const API_ENDPOINT = '/.netlify/functions/tiktok-download'
 const DEFAULT_ERROR = 'No downloadable public TikTok video was found for that URL.'
@@ -7,23 +8,6 @@ const DEFAULT_ERROR = 'No downloadable public TikTok video was found for that UR
 async function readJsonError(response) {
   const body = await response.json().catch(() => null)
   return body?.message || body?.error || DEFAULT_ERROR
-}
-
-function saveBlob(blob, filename) {
-  const objectUrl = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = objectUrl
-  link.download = filename
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
-}
-
-async function fetchVideoBlob(url) {
-  const res = await fetch(url, { credentials: 'omit' })
-  if (!res.ok) throw new Error(`Could not fetch video (HTTP ${res.status}).`)
-  return res.blob()
 }
 
 function Sidebar() {
@@ -137,9 +121,15 @@ export default function TikTokDownloaderPage() {
 
       setMessage(`Downloading ${videos[0].filename}...`)
       const blob = await fetchVideoBlob(videos[0].proxyUrl || videos[0].url)
-      saveBlob(blob, videos[0].filename)
+      const result = await saveOrShareBlob(blob, videos[0].filename)
       setStatus('success')
-      setMessage(`Download started: ${videos[0].filename}`)
+      setMessage(
+        result === 'shared'
+          ? `Saved ${videos[0].filename} via share sheet.`
+          : result === 'cancelled'
+            ? 'Share cancelled.'
+            : `Download started: ${videos[0].filename}`,
+      )
     } catch (error) {
       setStatus('error')
       setMessage(error?.message || DEFAULT_ERROR)
