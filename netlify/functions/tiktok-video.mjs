@@ -85,9 +85,14 @@ export default async (req) => {
       },
       signal: controller.signal,
     })
-  } catch {
+  } catch (err) {
     clearTimeout(timer)
-    return new Response('Upstream fetch failed.', {
+    const reason = err?.name === 'AbortError' ? 'timeout' : (err?.message || 'network error')
+    console.warn('tiktok-video: upstream fetch threw', {
+      hostname: parsed.hostname,
+      reason,
+    })
+    return new Response(`Upstream fetch failed: ${reason}`, {
       status: 502,
       headers: { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' },
     })
@@ -98,7 +103,14 @@ export default async (req) => {
   clearTimeout(timer)
 
   if (!upstream.ok || !upstream.body) {
-    return new Response('Upstream fetch failed.', {
+    console.warn('tiktok-video: upstream returned non-ok', {
+      hostname: parsed.hostname,
+      status: upstream.status,
+      statusText: upstream.statusText,
+      contentType: upstream.headers.get('content-type'),
+      hasBody: Boolean(upstream.body),
+    })
+    return new Response(`Upstream fetch failed: HTTP ${upstream.status}`, {
       status: 502,
       headers: { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' },
     })
