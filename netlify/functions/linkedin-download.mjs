@@ -18,9 +18,8 @@
  * Returns JSON metadata; the browser fetches the actual MP4 via the licdn
  * proxy function to keep bytes out of the Lambda response.
  *
- * Append ?debug=1 to the function URL to receive a diagnostic JSON of every
- * extraction attempt instead of the normal response. Useful when LinkedIn
- * changes its HTML and the extractor stops finding videos.
+ * Append ?debug=1 to receive the per-attempt diagnostic trace alongside a
+ * successful response too. Failures always include the trace.
  */
 const LINKEDIN_HOST = 'https://www.linkedin.com'
 const DESKTOP_UA =
@@ -334,9 +333,10 @@ export default async (req) => {
       traceEntry.ogCount = og.length
       traceEntry.blobCount = blobs.length
       traceEntry.flatCount = flat.length
-      if (debugMode) {
-        traceEntry.sample = fetched.html.slice(0, 4000)
-      }
+      // Always capture a sample on failed extraction so we can see what
+      // LinkedIn actually served. Bigger sample in debug mode.
+      const sampleLen = debugMode ? 8000 : 2000
+      traceEntry.sample = fetched.html.slice(0, sampleLen)
       if (merged.length > 0) {
         winningStreams = merged
         trace.push(traceEntry)
@@ -352,14 +352,13 @@ export default async (req) => {
       validated: { urnType: validated.urnType, id: validated.id, slug: validated.slug },
       trace,
     }))
-    if (debugMode) {
-      return json({ code: 'no_videos', trace }, 200)
-    }
     const anyFetchOk = trace.some((t) => t.ok)
-    if (!anyFetchOk) {
-      return errorBody('extract_failed', 'Could not read public LinkedIn media for that URL.', 502)
-    }
-    return errorBody('no_videos', 'No public LinkedIn video was found for that URL.', 404)
+    const code = anyFetchOk ? 'no_videos' : 'extract_failed'
+    const message = anyFetchOk
+      ? 'No public LinkedIn video was found for that URL.'
+      : 'Could not read public LinkedIn media for that URL.'
+    const status = anyFetchOk ? 404 : 502
+    return json({ code, message, trace }, status)
   }
 
   const best = pickBestStreams(winningStreams)
