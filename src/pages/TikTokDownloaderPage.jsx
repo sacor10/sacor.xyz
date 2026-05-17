@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import Layout from '../Layout'
-import { downloadBlob, fetchVideoBlob } from '../lib/download'
+import { downloadBlob, fetchVideoBlob, openPreviewWindow } from '../lib/download'
 
 const API_ENDPOINT = '/.netlify/functions/tiktok-download'
 const DEFAULT_ERROR = 'No downloadable public TikTok video was found for that URL.'
@@ -100,6 +100,7 @@ export default function TikTokDownloaderPage() {
       return
     }
 
+    const previewWindow = openPreviewWindow()
     setStatus('loading')
     setMessage('Finding public video...')
 
@@ -121,10 +122,11 @@ export default function TikTokDownloaderPage() {
 
       setMessage(`Downloading ${videos[0].filename}...`)
       const blob = await fetchVideoBlob(videos[0].proxyUrl || videos[0].url)
-      downloadBlob(blob, videos[0].filename)
+      downloadBlob(blob, videos[0].filename, previewWindow)
       setStatus('success')
       setMessage(`Download started: ${videos[0].filename}`)
     } catch (error) {
+      if (previewWindow && !previewWindow.closed) previewWindow.close()
       setStatus('error')
       setMessage(error?.message || DEFAULT_ERROR)
     }

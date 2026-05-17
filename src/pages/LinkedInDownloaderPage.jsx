@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import JSZip from 'jszip'
 import Layout from '../Layout'
-import { downloadBlob, fetchVideoBlob } from '../lib/download'
+import { downloadBlob, fetchVideoBlob, openPreviewWindow } from '../lib/download'
 
 const API_ENDPOINT = '/.netlify/functions/linkedin-download'
 const DEFAULT_ERROR = 'No downloadable public LinkedIn video was found for that URL.'
@@ -105,6 +105,7 @@ export default function LinkedInDownloaderPage() {
       return
     }
 
+    const previewWindow = openPreviewWindow()
     setStatus('loading')
     setMessage('Finding public videos...')
 
@@ -127,12 +128,13 @@ export default function LinkedInDownloaderPage() {
       if (videos.length === 1) {
         setMessage(`Downloading ${videos[0].filename}...`)
         const blob = await fetchVideoBlob(videos[0].proxyUrl || videos[0].url)
-        downloadBlob(blob, videos[0].filename)
+        downloadBlob(blob, videos[0].filename, previewWindow)
         setStatus('success')
         setMessage(`Download started: ${videos[0].filename}`)
         return
       }
 
+      if (previewWindow && !previewWindow.closed) previewWindow.close()
       const zip = new JSZip()
       for (let i = 0; i < videos.length; i += 1) {
         setMessage(`Downloading ${i + 1} of ${videos.length}...`)
@@ -146,6 +148,7 @@ export default function LinkedInDownloaderPage() {
       setStatus('success')
       setMessage(`Download started: ${zipName}`)
     } catch (error) {
+      if (previewWindow && !previewWindow.closed) previewWindow.close()
       setStatus('error')
       setMessage(error?.message || DEFAULT_ERROR)
     }
