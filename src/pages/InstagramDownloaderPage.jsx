@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import Layout from '../Layout'
-import { downloadBlob } from '../lib/download'
+import { downloadBlob, openPreviewWindow } from '../lib/download'
 
 const API_BASE = (import.meta.env.VITE_INSTAGRAM_DOWNLOADER_API_URL || 'http://localhost:8787')
   .replace(/\/+$/, '')
@@ -121,6 +121,7 @@ export default function InstagramDownloaderPage() {
       return
     }
 
+    const previewWindow = openPreviewWindow()
     setStatus('loading')
     setMessage('Finding public videos and preparing your download...')
 
@@ -137,10 +138,13 @@ export default function InstagramDownloaderPage() {
 
       const filename = getDownloadFilename(response.headers.get('Content-Disposition'))
       const blob = await response.blob()
-      downloadBlob(blob, filename)
+      const isZip = /\.zip$/i.test(filename) || blob.type === 'application/zip'
+      if (isZip && previewWindow && !previewWindow.closed) previewWindow.close()
+      downloadBlob(blob, filename, isZip ? null : previewWindow)
       setStatus('success')
       setMessage(`Download started: ${filename}`)
     } catch (error) {
+      if (previewWindow && !previewWindow.closed) previewWindow.close()
       setStatus('error')
       setMessage(error?.message || DEFAULT_ERROR)
     }
