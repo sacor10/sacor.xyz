@@ -71,6 +71,21 @@ async function resolveShortLink(url) {
   return current
 }
 
+function extractCookie(res, name) {
+  let cookies = []
+  if (typeof res.headers.getSetCookie === 'function') {
+    cookies = res.headers.getSetCookie()
+  } else {
+    const raw = res.headers.get('set-cookie')
+    if (raw) cookies = raw.split(/,\s*(?=[A-Za-z0-9_-]+=)/)
+  }
+  const prefix = `${name}=`
+  for (const c of cookies) {
+    if (c.startsWith(prefix)) return c.slice(prefix.length).split(';')[0]
+  }
+  return null
+}
+
 async function fetchTikTokPage(url) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
@@ -84,8 +99,9 @@ async function fetchTikTokPage(url) {
       signal: controller.signal,
     })
     if (!res.ok) return { upstreamStatus: res.status }
+    const chainToken = extractCookie(res, 'tt_chain_token')
     const html = await res.text()
-    return { html }
+    return { html, chainToken }
   } catch {
     return { upstreamStatus: 502 }
   } finally {
@@ -205,7 +221,10 @@ export default async (req) => {
   const width = itemStruct.video?.width || null
   const height = itemStruct.video?.height || null
 
-  const proxyUrl = `/.netlify/functions/tiktok-video?url=${encodeURIComponent(videoUrl)}`
+  let proxyUrl = `/.netlify/functions/tiktok-video?url=${encodeURIComponent(videoUrl)}`
+  if (result.chainToken) {
+    proxyUrl += `&tct=${encodeURIComponent(result.chainToken)}`
+  }
 
   return json({
     videos: [{

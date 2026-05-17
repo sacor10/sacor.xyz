@@ -75,14 +75,23 @@ export default async (req) => {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
 
+  const upstreamHeaders = {
+    Accept: '*/*',
+    Referer: 'https://www.tiktok.com/',
+    'User-Agent': USER_AGENT,
+  }
+  // TikTok's webapp-prime CDN URLs include tk=tt_chain_token and require the
+  // matching cookie value (set when the page that exposed the playAddr was
+  // rendered). The metadata function captures it and threads it through here.
+  const chainToken = incoming.searchParams.get('tct')
+  if (chainToken) {
+    upstreamHeaders.Cookie = `tt_chain_token=${chainToken}`
+  }
+
   let upstream
   try {
     upstream = await fetch(parsed.toString(), {
-      headers: {
-        Accept: '*/*',
-        Referer: 'https://www.tiktok.com/',
-        'User-Agent': USER_AGENT,
-      },
+      headers: upstreamHeaders,
       signal: controller.signal,
     })
   } catch (err) {
