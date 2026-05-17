@@ -27,7 +27,9 @@ const ALLOWED_SUFFIXES = [
   '.ibytedtos.com',
 ]
 
-const TIKTOK_VIDEO_SUBDOMAIN_RE = /^v\d+[a-z0-9-]*\.tiktok\.com$/i
+// Video-serving subdomains under tiktok.com, optionally with a 2-3 letter
+// region label (e.g. v16-webapp-prime.us.tiktok.com, v19.eu.tiktok.com).
+const TIKTOK_VIDEO_SUBDOMAIN_RE = /^v\d+[a-z0-9-]*(\.[a-z]{2,3})?\.tiktok\.com$/i
 
 function isAllowedHost(hostname) {
   const host = hostname.toLowerCase()
