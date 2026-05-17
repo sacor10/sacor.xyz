@@ -9,20 +9,32 @@ const USER_AGENT =
 const FETCH_TIMEOUT_MS = 30000
 const MAX_BYTES = 200 * 1024 * 1024 // 200 MB hard ceiling
 
-// TikTok rotates CDN subdomains so we use suffix matching
+// TikTok rotates CDN subdomains so we use suffix matching for the dedicated
+// CDN families. tiktok.com itself is intentionally NOT a bare suffix — only
+// known video-serving subdomain prefixes (matched by TIKTOK_VIDEO_SUBDOMAIN_RE)
+// are allowed, so the proxy can't be turned into a generic fetcher for
+// www/api/accounts/etc.
 const ALLOWED_SUFFIXES = [
   '.tiktokcdn.com',
   '.tiktokcdn-us.com',
   '.tiktokcdn-eu.com',
   '.tiktokv.com',
   '.tiktokv.us',
+  '.tiktokv.eu',
   '.byteoversea.com',
+  '.bytecdn.cn',
   '.muscdn.com',
+  '.ibytedtos.com',
 ]
+
+const TIKTOK_VIDEO_SUBDOMAIN_RE = /^v\d+[a-z0-9-]*\.tiktok\.com$/i
 
 function isAllowedHost(hostname) {
   const host = hostname.toLowerCase()
-  return ALLOWED_SUFFIXES.some((suffix) => host === suffix.slice(1) || host.endsWith(suffix))
+  if (ALLOWED_SUFFIXES.some((suffix) => host === suffix.slice(1) || host.endsWith(suffix))) {
+    return true
+  }
+  return TIKTOK_VIDEO_SUBDOMAIN_RE.test(host)
 }
 
 function badRequest(message) {
@@ -51,7 +63,11 @@ export default async (req) => {
     return badRequest('Invalid url parameter.')
   }
   if (parsed.protocol !== 'https:' || !isAllowedHost(parsed.hostname)) {
-    return badRequest('Host not allowed.')
+    console.warn('tiktok-video: rejected host', {
+      hostname: parsed.hostname,
+      protocol: parsed.protocol,
+    })
+    return badRequest(`Host not allowed: ${parsed.hostname}`)
   }
 
   const controller = new AbortController()
