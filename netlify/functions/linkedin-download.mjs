@@ -122,7 +122,7 @@ function extractOgVideo(html) {
     }
   }
   const url = tags['og:video:secure_url'] || tags['og:video:url'] || tags['og:video']
-  if (!url || !/\.mp4/i.test(url)) return []
+  if (!url || !/mp4/i.test(url)) return []
   return [{
     url,
     width: Number(tags['og:video:width']) || null,
@@ -135,8 +135,10 @@ function extractEmbeddedJsonBlobs(html) {
   const blobs = []
   const patterns = [
     /<code[^>]*>([\s\S]*?)<\/code>/g,
-    /<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g,
-    /<script[^>]*type="application\/json"[^>]*>([\s\S]*?)<\/script>/g,
+    // Match any script tag whose type contains "json" — catches the standard
+    // application/json, application/ld+json, and LinkedIn's SSR-data type
+    // application/vnd.linkedin.deferred-response+json.
+    /<script[^>]*\btype=["'][^"']*json[^"']*["'][^>]*>([\s\S]*?)<\/script>/gi,
   ]
   for (const re of patterns) {
     let m
@@ -150,6 +152,49 @@ function extractEmbeddedJsonBlobs(html) {
     }
   }
   return blobs
+}
+
+/**
+ * LinkedIn's SSR HTML inlines JSON that emits URLs as `https:\/\/...` (each
+ * forward slash backslash-escaped). Replacing the escaped form with the bare
+ * form makes both our `https://...licdn.com...mp4` flat regex and a possible
+ * downstream substring scan see the URLs. JSON itself accepts `/` unescaped,
+ * so this transform doesn't break JSON parses elsewhere.
+ */
+function unescapeForwardSlashes(html) {
+  return html.replace(/\\\//g, '/')
+}
+
+function findProgressiveStreamsByRegex(html) {
+  // Last resort when even broadened blob extraction fails: scan the unescaped
+  // HTML for occurrences of `"progressiveStreams":[...]` and try to parse the
+  // enclosing object directly. Cheap and tolerant of unknown wrapper shapes.
+  const out = []
+  const seen = new Set()
+  const marker = '"progressiveStreams"'
+  let idx = 0
+  while ((idx = html.indexOf(marker, idx)) !== -1) {
+    const arrStart = html.indexOf('[', idx)
+    if (arrStart === -1) break
+    let depth = 0
+    let end = -1
+    for (let i = arrStart; i < html.length; i++) {
+      const ch = html[i]
+      if (ch === '[') depth++
+      else if (ch === ']') {
+        depth--
+        if (depth === 0) { end = i; break }
+      }
+    }
+    if (end === -1) break
+    const slice = html.slice(arrStart, end + 1)
+    try {
+      const streams = JSON.parse(slice)
+      collectMp4Streams({ progressiveStreams: streams }, out, seen)
+    } catch { /* try next occurrence */ }
+    idx = end + 1
+  }
+  return out
 }
 
 function collectMp4Streams(node, out, seen) {
@@ -166,7 +211,7 @@ function collectMp4Streams(node, out, seen) {
         : []
       for (const loc of locations) {
         const url = typeof loc?.url === 'string' ? loc.url : null
-        if (!url || !/\.mp4/i.test(url) || seen.has(url)) continue
+        if (!url || !/mp4/i.test(url) || seen.has(url)) continue
         seen.add(url)
         out.push({
           url,
@@ -182,7 +227,7 @@ function collectMp4Streams(node, out, seen) {
       const url = typeof stream?.src === 'string' ? stream.src
         : typeof stream?.url === 'string' ? stream.url
         : null
-      if (!url || !/\.mp4/i.test(url) || seen.has(url)) continue
+      if (!url || !/mp4/i.test(url) || seen.has(url)) continue
       seen.add(url)
       out.push({
         url,
@@ -206,9 +251,11 @@ function extractFromJsonBlobs(html) {
 }
 
 function fallbackHtmlMp4Scan(html) {
-  // Any *.licdn.com host plus loose path/query — playlist URLs and direct mp4s
-  // both end in `.mp4` somewhere in the path before query params.
-  const re = /https:\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)*\.licdn\.com\/[^\s"'<>]+?\.mp4(?:\?[^\s"'<>]*)?/gi
+  // LinkedIn's progressive video URLs look like
+  // `https://dms.licdn.com/playlist/vid/.../mp4-720p-30fp-crf28/.../...?e=...&v=beta&t=...`
+  // — the `.mp4` extension is never present; instead `mp4-NNNp` appears as a
+  // path segment. Match any licdn host with `mp4` somewhere in the path.
+  const re = /https:\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)*\.licdn\.com\/[^\s"'<>)\\]*?mp4[^\s"'<>)\\]*/gi
   const seen = new Set()
   const out = []
   let m
@@ -216,29 +263,30 @@ function fallbackHtmlMp4Scan(html) {
     const url = m[0]
     if (seen.has(url)) continue
     seen.add(url)
-    const dimMatch = url.match(/[-_/](\d{3,4})[xX](\d{3,4})[-_/]/)
-    out.push({
-      url,
-      width: dimMatch ? Number(dimMatch[1]) : null,
-      height: dimMatch ? Number(dimMatch[2]) : null,
-      bitrate: 0,
-    })
+    const dimMatch = url.match(/[-_/](\d{3,4})[xX](\d{3,4})[-_/]/) || url.match(/mp4-(\d{3,4})p/)
+    const width = dimMatch && dimMatch[2] ? Number(dimMatch[1]) : null
+    const height = dimMatch
+      ? Number(dimMatch[2] || dimMatch[1])
+      : null
+    out.push({ url, width, height, bitrate: 0 })
   }
   return out
 }
 
 function findAllVideosInHtml(html) {
-  const og = extractOgVideo(html)
-  const blobs = extractFromJsonBlobs(html)
-  const flat = fallbackHtmlMp4Scan(html)
+  const unescaped = unescapeForwardSlashes(html)
+  const og = extractOgVideo(unescaped)
+  const blobs = extractFromJsonBlobs(unescaped)
+  const regexProgressive = findProgressiveStreamsByRegex(unescaped)
+  const flat = fallbackHtmlMp4Scan(unescaped)
   const seen = new Set()
   const merged = []
-  for (const stream of [...og, ...blobs, ...flat]) {
+  for (const stream of [...og, ...blobs, ...regexProgressive, ...flat]) {
     if (seen.has(stream.url)) continue
     seen.add(stream.url)
     merged.push(stream)
   }
-  return { og, blobs, flat, merged }
+  return { og, blobs, regex: regexProgressive, flat, merged }
 }
 
 async function fetchHtml(url, userAgent, label) {
@@ -325,16 +373,16 @@ export default async (req) => {
       error: fetched.error || null,
       ogCount: 0,
       blobCount: 0,
+      regexCount: 0,
       flatCount: 0,
       sample: null,
     }
     if (fetched.ok && fetched.html) {
-      const { og, blobs, flat, merged } = findAllVideosInHtml(fetched.html)
+      const { og, blobs, regex, flat, merged } = findAllVideosInHtml(fetched.html)
       traceEntry.ogCount = og.length
       traceEntry.blobCount = blobs.length
+      traceEntry.regexCount = regex.length
       traceEntry.flatCount = flat.length
-      // Always capture a sample on failed extraction so we can see what
-      // LinkedIn actually served. Bigger sample in debug mode.
       const sampleLen = debugMode ? 8000 : 2000
       traceEntry.sample = fetched.html.slice(0, sampleLen)
       if (merged.length > 0) {
