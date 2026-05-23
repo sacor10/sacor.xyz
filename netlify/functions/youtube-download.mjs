@@ -6,7 +6,7 @@ import { collectVideoItems, filenameForVideo } from '../../services/youtube-down
 import { DownloaderError, NoVideosError } from '../../services/youtube-downloader/src/errors.js'
 import { validateYouTubeUrl } from '../../services/youtube-downloader/src/youtube.js'
 
-const EXTRACT_TIMEOUT_MS = 25000
+const EXTRACT_TIMEOUT_MS = 7000
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
 const require = createRequire(import.meta.url)
@@ -29,6 +29,14 @@ function toJsonError(error) {
     return errorBody(error.code, error.message, error.status)
   }
   return errorBody('internal_error', 'The YouTube downloader failed unexpectedly.', 500)
+}
+
+function sanitizeDiagnostic(value) {
+  return String(value || '')
+    .replace(/https?:\/\/\S+/g, '[url]')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 300)
 }
 
 function findFile(startDir, filename, { maxDepth = 5 } = {}) {
@@ -138,6 +146,8 @@ async function extractYouTubeVideos(pageUrl) {
       noPlaylist: true,
       noWarnings: true,
       playlistEnd: 1,
+      retries: 1,
+      socketTimeout: 5,
       skipDownload: true,
     }, {
       killSignal: 'SIGKILL',
@@ -151,10 +161,11 @@ async function extractYouTubeVideos(pageUrl) {
       exitCode: error?.exitCode,
       code: error?.code,
     })
-    const detail = error?.code || error?.exitCode || error?.message || 'yt-dlp failed'
+    const detail = sanitizeDiagnostic(error?.stderr || error?.message || error?.code || error?.exitCode || 'yt-dlp failed')
+      || String(error?.exitCode || 'yt-dlp failed')
     throw new DownloaderError(
       'extract_failed',
-      `Could not read public YouTube media for that URL. Diagnostic: ${String(detail).slice(0, 160)}.`,
+      `Could not read public YouTube media for that URL. Diagnostic: ${detail}.`,
       502,
     )
   }
