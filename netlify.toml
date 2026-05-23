@@ -5,6 +5,9 @@
 [build.environment]
   NODE_VERSION = "20"
 
+[functions]
+  included_files = ["node_modules/youtube-dl-exec/bin/**"]
+
 # SPA fallback (safe even without a router)
 [[redirects]]
   from = "/*"
