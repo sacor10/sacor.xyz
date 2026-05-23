@@ -5,6 +5,7 @@ import YoutubeDownloaderPage from './pages/YoutubeDownloaderPage'
 import InstagramDownloaderPage from './pages/InstagramDownloaderPage'
 import XDownloaderPage from './pages/XDownloaderPage'
 import TikTokDownloaderPage from './pages/TikTokDownloaderPage'
+import LinkedInDownloaderPage from './pages/LinkedInDownloaderPage'
 import MtsPage from './pages/MtsPage'
 import WebringPage from './pages/WebringPage'
 import BlogIndexPage from './pages/BlogIndexPage'
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/instagram-downloader" element={<InstagramDownloaderPage />} />
           <Route path="/x-downloader" element={<XDownloaderPage />} />
           <Route path="/tiktok-downloader" element={<TikTokDownloaderPage />} />
+          <Route path="/linkedin-downloader" element={<LinkedInDownloaderPage />} />
           <Route path="/mts" element={<MtsPage />} />
           <Route path="/webring" element={<WebringPage />} />
           <Route path="/blog" element={<BlogIndexPage />} />

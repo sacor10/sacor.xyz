@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import JSZip from 'jszip'
 import Layout from '../Layout'
+import { downloadBlob, fetchVideoBlob, openPreviewWindow } from '../lib/download'
 
 const API_ENDPOINT = '/.netlify/functions/x-download'
 const DEFAULT_ERROR = 'No downloadable public X/Twitter videos were found for that URL.'
@@ -8,23 +9,6 @@ const DEFAULT_ERROR = 'No downloadable public X/Twitter videos were found for th
 async function readJsonError(response) {
   const body = await response.json().catch(() => null)
   return body?.message || body?.error || DEFAULT_ERROR
-}
-
-function saveBlob(blob, filename) {
-  const objectUrl = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = objectUrl
-  link.download = filename
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
-}
-
-async function fetchVideoBlob(url) {
-  const res = await fetch(url, { credentials: 'omit' })
-  if (!res.ok) throw new Error(`Could not fetch video (HTTP ${res.status}).`)
-  return res.blob()
 }
 
 function zipBaseName(filename) {
@@ -122,6 +106,7 @@ export default function XDownloaderPage() {
       return
     }
 
+    const previewWindow = openPreviewWindow()
     setStatus('loading')
     setMessage('Finding public videos...')
 
@@ -144,12 +129,14 @@ export default function XDownloaderPage() {
       if (videos.length === 1) {
         setMessage(`Downloading ${videos[0].filename}...`)
         const blob = await fetchVideoBlob(videos[0].proxyUrl || videos[0].url)
-        saveBlob(blob, videos[0].filename)
+        downloadBlob(blob, videos[0].filename, previewWindow)
         setStatus('success')
         setMessage(`Download started: ${videos[0].filename}`)
         return
       }
 
+      // ZIPs don't preview meaningfully — close the placeholder tab if we opened one.
+      if (previewWindow && !previewWindow.closed) previewWindow.close()
       const zip = new JSZip()
       for (let i = 0; i < videos.length; i += 1) {
         setMessage(`Downloading ${i + 1} of ${videos.length}...`)
@@ -159,10 +146,11 @@ export default function XDownloaderPage() {
       setMessage(`Packing ${videos.length} videos into a ZIP...`)
       const zipBlob = await zip.generateAsync({ type: 'blob' })
       const zipName = zipBaseName(videos[0].filename)
-      saveBlob(zipBlob, zipName)
+      downloadBlob(zipBlob, zipName)
       setStatus('success')
       setMessage(`Download started: ${zipName}`)
     } catch (error) {
+      if (previewWindow && !previewWindow.closed) previewWindow.close()
       setStatus('error')
       setMessage(error?.message || DEFAULT_ERROR)
     }

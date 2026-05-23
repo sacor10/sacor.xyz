@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Layout from '../Layout'
+import { downloadBlob, fetchVideoBlob, openPreviewWindow } from '../lib/download'
 
 const API_ENDPOINT = '/.netlify/functions/tiktok-download'
 const DEFAULT_ERROR = 'No downloadable public TikTok video was found for that URL.'
@@ -7,23 +8,6 @@ const DEFAULT_ERROR = 'No downloadable public TikTok video was found for that UR
 async function readJsonError(response) {
   const body = await response.json().catch(() => null)
   return body?.message || body?.error || DEFAULT_ERROR
-}
-
-function saveBlob(blob, filename) {
-  const objectUrl = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = objectUrl
-  link.download = filename
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
-}
-
-async function fetchVideoBlob(url) {
-  const res = await fetch(url, { credentials: 'omit' })
-  if (!res.ok) throw new Error(`Could not fetch video (HTTP ${res.status}).`)
-  return res.blob()
 }
 
 function Sidebar() {
@@ -116,6 +100,7 @@ export default function TikTokDownloaderPage() {
       return
     }
 
+    const previewWindow = openPreviewWindow()
     setStatus('loading')
     setMessage('Finding public video...')
 
@@ -137,10 +122,11 @@ export default function TikTokDownloaderPage() {
 
       setMessage(`Downloading ${videos[0].filename}...`)
       const blob = await fetchVideoBlob(videos[0].proxyUrl || videos[0].url)
-      saveBlob(blob, videos[0].filename)
+      downloadBlob(blob, videos[0].filename, previewWindow)
       setStatus('success')
       setMessage(`Download started: ${videos[0].filename}`)
     } catch (error) {
+      if (previewWindow && !previewWindow.closed) previewWindow.close()
       setStatus('error')
       setMessage(error?.message || DEFAULT_ERROR)
     }

@@ -104,10 +104,11 @@ function collectVideos(payload, statusId, titleHint) {
     const suffix = media.filter((m) => m && (m.type === 'video' || m.type === 'animated_gif')).length > 1
       ? `-${String(index).padStart(2, '0')}`
       : ''
+    const filename = `${titleBase}${suffix}.mp4`
     out.push({
       url: best.url,
-      proxyUrl: `/.netlify/functions/x-video?url=${encodeURIComponent(best.url)}`,
-      filename: `${titleBase}${suffix}.mp4`,
+      proxyUrl: `/.netlify/functions/x-video?url=${encodeURIComponent(best.url)}&filename=${encodeURIComponent(filename)}`,
+      filename,
       width,
       height,
     })

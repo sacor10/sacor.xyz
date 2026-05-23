@@ -1,34 +1,19 @@
 import { useState } from 'react'
+import JSZip from 'jszip'
 import Layout from '../Layout'
-import { downloadBlob, openPreviewWindow } from '../lib/download'
+import { downloadBlob, fetchVideoBlob, openPreviewWindow } from '../lib/download'
 
-const API_BASE = (import.meta.env.VITE_INSTAGRAM_DOWNLOADER_API_URL || 'http://localhost:8787')
-  .replace(/\/+$/, '')
+const API_ENDPOINT = '/.netlify/functions/linkedin-download'
+const DEFAULT_ERROR = 'No downloadable public LinkedIn video was found for that URL.'
 
-const DEFAULT_ERROR = 'No downloadable public videos were found for that URL.'
-
-function getDownloadFilename(disposition) {
-  if (!disposition) return 'instagram-download'
-
-  const utf8 = disposition.match(/filename\*=UTF-8''([^;]+)/i)
-  if (utf8?.[1]) {
-    try {
-      return decodeURIComponent(utf8[1].trim())
-    } catch {
-      return utf8[1].trim()
-    }
-  }
-
-  const quoted = disposition.match(/filename="([^"]+)"/i)
-  if (quoted?.[1]) return quoted[1].trim()
-
-  const plain = disposition.match(/filename=([^;]+)/i)
-  return plain?.[1]?.trim() || 'instagram-download'
-}
-
-async function readDownloadError(response) {
+async function readJsonError(response) {
   const body = await response.json().catch(() => null)
   return body?.message || body?.error || DEFAULT_ERROR
+}
+
+function zipBaseName(filename) {
+  const trimmed = filename.replace(/\.mp4$/i, '').replace(/-\d+$/, '')
+  return `${trimmed || 'linkedin-videos'}-videos.zip`
 }
 
 function Sidebar() {
@@ -46,14 +31,14 @@ function Sidebar() {
           <tr>
             <td bgcolor="#000000">
               <font face="Comic Sans MS" size="2" color="#FFFFFF">
-                <b className="cyan">Reels:</b> /reel/ links
+                <b className="cyan">Posts:</b> linkedin.com/posts/&lt;author&gt;_...
                 <br />
-                <b className="lime">Posts:</b> /p/ links
+                <b className="lime">Feed:</b> linkedin.com/feed/update/urn:li:...
                 <br />
-                <b className="yellow">Videos:</b> /tv/ links
+                <b className="yellow">URN:</b> ugcPost-&lt;id&gt; and activity-&lt;id&gt;
                 <br />
                 <br />
-                Public Instagram videos only. Photo-only posts will politely bounce.
+                Public post videos only. Articles, polls, and image-only posts will politely bounce.
               </font>
             </td>
           </tr>
@@ -74,8 +59,7 @@ function Sidebar() {
           <tr>
             <td bgcolor="#000000">
               <font face="Comic Sans MS" size="2" color="#00FF00">
-                Carousel posts download as one ZIP with up to 20 public videos inside.
-                Single videos download as one MP4.
+                Single videos download as one MP4. Posts with multiple public videos come down as one ZIP.
               </font>
             </td>
           </tr>
@@ -96,7 +80,7 @@ function Sidebar() {
           <tr>
             <td bgcolor="#000000">
               <font face="Comic Sans MS" size="2" color="#FFFFFF">
-                Save stuff you own or have permission to download. Private or login-only posts are out of scope.
+                Save stuff you own or have permission to download. Private or member-only posts are out of scope.
               </font>
             </td>
           </tr>
@@ -106,7 +90,7 @@ function Sidebar() {
   )
 }
 
-export default function InstagramDownloaderPage() {
+export default function LinkedInDownloaderPage() {
   const [url, setUrl] = useState('')
   const [status, setStatus] = useState('idle')
   const [message, setMessage] = useState('')
@@ -117,32 +101,52 @@ export default function InstagramDownloaderPage() {
 
     if (!targetUrl) {
       setStatus('error')
-      setMessage('Paste a public Instagram Reel or video post URL first.')
+      setMessage('Paste a public LinkedIn post URL first.')
       return
     }
 
     const previewWindow = openPreviewWindow()
     setStatus('loading')
-    setMessage('Finding public videos and preparing your download...')
+    setMessage('Finding public videos...')
 
     try {
-      const response = await fetch(`${API_BASE}/download`, {
+      const response = await fetch(API_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: targetUrl }),
       })
 
       if (!response.ok) {
-        throw new Error(await readDownloadError(response))
+        throw new Error(await readJsonError(response))
       }
 
-      const filename = getDownloadFilename(response.headers.get('Content-Disposition'))
-      const blob = await response.blob()
-      const isZip = /\.zip$/i.test(filename) || blob.type === 'application/zip'
-      if (isZip && previewWindow && !previewWindow.closed) previewWindow.close()
-      downloadBlob(blob, filename, isZip ? null : previewWindow)
+      const { videos } = await response.json()
+      if (!Array.isArray(videos) || videos.length === 0) {
+        throw new Error(DEFAULT_ERROR)
+      }
+
+      if (videos.length === 1) {
+        setMessage(`Downloading ${videos[0].filename}...`)
+        const blob = await fetchVideoBlob(videos[0].proxyUrl || videos[0].url)
+        downloadBlob(blob, videos[0].filename, previewWindow)
+        setStatus('success')
+        setMessage(`Download started: ${videos[0].filename}`)
+        return
+      }
+
+      if (previewWindow && !previewWindow.closed) previewWindow.close()
+      const zip = new JSZip()
+      for (let i = 0; i < videos.length; i += 1) {
+        setMessage(`Downloading ${i + 1} of ${videos.length}...`)
+        const blob = await fetchVideoBlob(videos[i].proxyUrl || videos[i].url)
+        zip.file(videos[i].filename, blob)
+      }
+      setMessage(`Packing ${videos.length} videos into a ZIP...`)
+      const zipBlob = await zip.generateAsync({ type: 'blob' })
+      const zipName = zipBaseName(videos[0].filename)
+      downloadBlob(zipBlob, zipName)
       setStatus('success')
-      setMessage(`Download started: ${filename}`)
+      setMessage(`Download started: ${zipName}`)
     } catch (error) {
       if (previewWindow && !previewWindow.closed) previewWindow.close()
       setStatus('error')
@@ -154,7 +158,7 @@ export default function InstagramDownloaderPage() {
     <>
       <center>
         <font face="Impact" size="6" color="#FF00FF" className="hero-glow">
-          <span className="blink">~*~ INSTAGRAM LINK DOWNLOADER ~*~</span>
+          <span className="blink">~*~ LINKEDIN VIDEO DOWNLOADER ~*~</span>
         </font>
       </center>
 
@@ -165,8 +169,8 @@ export default function InstagramDownloaderPage() {
           <tr>
             <td>
               <font face="Comic Sans MS" size="3" color="#FFFFFF">
-                Paste a public Instagram Reel or video post URL and this thing grabs every public video it can find
-                in one shot. Reels come down as MP4; multi-video posts come down as one ZIP.
+                Paste a public LinkedIn post URL and this thing grabs the MP4 straight from
+                LinkedIn's embed player. Works on /posts/ links and /feed/update/ links alike.
               </font>
             </td>
           </tr>
@@ -198,20 +202,20 @@ export default function InstagramDownloaderPage() {
               <form className="igdl-form" onSubmit={submit}>
                 <label>
                   <font face="Courier New" size="3" color="#00FF00">
-                    INSTAGRAM URL:
+                    LINKEDIN URL:
                   </font>
                   <input
                     type="url"
                     value={url}
                     onChange={(event) => setUrl(event.target.value)}
-                    placeholder="https://www.instagram.com/reel/..."
+                    placeholder="https://www.linkedin.com/posts/..."
                     disabled={status === 'loading'}
                   />
                 </label>
 
                 <center>
                   <button type="submit" className="igdl-submit" disabled={status === 'loading'}>
-                    {status === 'loading' ? '~ WORKING ~' : <>&#11015; DOWNLOAD VIDEOS &#11015;</>}
+                    {status === 'loading' ? '~ WORKING ~' : <>&#11015; DOWNLOAD VIDEO &#11015;</>}
                   </button>
                 </center>
               </form>
@@ -235,7 +239,7 @@ export default function InstagramDownloaderPage() {
 
       <center>
         <font face="Comic Sans MS" size="2" color="#888888">
-          Powered by yt-dlp &nbsp;&#9733;&nbsp; Public Instagram media only &nbsp;&#9733;&nbsp;
+          Public LinkedIn media only &nbsp;&#9733;&nbsp;
           <a href="mailto:vestibule@sacor.xyz">report bugs here</a>
         </font>
       </center>

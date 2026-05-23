@@ -1,14 +1,14 @@
 /**
- * Streaming proxy for public X/Twitter MP4s. The browser cannot fetch
- * `video.twimg.com` directly for many videos (the cross-origin Referer is
- * stripped, no X cookies, etc.) and gets a 403. This function fetches
- * server-side with the headers twimg expects, then streams the bytes back.
+ * Streaming proxy for public LinkedIn MP4s served from *.licdn.com. The browser
+ * cannot reliably fetch these URLs directly (CORS, opaque signed query strings
+ * with no filename, sometimes Referer-gated). This function fetches server-side
+ * with the headers licdn expects, then streams the bytes back with a clean
+ * Content-Disposition.
  *
  * Streaming via `new Response(upstream.body, …)` from a Netlify Functions v2
  * handler bypasses the 6 MB Lambda response cap that applies to buffered
  * v1-style responses.
  */
-const ALLOWED_HOSTS = new Set(['video.twimg.com'])
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
 const FETCH_TIMEOUT_MS = 30000
@@ -19,6 +19,11 @@ function badRequest(message) {
     status: 400,
     headers: { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' },
   })
+}
+
+function isLicdnHost(hostname) {
+  const host = hostname.toLowerCase()
+  return host === 'licdn.com' || host.endsWith('.licdn.com')
 }
 
 export default async (req) => {
@@ -39,7 +44,7 @@ export default async (req) => {
   } catch {
     return badRequest('Invalid url parameter.')
   }
-  if (parsed.protocol !== 'https:' || !ALLOWED_HOSTS.has(parsed.hostname)) {
+  if (parsed.protocol !== 'https:' || !isLicdnHost(parsed.hostname)) {
     return badRequest('Host not allowed.')
   }
 
@@ -51,7 +56,7 @@ export default async (req) => {
     upstream = await fetch(parsed.toString(), {
       headers: {
         Accept: '*/*',
-        Referer: 'https://x.com/',
+        Referer: 'https://www.linkedin.com/',
         'User-Agent': USER_AGENT,
       },
       signal: controller.signal,
@@ -64,8 +69,6 @@ export default async (req) => {
     })
   }
 
-  // Headers received — clear the connect/headers timeout so long downloads
-  // aren't aborted mid-stream.
   clearTimeout(timer)
 
   if (!upstream.ok || !upstream.body) {
@@ -90,8 +93,8 @@ export default async (req) => {
   headers.set('Cache-Control', 'no-store')
   const filenameParam = incoming.searchParams.get('filename')
   const safeName = filenameParam
-    ? filenameParam.replace(/[^\w.\-]+/g, '_').slice(0, 120) || 'x-video.mp4'
-    : 'x-video.mp4'
+    ? filenameParam.replace(/[^\w.\-]+/g, '_').slice(0, 120) || 'linkedin-video.mp4'
+    : 'linkedin-video.mp4'
   headers.set('Content-Disposition', `attachment; filename="${safeName}"`)
 
   return new Response(upstream.body, { status: 200, headers })
