@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import HomePage from './pages/HomePage'
 import YtMp4Page from './pages/YtMp4Page'
+import YoutubeDownloaderPage from './pages/YoutubeDownloaderPage'
 import InstagramDownloaderPage from './pages/InstagramDownloaderPage'
 import XDownloaderPage from './pages/XDownloaderPage'
 import TikTokDownloaderPage from './pages/TikTokDownloaderPage'
@@ -23,6 +24,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/ytmp4" element={<YtMp4Page />} />
+          <Route path="/youtube-downloader" element={<YoutubeDownloaderPage />} />
           <Route path="/instagram-downloader" element={<InstagramDownloaderPage />} />
           <Route path="/x-downloader" element={<XDownloaderPage />} />
           <Route path="/tiktok-downloader" element={<TikTokDownloaderPage />} />

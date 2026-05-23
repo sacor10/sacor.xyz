@@ -9,6 +9,7 @@ export default defineConfig([
     'dist',
     '_patch_css.js',
     'services/instagram-downloader/node_modules',
+    'services/youtube-downloader/node_modules',
     'services/x-downloader/node_modules',
   ]),
   {
@@ -32,7 +33,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['services/{instagram,x}-downloader/**/*.js'],
+    files: ['services/{instagram,youtube,x}-downloader/**/*.js'],
     languageOptions: {
       globals: {
         ...globals.node,
