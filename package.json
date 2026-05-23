@@ -5,14 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/ensure-yt-dlp-linux.mjs",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "instagram-api": "npm --prefix services/instagram-downloader run dev",
     "instagram-api:test": "npm --prefix services/instagram-downloader test",
-    "youtube-api": "npm --prefix services/youtube-downloader run dev",
-    "youtube-api:test": "npm --prefix services/youtube-downloader test",
     "x-api": "npm --prefix services/x-downloader run dev",
     "x-api:test": "npm --prefix services/x-downloader test"
   },
@@ -27,8 +24,7 @@
     "react-markdown": "^9.0.1",
     "react-router-dom": "^7.14.1",
     "remark-gfm": "^4.0.0",
-    "sanitize-filename": "^1.6.4",
-    "youtube-dl-exec": "^3.1.5"
+    "sanitize-filename": "^1.6.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

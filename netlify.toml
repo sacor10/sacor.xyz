@@ -4,10 +4,6 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  YOUTUBE_DL_FILENAME = "yt-dlp_linux"
-
-[functions]
-  included_files = ["netlify/bin/yt-dlp_linux", "node_modules/youtube-dl-exec/bin/**"]
 
 # SPA fallback (safe even without a router)
 [[redirects]]

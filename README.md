@@ -113,9 +113,7 @@ No service or env var setup is required.
 
 ## YouTube Downloader
 
-The `/youtube-downloader` page does not require a `VITE_` API URL in production. On Netlify it calls `/.netlify/functions/youtube-download`, which resolves a public YouTube video with yt-dlp and returns one progressive MP4 URL for the browser to open.
-
-For plain `npm run dev` on `http://localhost:5173`, the page falls back to the local Express service on `http://localhost:8789/download`. For same-origin local function testing, use `npx netlify dev`.
+The in-browser YouTube downloader was removed. Running yt-dlp from Netlify Functions (AWS Lambda datacenter IPs) triggered YouTube's "Sign in to confirm you're not a bot" challenge, which can't be reliably worked around server-side without a residential proxy or account cookies. The `/youtube-downloader` route now redirects to `/ytmp4`, the downloadable Windows EXE that runs yt-dlp locally from the user's own (residential) IP.
 
 ## Account / Google Sign-In
 
