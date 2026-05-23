@@ -111,6 +111,12 @@ No service or env var setup is required.
 
 `services/x-downloader/` still contains the original yt-dlp-backed Express service, with its own `npm --prefix services/x-downloader run dev` script. It's not used by the deployed site and is kept around for local experimentation only.
 
+## YouTube Downloader
+
+The `/youtube-downloader` page does not require a `VITE_` API URL in production. On Netlify it calls `/.netlify/functions/youtube-download`, which resolves a public YouTube video with yt-dlp and returns one progressive MP4 URL for the browser to open.
+
+For plain `npm run dev` on `http://localhost:5173`, the page falls back to the local Express service on `http://localhost:8789/download`. For same-origin local function testing, use `npx netlify dev`.
+
 ## Account / Google Sign-In
 
 The site supports Google sign-in. Any signed-in Google account can create and manage its own Travel Plans, and can also access plans shared with that exact email address.

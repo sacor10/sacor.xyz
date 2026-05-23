@@ -2,10 +2,20 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../Layout'
 
-const API_BASE = (import.meta.env.VITE_YOUTUBE_DOWNLOADER_API_URL || 'http://localhost:8789')
-  .replace(/\/+$/, '')
-
 const DEFAULT_ERROR = 'No downloadable public YouTube video was found for that URL.'
+
+function getApiEndpoint() {
+  if (
+    import.meta.env.DEV
+    &&
+    typeof window !== 'undefined'
+    && ['localhost', '127.0.0.1'].includes(window.location.hostname)
+    && window.location.port === '5173'
+  ) {
+    return 'http://localhost:8789/download'
+  }
+  return '/.netlify/functions/youtube-download'
+}
 
 function getDownloadFilename(disposition) {
   if (!disposition) return 'youtube-download'
@@ -40,6 +50,16 @@ function saveBlob(blob, filename) {
   link.click()
   link.remove()
   window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+}
+
+function downloadExternalUrl(url, filename) {
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.rel = 'noopener'
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
 }
 
 function Sidebar() {
@@ -136,7 +156,7 @@ export default function YoutubeDownloaderPage() {
     setMessage('Finding the best MP4 with audio and preparing your download...')
 
     try {
-      const response = await fetch(`${API_BASE}/download`, {
+      const response = await fetch(getApiEndpoint(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: targetUrl }),
@@ -144,6 +164,18 @@ export default function YoutubeDownloaderPage() {
 
       if (!response.ok) {
         throw new Error(await readDownloadError(response))
+      }
+
+      const contentType = response.headers.get('Content-Type') || ''
+      if (contentType.includes('application/json')) {
+        const body = await response.json()
+        const video = Array.isArray(body?.videos) ? body.videos[0] : null
+        if (!video?.url) throw new Error(DEFAULT_ERROR)
+
+        downloadExternalUrl(video.url, video.filename || 'youtube-video.mp4')
+        setStatus('success')
+        setMessage(`Download opened: ${video.filename || 'youtube-video.mp4'}`)
+        return
       }
 
       const filename = getDownloadFilename(response.headers.get('Content-Disposition'))
