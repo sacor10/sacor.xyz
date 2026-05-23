@@ -4,6 +4,7 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  YOUTUBE_DL_FILENAME = "yt-dlp_linux"
 
 [functions]
   included_files = ["node_modules/youtube-dl-exec/bin/**"]

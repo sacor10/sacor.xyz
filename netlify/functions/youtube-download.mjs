@@ -65,18 +65,24 @@ function resolveYtDlpPath() {
   if (cachedYtDlpPath && fs.existsSync(cachedYtDlpPath)) return cachedYtDlpPath
 
   const dirname = path.dirname(fileURLToPath(import.meta.url))
-  const filename = process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp'
+  const filenames = process.platform === 'win32'
+    ? ['yt-dlp.exe']
+    : ['yt-dlp_linux', 'yt-dlp']
   const candidates = [
-    path.join(process.cwd(), 'node_modules', 'youtube-dl-exec', 'bin', filename),
-    path.join(dirname, 'node_modules', 'youtube-dl-exec', 'bin', filename),
-    path.join(dirname, '..', 'node_modules', 'youtube-dl-exec', 'bin', filename),
-    path.join(dirname, '..', '..', 'node_modules', 'youtube-dl-exec', 'bin', filename),
-    path.join('/var/task', 'node_modules', 'youtube-dl-exec', 'bin', filename),
-    path.join('/opt', 'nodejs', 'node_modules', 'youtube-dl-exec', 'bin', filename),
-  ]
+    process.cwd(),
+    dirname,
+    path.join(dirname, '..'),
+    path.join(dirname, '..', '..'),
+    '/var/task',
+    '/opt/nodejs',
+  ].flatMap((base) => filenames.map((filename) =>
+    path.join(base, 'node_modules', 'youtube-dl-exec', 'bin', filename),
+  ))
 
   const direct = candidates.find((candidate) => fs.existsSync(candidate))
-  const found = direct || findFile(dirname, filename) || findFile('/var/task', filename)
+  const found = direct
+    || filenames.map((filename) => findFile(dirname, filename)).find(Boolean)
+    || filenames.map((filename) => findFile('/var/task', filename)).find(Boolean)
   if (!found) return null
 
   try {
