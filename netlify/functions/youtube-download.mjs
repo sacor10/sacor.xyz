@@ -68,7 +68,16 @@ function resolveYtDlpPath() {
   const filenames = process.platform === 'win32'
     ? ['yt-dlp.exe']
     : ['yt-dlp_linux', 'yt-dlp']
-  const candidates = [
+  const packagedBinaryCandidates = process.platform === 'win32'
+    ? []
+    : [
+        path.join(process.cwd(), 'netlify', 'bin', 'yt-dlp_linux'),
+        path.join(dirname, 'netlify', 'bin', 'yt-dlp_linux'),
+        path.join(dirname, '..', 'netlify', 'bin', 'yt-dlp_linux'),
+        path.join(dirname, '..', '..', 'netlify', 'bin', 'yt-dlp_linux'),
+        path.join('/var/task', 'netlify', 'bin', 'yt-dlp_linux'),
+      ]
+  const dependencyBinaryCandidates = [
     process.cwd(),
     dirname,
     path.join(dirname, '..'),
@@ -78,6 +87,7 @@ function resolveYtDlpPath() {
   ].flatMap((base) => filenames.map((filename) =>
     path.join(base, 'node_modules', 'youtube-dl-exec', 'bin', filename),
   ))
+  const candidates = [...packagedBinaryCandidates, ...dependencyBinaryCandidates]
 
   const direct = candidates.find((candidate) => fs.existsSync(candidate))
   const found = direct
