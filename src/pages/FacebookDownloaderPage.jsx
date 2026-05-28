@@ -56,7 +56,8 @@ function Sidebar() {
             <td bgcolor="#000000">
               <font face="Comic Sans MS" size="2" color="#00FF00">
                 Share links get resolved to their canonical reel or video, then the highest-quality
-                MP4 comes straight down as one file. HD when Facebook offers it.
+                MP4 comes straight down. When Facebook only serves split audio/video (DASH), the
+                tracks are merged in your browser &mdash; the first merge downloads a ~30 MB tool.
               </font>
             </td>
           </tr>
@@ -128,13 +129,32 @@ export default function FacebookDownloaderPage() {
 
       const video = videos[0]
       // Surface what the extractor found so the result is debuggable without
-      // dev tools (e.g. on mobile) — especially the muxed/audio flag.
+      // dev tools (e.g. on mobile) — especially the audio status.
       setMeta({
         source: video.source || null,
-        muxed: video.muxed !== false,
+        audio: video.needsMux ? 'merging' : (video.muxed !== false ? 'muxed' : 'none'),
         width: video.width || null,
         height: video.height || null,
       })
+
+      if (video.needsMux && video.audioProxyUrl) {
+        // Facebook only offered separated DASH tracks — fetch both and remux
+        // them into one MP4 in the browser with ffmpeg.wasm.
+        setMessage('Downloading video track...')
+        const videoBlob = await fetchVideoBlob(video.proxyUrl)
+        setMessage('Downloading audio track...')
+        const audioBlob = await fetchVideoBlob(video.audioProxyUrl, { mime: 'audio/mp4' })
+        setMessage('Merging audio + video... first run downloads the merger (~30 MB), please wait.')
+        const { muxVideoAudio } = await import('../lib/mux')
+        const merged = await muxVideoAudio(videoBlob, audioBlob)
+        const objectUrl = downloadBlob(merged, video.filename, previewWindow)
+        setStatus('success')
+        setMessage(`Download started: ${video.filename}`)
+        setMeta((prev) => (prev ? { ...prev, audio: 'merged' } : prev))
+        setDownloadLink(objectUrl ? { url: objectUrl, filename: video.filename } : null)
+        return
+      }
+
       setMessage(`Downloading ${video.filename}...`)
       const blob = await fetchVideoBlob(video.proxyUrl || video.url)
       const objectUrl = downloadBlob(blob, video.filename, previewWindow)
@@ -243,17 +263,19 @@ export default function FacebookDownloaderPage() {
                         <> &nbsp;|&nbsp; size: <b className="yellow">{meta.width}&times;{meta.height}</b></>
                       ) : null}
                       {' '}|{' '}audio:{' '}
-                      <b className={meta.muxed ? 'lime' : 'hotpink'}>
-                        {meta.muxed ? 'YES (muxed)' : 'NO (video-only track)'}
+                      <b className={meta.audio === 'none' ? 'hotpink' : 'lime'}>
+                        {meta.audio === 'muxed' && 'YES (muxed)'}
+                        {meta.audio === 'merged' && 'YES (merged separate tracks)'}
+                        {meta.audio === 'none' && 'NO (video-only track)'}
                       </b>
                     </font>
-                    {!meta.muxed && (
+                    {meta.audio === 'none' && (
                       <>
                         <br />
                         <font face="Comic Sans MS" size="2" color="#FF66CC">
-                          Heads up: Facebook only offered a separate (video-only) track for this one,
-                          so the file has no sound. Tell Claude &ldquo;muxed: NO&rdquo; and which source
-                          won &mdash; that means server-side audio+video merging is needed.
+                          Heads up: Facebook only offered a video-only track with no matching audio,
+                          so this file has no sound. Tell Claude &ldquo;audio: none&rdquo; and which
+                          source won.
                         </font>
                       </>
                     )}

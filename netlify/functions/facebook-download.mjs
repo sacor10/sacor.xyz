@@ -215,19 +215,76 @@ function fallbackHtmlMp4Scan(html) {
   return out
 }
 
-function findAllVideosInHtml(html) {
-  const decoded = decodeJsonString(html)
+// Strategy d: parse Facebook's inline DASH manifest into separate best video
+// and audio tracks. Modern FB videos (and most reels) ship no muxed progressive
+// to logged-out clients — only DASH, where audio and video are distinct
+// Representations. We return both so the browser can remux them into one file.
+function parseDashRepresentations(mpd) {
+  const reps = []
+  const collect = (mime, body) => {
+    const repRe = /<Representation\b([^>]*)>([\s\S]*?)<\/Representation>/gi
+    let r
+    while ((r = repRe.exec(body)) !== null) {
+      const attrs = r[1]
+      const inner = r[2]
+      const repMime = (attrs.match(/mimeType="([^"]+)"/i) || [])[1] || mime
+      const bandwidth = Number((attrs.match(/bandwidth="(\d+)"/i) || [])[1] || 0)
+      // \b so `width=` isn't matched inside `bandWIDTH=`.
+      const width = Number((attrs.match(/\bwidth="(\d+)"/i) || [])[1] || 0)
+      const height = Number((attrs.match(/\bheight="(\d+)"/i) || [])[1] || 0)
+      const baseRaw = (inner.match(/<BaseURL>([\s\S]*?)<\/BaseURL>/i) || [])[1]
+      if (!baseRaw) continue
+      const url = decodeHtmlEntities(baseRaw.trim())
+      if (!/^https:\/\/[^\s"'<>]*\.fbcdn\.net\//i.test(url)) continue
+      const kind = /audio/i.test(repMime) ? 'audio'
+        : (/video/i.test(repMime) || width || height) ? 'video'
+        : 'unknown'
+      reps.push({ kind, bandwidth, width, height, url })
+    }
+  }
+  // Prefer per-AdaptationSet mimeType context; fall back to a flat scan.
+  const setRe = /<AdaptationSet\b([^>]*)>([\s\S]*?)<\/AdaptationSet>/gi
+  let s
+  let sawSet = false
+  while ((s = setRe.exec(mpd)) !== null) {
+    sawSet = true
+    const setMime = (s[1].match(/(?:mimeType|contentType)="([^"]+)"/i) || [])[1] || ''
+    collect(setMime, s[2])
+  }
+  if (!sawSet) collect('', mpd)
+
+  const vids = reps.filter((r) => r.kind === 'video')
+    .sort((a, b) => (b.height || b.width || 0) - (a.height || a.width || 0) || b.bandwidth - a.bandwidth)
+  const auds = reps.filter((r) => r.kind === 'audio')
+    .sort((a, b) => b.bandwidth - a.bandwidth)
+  if (!vids.length && !auds.length) return null
+  return { video: vids[0] || null, audio: auds[0] || null }
+}
+
+function extractDashTracks(rawHtml) {
+  // dash_manifest is a JSON string of MPD XML; capture the escaped literal and
+  // JSON.parse it back to real XML (handles \", \/, \uXXXX, \n in one shot).
+  const m = rawHtml.match(/"dash_manifest(?:_xml_string)?"\s*:\s*"((?:\\.|[^"\\])*)"/)
+  if (!m) return null
+  let mpd
+  try {
+    mpd = JSON.parse(`"${m[1]}"`)
+  } catch {
+    return null
+  }
+  // Some pages store the XML with HTML entities instead of \uXXXX.
+  if (/&lt;|&gt;/.test(mpd)) mpd = decodeHtmlEntities(mpd)
+  return parseDashRepresentations(mpd)
+}
+
+function findAllVideosInHtml(rawHtml) {
+  const decoded = decodeJsonString(rawHtml)
   const keyed = extractFromJsonKeys(decoded)
   const og = extractOgVideo(decoded)
+  const dash = extractDashTracks(rawHtml)
   const flat = fallbackHtmlMp4Scan(decoded)
-  const seen = new Set()
-  const merged = []
-  for (const stream of [...keyed, ...og, ...flat]) {
-    if (seen.has(stream.url)) continue
-    seen.add(stream.url)
-    merged.push(stream)
-  }
-  return { keyed, og, flat, merged }
+  const hasAny = keyed.length > 0 || og.length > 0 || !!(dash && dash.video) || flat.length > 0
+  return { keyed, og, dash, flat, hasAny }
 }
 
 async function fetchHtml(url, userAgent, label) {
@@ -352,7 +409,7 @@ export default async (req) => {
 
   const attempts = buildAttempts(canonicalUrl, videoId)
   const trace = []
-  let winningStreams = []
+  let winning = null
 
   for (const attempt of attempts) {
     const fetched = await fetchHtml(attempt.url, attempt.ua, attempt.label)
@@ -366,16 +423,20 @@ export default async (req) => {
       keyedCount: 0,
       ogCount: 0,
       flatCount: 0,
+      dashVideo: false,
+      dashAudio: false,
       sample: null,
     }
     if (fetched.ok && fetched.html) {
-      const { keyed, og, flat, merged } = findAllVideosInHtml(fetched.html)
-      traceEntry.keyedCount = keyed.length
-      traceEntry.ogCount = og.length
-      traceEntry.flatCount = flat.length
+      const found = findAllVideosInHtml(fetched.html)
+      traceEntry.keyedCount = found.keyed.length
+      traceEntry.ogCount = found.og.length
+      traceEntry.flatCount = found.flat.length
+      traceEntry.dashVideo = !!(found.dash && found.dash.video)
+      traceEntry.dashAudio = !!(found.dash && found.dash.audio)
       traceEntry.sample = fetched.html.slice(0, debugMode ? 8000 : 2000)
-      if (merged.length > 0) {
-        winningStreams = merged
+      if (found.hasAny) {
+        winning = found
         trace.push(traceEntry)
         break
       }
@@ -383,7 +444,7 @@ export default async (req) => {
     trace.push(traceEntry)
   }
 
-  if (winningStreams.length === 0) {
+  if (!winning) {
     console.error('[facebook-download] no videos found', JSON.stringify({
       input,
       canonicalUrl,
@@ -399,20 +460,54 @@ export default async (req) => {
     return json({ code, message, trace }, status)
   }
 
-  const best = pickBestStream(winningStreams)
   const baseName = sanitizeFilenamePart(videoId ? `facebook-${videoId}` : '', 'facebook-video')
   const filename = `${baseName}.mp4`
+  const proxy = (u, name) =>
+    `/.netlify/functions/facebook-video?url=${encodeURIComponent(u)}&filename=${encodeURIComponent(name)}`
 
-  const video = {
-    url: best.url,
-    proxyUrl: `/.netlify/functions/facebook-video?url=${encodeURIComponent(best.url)}&filename=${encodeURIComponent(filename)}`,
-    filename,
-    width: best.width,
-    height: best.height,
-    // Which extractor won and whether it's a muxed (has-audio) source — visible
-    // in the Network response to diagnose silent (video-only) downloads.
-    source: best.source,
-    muxed: !!best.muxed,
+  const muxedStreams = [...winning.keyed, ...winning.og]
+  let video
+
+  if (muxedStreams.length > 0) {
+    // Best case: a single muxed progressive MP4 (audio already baked in).
+    const best = pickBestStream(muxedStreams)
+    video = {
+      url: best.url,
+      proxyUrl: proxy(best.url, filename),
+      filename,
+      width: best.width,
+      height: best.height,
+      source: best.source,
+      muxed: true,
+    }
+  } else if (winning.dash && winning.dash.video && winning.dash.audio) {
+    // Only separated DASH tracks: hand back both so the browser can remux them.
+    const v = winning.dash.video
+    const a = winning.dash.audio
+    video = {
+      url: v.url,
+      proxyUrl: proxy(v.url, filename),
+      filename,
+      width: v.width || null,
+      height: v.height || null,
+      source: 'dash',
+      muxed: false,
+      needsMux: true,
+      audioUrl: a.url,
+      audioProxyUrl: proxy(a.url, `${baseName}-audio.mp4`),
+    }
+  } else {
+    // Truly video-only (DASH video with no audio track, or a flat scan hit).
+    const v = (winning.dash && winning.dash.video) || pickBestStream(winning.flat)
+    video = {
+      url: v.url,
+      proxyUrl: proxy(v.url, filename),
+      filename,
+      width: v.width || null,
+      height: v.height || null,
+      source: winning.dash && winning.dash.video ? 'dash-video' : 'flat',
+      muxed: false,
+    }
   }
 
   if (debugMode) {
