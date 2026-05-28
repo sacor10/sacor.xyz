@@ -51,14 +51,16 @@ export default async (req) => {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
 
-  // Pass through a Range header so iOS Safari's piecemeal video fetch works.
+  // Pass through the browser's Range header for iOS Safari's piecemeal fetch;
+  // otherwise send `Range: bytes=0-`, which some fbcdn edges require before
+  // they'll serve a progressive MP4 to a non-browser client.
   const rangeHeader = req.headers.get('range')
   const upstreamHeaders = {
     Accept: '*/*',
     Referer: 'https://www.facebook.com/',
     'User-Agent': USER_AGENT,
+    Range: rangeHeader || 'bytes=0-',
   }
-  if (rangeHeader) upstreamHeaders.Range = rangeHeader
 
   let upstream
   try {
@@ -66,10 +68,16 @@ export default async (req) => {
       headers: upstreamHeaders,
       signal: controller.signal,
     })
-  } catch {
+  } catch (err) {
     clearTimeout(timer)
-    return new Response('Upstream fetch failed.', {
-      status: 502,
+    const aborted = err?.name === 'AbortError'
+    console.error('[facebook-video] upstream fetch threw', JSON.stringify({
+      host: parsed.hostname, aborted, error: String(err?.message || err),
+    }))
+    // 504 on timeout, 502 on any other network error, so the browser-facing
+    // message distinguishes "fbcdn was slow" from "fbcdn refused us".
+    return new Response(aborted ? 'Upstream timed out.' : 'Upstream fetch failed.', {
+      status: aborted ? 504 : 502,
       headers: { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' },
     })
   }
@@ -77,8 +85,14 @@ export default async (req) => {
   clearTimeout(timer)
 
   if (!upstream.ok || !upstream.body) {
-    return new Response('Upstream fetch failed.', {
-      status: 502,
+    console.error('[facebook-video] upstream not ok', JSON.stringify({
+      host: parsed.hostname, status: upstream.status, hasBody: !!upstream.body,
+    }))
+    // Surface fbcdn's own status (403 expired/bad signature, 404 gone, …) so
+    // failures are diagnosable from the browser instead of a blanket 502.
+    const status = upstream.status >= 400 ? upstream.status : 502
+    return new Response(`Upstream returned ${upstream.status}.`, {
+      status,
       headers: { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' },
     })
   }

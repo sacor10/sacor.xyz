@@ -122,17 +122,17 @@ function decodeHtmlEntities(s) {
     .replace(/&amp;/g, '&')
 }
 
-// Facebook inlines URLs as JSON string literals: forward slashes are escaped
-// as \/ and ampersands as &. Normalising both lets the flat regex and the
-// JSON-key scan see clean URLs.
+// Facebook inlines video URLs in several escaped forms depending on where they
+// live in the page: JSON string literals escape `/` as `\/` and other chars as
+// `\uXXXX`; HTML attributes use `&amp;`/`&#x26;`. A signed fbcdn URL with even
+// one mangled query param gets rejected by the CDN, so normalise all of them.
 function decodeJsonString(value) {
   return value
     .replace(/\\\//g, '/')
-    .replace(/\\u002F/gi, '/')
-    .replace(/\\u0026/gi, '&')
-    .replace(/\\u003D/gi, '=')
-    .replace(/\\u003F/gi, '?')
-    .replace(/\\u0025/gi, '%')
+    .replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/&amp;/g, '&')
+    .replace(/&#x26;/gi, '&')
+    .replace(/&#38;/g, '&')
 }
 
 function isFbVideoUrl(url) {
