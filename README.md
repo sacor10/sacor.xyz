@@ -11,6 +11,7 @@ Most pages are static React (home, blog index/post, contact, guestbook, MTS, web
 
 - `/instagram-downloader` - public Instagram Reel/post downloader backed by a separate Node API (see below).
 - `/x-downloader` - public X/Twitter post video downloader backed by a separate Node API (see below).
+- `/facebook-downloader` - public Facebook reel/watch/video downloader backed by the `facebook-download` Netlify Function (resolves share & fb.watch links, streams the MP4 via the `facebook-video` proxy).
 
 ## Scripts
 
