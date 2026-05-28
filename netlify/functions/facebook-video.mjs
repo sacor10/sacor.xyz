@@ -48,51 +48,78 @@ export default async (req) => {
     return badRequest('Host not allowed.')
   }
 
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+  // fbcdn is fussy about which headers a non-browser client may send: some
+  // signed URLs 403 when a Referer/Origin is present (inverted hotlink
+  // protection), others only serve bytes when a Range is set. There's no single
+  // header set that works for every URL, so try a few least-to-most decorated
+  // variants and stream the first that fbcdn accepts. `null` Range means "send
+  // no Range header at all" — distinct from passing through the browser's.
+  const browserRange = req.headers.get('range')
+  const baseUA = { 'User-Agent': USER_AGENT, Accept: '*/*' }
+  const strategies = [
+    // 1. Bare GET, no Referer — matches how yt-dlp pulls fbcdn progressive MP4s.
+    { label: 'bare', headers: { ...baseUA }, range: browserRange },
+    // 2. Range-only, still no Referer.
+    { label: 'range', headers: { ...baseUA }, range: browserRange || 'bytes=0-' },
+    // 3. Full browser video-fetch headers including the Facebook Referer/Origin.
+    {
+      label: 'referer',
+      headers: {
+        ...baseUA,
+        Referer: 'https://www.facebook.com/',
+        Origin: 'https://www.facebook.com',
+        'Sec-Fetch-Dest': 'video',
+        'Sec-Fetch-Mode': 'no-cors',
+        'Sec-Fetch-Site': 'cross-site',
+      },
+      range: browserRange || 'bytes=0-',
+    },
+  ]
 
-  // Pass through the browser's Range header for iOS Safari's piecemeal fetch;
-  // otherwise send `Range: bytes=0-`, which some fbcdn edges require before
-  // they'll serve a progressive MP4 to a non-browser client.
-  const rangeHeader = req.headers.get('range')
-  const upstreamHeaders = {
-    Accept: '*/*',
-    Referer: 'https://www.facebook.com/',
-    'User-Agent': USER_AGENT,
-    Range: rangeHeader || 'bytes=0-',
+  let upstream = null
+  let lastStatus = 0
+  let lastError = null
+
+  for (const strategy of strategies) {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+    const headers = { ...strategy.headers }
+    if (strategy.range) headers.Range = strategy.range
+    try {
+      const res = await fetch(parsed.toString(), { headers, signal: controller.signal })
+      clearTimeout(timer)
+      if (res.ok && res.body) {
+        upstream = res
+        break
+      }
+      lastStatus = res.status
+      // Drain the (small) error body so the socket is freed before retrying.
+      await res.body?.cancel().catch(() => {})
+      console.error('[facebook-video] strategy rejected', JSON.stringify({
+        host: parsed.hostname, strategy: strategy.label, status: res.status,
+      }))
+    } catch (err) {
+      clearTimeout(timer)
+      lastError = err
+      console.error('[facebook-video] strategy threw', JSON.stringify({
+        host: parsed.hostname, strategy: strategy.label,
+        aborted: err?.name === 'AbortError', error: String(err?.message || err),
+      }))
+    }
   }
 
-  let upstream
-  try {
-    upstream = await fetch(parsed.toString(), {
-      headers: upstreamHeaders,
-      signal: controller.signal,
-    })
-  } catch (err) {
-    clearTimeout(timer)
-    const aborted = err?.name === 'AbortError'
-    console.error('[facebook-video] upstream fetch threw', JSON.stringify({
-      host: parsed.hostname, aborted, error: String(err?.message || err),
-    }))
-    // 504 on timeout, 502 on any other network error, so the browser-facing
-    // message distinguishes "fbcdn was slow" from "fbcdn refused us".
+  if (!upstream) {
+    // Surface fbcdn's own status (403 bad signature/hotlink, 404 gone) when we
+    // got one; otherwise 504 for a timeout or 502 for any other network error.
+    if (lastStatus >= 400) {
+      return new Response(`Upstream returned ${lastStatus}.`, {
+        status: lastStatus,
+        headers: { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' },
+      })
+    }
+    const aborted = lastError?.name === 'AbortError'
     return new Response(aborted ? 'Upstream timed out.' : 'Upstream fetch failed.', {
       status: aborted ? 504 : 502,
-      headers: { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' },
-    })
-  }
-
-  clearTimeout(timer)
-
-  if (!upstream.ok || !upstream.body) {
-    console.error('[facebook-video] upstream not ok', JSON.stringify({
-      host: parsed.hostname, status: upstream.status, hasBody: !!upstream.body,
-    }))
-    // Surface fbcdn's own status (403 expired/bad signature, 404 gone, …) so
-    // failures are diagnosable from the browser instead of a blanket 502.
-    const status = upstream.status >= 400 ? upstream.status : 502
-    return new Response(`Upstream returned ${upstream.status}.`, {
-      status,
       headers: { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' },
     })
   }
