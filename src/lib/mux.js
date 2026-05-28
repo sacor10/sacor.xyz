@@ -9,8 +9,14 @@
 // merge is needed, so it never bloats the initial page load. We use the
 // single-threaded core, which does not require SharedArrayBuffer / cross-origin
 // isolation, so the site's existing COOP headers are left untouched.
-const CORE_VERSION = '0.12.6'
-const CORE_BASE = `https://unpkg.com/@ffmpeg/core@${CORE_VERSION}/dist/umd`
+//
+// @ffmpeg/ffmpeg 0.12 runs a *module* worker, where importScripts is
+// unavailable, so the worker loads the core via `await import(coreURL)`. That
+// requires the ESM build of the core (the UMD build has no default export and
+// fails with "failed to import ffmpeg-core.js"). CORE_VERSION must match the
+// CORE_VERSION baked into the installed @ffmpeg/ffmpeg.
+const CORE_VERSION = '0.12.9'
+const CORE_BASE = `https://unpkg.com/@ffmpeg/core@${CORE_VERSION}/dist/esm`
 
 let ffmpegPromise = null
 
