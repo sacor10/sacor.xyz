@@ -110,6 +110,7 @@ export default function InstagramDownloaderPage() {
   const [url, setUrl] = useState('')
   const [status, setStatus] = useState('idle')
   const [message, setMessage] = useState('')
+  const [downloadLink, setDownloadLink] = useState(null)
 
   const submit = async (event) => {
     event.preventDefault()
@@ -124,6 +125,7 @@ export default function InstagramDownloaderPage() {
     const previewWindow = openPreviewWindow()
     setStatus('loading')
     setMessage('Finding public videos and preparing your download...')
+    setDownloadLink(null)
 
     try {
       const response = await fetch(`${API_BASE}/download`, {
@@ -140,9 +142,10 @@ export default function InstagramDownloaderPage() {
       const blob = await response.blob()
       const isZip = /\.zip$/i.test(filename) || blob.type === 'application/zip'
       if (isZip && previewWindow && !previewWindow.closed) previewWindow.close()
-      downloadBlob(blob, filename, isZip ? null : previewWindow)
+      const objectUrl = downloadBlob(blob, filename, isZip ? null : previewWindow)
       setStatus('success')
       setMessage(`Download started: ${filename}`)
+      setDownloadLink(objectUrl ? { url: objectUrl, filename } : null)
     } catch (error) {
       if (previewWindow && !previewWindow.closed) previewWindow.close()
       setStatus('error')
@@ -221,7 +224,14 @@ export default function InstagramDownloaderPage() {
                   <br />
                   <div className={`igdl-status igdl-status-${status}`}>
                     <font face="Comic Sans MS" size="3" color={status === 'error' ? '#FF0000' : '#FFFF00'}>
-                      {message}
+                      {status === 'success' && downloadLink ? (
+                        <>
+                          Download started:{' '}
+                          <a href={downloadLink.url} download={downloadLink.filename} className="igdl-download-link">
+                            {downloadLink.filename}
+                          </a>
+                        </>
+                      ) : message}
                     </font>
                   </div>
                 </>

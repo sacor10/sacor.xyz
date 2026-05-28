@@ -95,6 +95,7 @@ export default function XDownloaderPage() {
   const [url, setUrl] = useState('')
   const [status, setStatus] = useState('idle')
   const [message, setMessage] = useState('')
+  const [downloadLink, setDownloadLink] = useState(null)
 
   const submit = async (event) => {
     event.preventDefault()
@@ -109,6 +110,7 @@ export default function XDownloaderPage() {
     const previewWindow = openPreviewWindow()
     setStatus('loading')
     setMessage('Finding public videos...')
+    setDownloadLink(null)
 
     try {
       const response = await fetch(API_ENDPOINT, {
@@ -129,9 +131,10 @@ export default function XDownloaderPage() {
       if (videos.length === 1) {
         setMessage(`Downloading ${videos[0].filename}...`)
         const blob = await fetchVideoBlob(videos[0].proxyUrl || videos[0].url)
-        downloadBlob(blob, videos[0].filename, previewWindow)
+        const objectUrl = downloadBlob(blob, videos[0].filename, previewWindow)
         setStatus('success')
         setMessage(`Download started: ${videos[0].filename}`)
+        setDownloadLink(objectUrl ? { url: objectUrl, filename: videos[0].filename } : null)
         return
       }
 
@@ -146,9 +149,10 @@ export default function XDownloaderPage() {
       setMessage(`Packing ${videos.length} videos into a ZIP...`)
       const zipBlob = await zip.generateAsync({ type: 'blob' })
       const zipName = zipBaseName(videos[0].filename)
-      downloadBlob(zipBlob, zipName)
+      const objectUrl = downloadBlob(zipBlob, zipName)
       setStatus('success')
       setMessage(`Download started: ${zipName}`)
+      setDownloadLink(objectUrl ? { url: objectUrl, filename: zipName } : null)
     } catch (error) {
       if (previewWindow && !previewWindow.closed) previewWindow.close()
       setStatus('error')
@@ -227,7 +231,14 @@ export default function XDownloaderPage() {
                   <br />
                   <div className={`igdl-status igdl-status-${status}`}>
                     <font face="Comic Sans MS" size="3" color={status === 'error' ? '#FF0000' : '#FFFF00'}>
-                      {message}
+                      {status === 'success' && downloadLink ? (
+                        <>
+                          Download started:{' '}
+                          <a href={downloadLink.url} download={downloadLink.filename} className="igdl-download-link">
+                            {downloadLink.filename}
+                          </a>
+                        </>
+                      ) : message}
                     </font>
                   </div>
                 </>
