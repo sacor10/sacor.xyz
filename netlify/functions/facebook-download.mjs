@@ -22,15 +22,15 @@
  * Append ?debug=1 to receive the per-attempt diagnostic trace alongside a
  * successful response too. Failures always include the trace.
  */
+const FB_HOST = 'https://www.facebook.com'
 const DESKTOP_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
-// mbasic serves a lighter, login-optional HTML shell that still carries the
-// public video source for many posts.
-const MBASIC_UA =
-  'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36'
-// Slackbot reliably receives the OG-tag share preview without the app shell.
+// Facebook's own link-preview crawler reliably receives og:video on the
+// canonical page without hitting the login/consent wall.
+const FBBOT_UA = 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'
+// Slackbot is a second, equally permissive preview UA.
 const PREVIEW_UA = 'Slackbot 1.0 (+https://api.slack.com/robots)'
-const FETCH_TIMEOUT_MS = 8000
+const FETCH_TIMEOUT_MS = 6000
 const MAX_REDIRECTS = 5
 
 const VALID_HOSTS = new Set([
@@ -251,14 +251,41 @@ function pickBestStream(streams) {
   return sorted[0]
 }
 
-function buildAttempts(canonicalUrl) {
-  const parsed = new URL(canonicalUrl)
-  const mbasicUrl = `https://mbasic.facebook.com${parsed.pathname}${parsed.search}`
-  return [
-    { url: canonicalUrl, ua: DESKTOP_UA, label: 'canonical+desktop' },
-    { url: mbasicUrl, ua: MBASIC_UA, label: 'mbasic+mobile' },
+// Distinct, login-free href targets the embed player will accept, best-first.
+function hrefCandidates(canonicalUrl, videoId) {
+  const set = new Set()
+  if (videoId) {
+    set.add(`${FB_HOST}/watch/?v=${videoId}`)
+    set.add(`${FB_HOST}/reel/${videoId}/`)
+  }
+  try {
+    const u = new URL(canonicalUrl)
+    set.add(`${u.origin}${u.pathname}`)
+  } catch { /* canonicalUrl already validated upstream */ }
+  set.add(canonicalUrl)
+  return [...set]
+}
+
+function buildAttempts(canonicalUrl, videoId) {
+  const attempts = []
+  // 1. The public embed player (/plugins/video.php) is meant for third-party
+  //    embedding, so it renders without login and inlines the playable_url
+  //    JSON. This is the most reliable path from a datacenter IP, where the
+  //    canonical page usually returns a login/consent wall.
+  for (const href of hrefCandidates(canonicalUrl, videoId)) {
+    attempts.push({
+      url: `${FB_HOST}/plugins/video.php?href=${encodeURIComponent(href)}&show_text=false`,
+      ua: DESKTOP_UA,
+      label: `embed:${href.replace(FB_HOST, '') || href}`,
+    })
+  }
+  // 2. The canonical page with preview-crawler UAs, which still get og:video
+  //    when the embed player comes up empty (e.g. some watch videos).
+  attempts.push(
+    { url: canonicalUrl, ua: FBBOT_UA, label: 'canonical+fbbot' },
     { url: canonicalUrl, ua: PREVIEW_UA, label: 'canonical+slackbot' },
-  ]
+  )
+  return attempts
 }
 
 export default async (req) => {
@@ -311,7 +338,7 @@ export default async (req) => {
 
   const videoId = extractVideoId(canonicalParsed)
 
-  const attempts = buildAttempts(canonicalUrl)
+  const attempts = buildAttempts(canonicalUrl, videoId)
   const trace = []
   let winningStreams = []
 
