@@ -92,6 +92,7 @@ export default function FacebookDownloaderPage() {
   const [status, setStatus] = useState('idle')
   const [message, setMessage] = useState('')
   const [downloadLink, setDownloadLink] = useState(null)
+  const [meta, setMeta] = useState(null)
 
   const submit = async (event) => {
     event.preventDefault()
@@ -107,6 +108,7 @@ export default function FacebookDownloaderPage() {
     setStatus('loading')
     setMessage('Finding the video...')
     setDownloadLink(null)
+    setMeta(null)
 
     try {
       const response = await fetch(API_ENDPOINT, {
@@ -125,6 +127,14 @@ export default function FacebookDownloaderPage() {
       }
 
       const video = videos[0]
+      // Surface what the extractor found so the result is debuggable without
+      // dev tools (e.g. on mobile) — especially the muxed/audio flag.
+      setMeta({
+        source: video.source || null,
+        muxed: video.muxed !== false,
+        width: video.width || null,
+        height: video.height || null,
+      })
       setMessage(`Downloading ${video.filename}...`)
       const blob = await fetchVideoBlob(video.proxyUrl || video.url)
       const objectUrl = downloadBlob(blob, video.filename, previewWindow)
@@ -219,6 +229,34 @@ export default function FacebookDownloaderPage() {
                         </>
                       ) : message}
                     </font>
+                  </div>
+                </>
+              )}
+
+              {meta && status === 'success' && (
+                <>
+                  <br />
+                  <div className="igdl-status">
+                    <font face="Courier New" size="2" color="#00FFFF">
+                      DEBUG &mdash; source: <b className="yellow">{meta.source || 'unknown'}</b>
+                      {meta.width && meta.height ? (
+                        <> &nbsp;|&nbsp; size: <b className="yellow">{meta.width}&times;{meta.height}</b></>
+                      ) : null}
+                      {' '}|{' '}audio:{' '}
+                      <b className={meta.muxed ? 'lime' : 'hotpink'}>
+                        {meta.muxed ? 'YES (muxed)' : 'NO (video-only track)'}
+                      </b>
+                    </font>
+                    {!meta.muxed && (
+                      <>
+                        <br />
+                        <font face="Comic Sans MS" size="2" color="#FF66CC">
+                          Heads up: Facebook only offered a separate (video-only) track for this one,
+                          so the file has no sound. Tell Claude &ldquo;muxed: NO&rdquo; and which source
+                          won &mdash; that means server-side audio+video merging is needed.
+                        </font>
+                      </>
+                    )}
                   </div>
                 </>
               )}
