@@ -144,9 +144,25 @@ export default function FacebookDownloaderPage() {
         const videoBlob = await fetchVideoBlob(video.proxyUrl)
         setMessage('Downloading audio track...')
         const audioBlob = await fetchVideoBlob(video.audioProxyUrl, { mime: 'audio/mp4' })
-        setMessage('Merging audio + video... first run downloads the merger (~30 MB), please wait.')
-        const { muxVideoAudio } = await import('../lib/mux')
-        const merged = await muxVideoAudio(videoBlob, audioBlob)
+
+        let merged
+        try {
+          const { muxVideoAudio } = await import('../lib/mux')
+          merged = await muxVideoAudio(videoBlob, audioBlob, (s) =>
+            setMessage(`Merging audio + video (${s})... first run downloads the merger (~30 MB).`))
+        } catch (mergeError) {
+          // Merge failed — fall back to the (silent) video so the download isn't
+          // a total loss, and surface the real reason so it can be relayed.
+          if (previewWindow && !previewWindow.closed) previewWindow.close()
+          const detail = mergeError?.message || String(mergeError) || 'unknown error'
+          const objectUrl = downloadBlob(videoBlob, video.filename)
+          setStatus('success')
+          setMessage(`Audio merge failed, downloaded video without sound: ${video.filename}`)
+          setMeta((prev) => (prev ? { ...prev, audio: 'none', mergeError: detail } : prev))
+          setDownloadLink(objectUrl ? { url: objectUrl, filename: video.filename } : null)
+          return
+        }
+
         const objectUrl = downloadBlob(merged, video.filename, previewWindow)
         setStatus('success')
         setMessage(`Download started: ${video.filename}`)
@@ -273,10 +289,18 @@ export default function FacebookDownloaderPage() {
                       <>
                         <br />
                         <font face="Comic Sans MS" size="2" color="#FF66CC">
-                          Heads up: Facebook only offered a video-only track with no matching audio,
-                          so this file has no sound. Tell Claude &ldquo;audio: none&rdquo; and which
-                          source won.
+                          {meta.mergeError
+                            ? 'The audio + video merge failed, so this file has no sound. Copy the merge error below to Claude:'
+                            : 'Heads up: Facebook only offered a video-only track with no matching audio, so this file has no sound. Tell Claude “audio: none” and which source won.'}
                         </font>
+                        {meta.mergeError && (
+                          <>
+                            <br />
+                            <font face="Courier New" size="2" color="#FFAAAA">
+                              {meta.mergeError}
+                            </font>
+                          </>
+                        )}
                       </>
                     )}
                   </div>
