@@ -43,7 +43,7 @@ export function downloadBlob(blob, filename, previewWindow = null) {
   if (previewWindow && !previewWindow.closed) {
     previewWindow.location.href = objectUrl
     setTimeout(() => URL.revokeObjectURL(objectUrl), 60000)
-    return
+    return null
   }
   const link = document.createElement('a')
   link.href = objectUrl
@@ -52,5 +52,6 @@ export function downloadBlob(blob, filename, previewWindow = null) {
   document.body.appendChild(link)
   link.click()
   link.remove()
-  setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 300000)
+  return objectUrl
 }

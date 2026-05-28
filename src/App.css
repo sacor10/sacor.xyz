@@ -349,6 +349,15 @@
   border-color: #FF00FF;
 }
 
+.geocities .igdl-download-link {
+  color: #00FF00;
+  text-decoration: underline;
+}
+
+.geocities .igdl-download-link:hover {
+  color: #00FFFF;
+}
+
 /* === Account / sign-in === */
 .geocities .header-account {
   margin-top: 10px;
