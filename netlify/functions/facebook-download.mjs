@@ -163,7 +163,9 @@ function extractFromJsonKeys(html) {
       if (!isFbVideoUrl(url) || seen.has(url)) continue
       seen.add(url)
       const hd = /hd/i.test(key)
-      out.push({ url, width: null, height: null, bitrate: hd ? 2 : 1 })
+      // These keys are muxed progressive MP4s (audio baked in), so they must
+      // always beat a bare/DASH URL that may be a video-only track.
+      out.push({ url, width: null, height: null, muxed: true, source: key, score: hd ? 40 : 30 })
     }
   }
   return out
@@ -184,11 +186,15 @@ function extractOgVideo(html) {
   }
   const url = tags['og:video:secure_url'] || tags['og:video:url'] || tags['og:video']
   if (!url || !/\.mp4/i.test(url)) return []
+  // og:video is the muxed share-preview render — has audio, but lower quality
+  // than the progressive keys, so it ranks below them and above the flat scan.
   return [{
     url,
     width: Number(tags['og:video:width']) || null,
     height: Number(tags['og:video:height']) || null,
-    bitrate: 0,
+    muxed: true,
+    source: 'og:video',
+    score: 20,
   }]
 }
 
@@ -202,7 +208,9 @@ function fallbackHtmlMp4Scan(html) {
     const url = m[0]
     if (seen.has(url)) continue
     seen.add(url)
-    out.push({ url, width: null, height: null, bitrate: 0 })
+    // Last resort: this may be a DASH video-only track (no audio), so it ranks
+    // below every muxed source and is only used when nothing better exists.
+    out.push({ url, width: null, height: null, muxed: false, source: 'flat', score: 10 })
   }
   return out
 }
@@ -244,10 +252,14 @@ async function fetchHtml(url, userAgent, label) {
   }
 }
 
-// Prefer the highest-quality source; bitrate is our HD/SD rank, 2 = HD.
+// Prefer a muxed source over anything that might be a video-only DASH track,
+// then prefer the higher-quality source (HD progressive > SD > og > flat).
 function pickBestStream(streams) {
   if (streams.length === 0) return null
-  const sorted = [...streams].sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0))
+  const sorted = [...streams].sort((a, b) => {
+    if (!!b.muxed !== !!a.muxed) return (b.muxed ? 1 : 0) - (a.muxed ? 1 : 0)
+    return (b.score || 0) - (a.score || 0)
+  })
   return sorted[0]
 }
 
@@ -397,6 +409,10 @@ export default async (req) => {
     filename,
     width: best.width,
     height: best.height,
+    // Which extractor won and whether it's a muxed (has-audio) source — visible
+    // in the Network response to diagnose silent (video-only) downloads.
+    source: best.source,
+    muxed: !!best.muxed,
   }
 
   if (debugMode) {
