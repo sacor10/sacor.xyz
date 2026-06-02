@@ -72,28 +72,29 @@ const mainContent = (
     </center>
     <br />
 
-    {/* Big Goldendoodle Picture Container */}
+    {/* Baseball Bat Showcase Container */}
     <center>
       <div style={{ 
-        border: '4px outset #00FFFF', 
-        padding: '10px', 
+        border: '4px outset #FF00FF', 
+        padding: '15px', 
         background: '#000000', 
         maxWidth: '500px',
         marginBottom: '20px'
       }}>
         <img 
-          src="/goldendoodle.jpg" 
-          alt="Happy Goldendoodle" 
+          src="/speed.png" 
+          alt="Easton Speed Baseball Bat" 
           style={{ 
             width: '100%', 
             height: 'auto', 
             display: 'block',
-            border: '2px solid #FF00FF' 
+            border: '2px solid #00FFFF',
+            background: '#FFFFFF'
           }} 
         />
         <br />
-        <font face="Comic Sans MS" size="2" color="#FF00FF">
-          🐾 <b>GOLDENDOODLE POWER!</b> 🐾
+        <font face="Impact" size="4" color="#00FFFF">
+          🔥 <b>EASTON SPEED POWER!</b> 🔥
         </font>
       </div>
     </center>
