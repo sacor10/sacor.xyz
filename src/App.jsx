@@ -16,6 +16,7 @@ import GuestbookPage from './pages/GuestbookPage'
 import StocksPage from './pages/StocksPage'
 import TravelPlansPage from './pages/TravelPlansPage'
 import TravelPlanPage from './pages/TravelPlanPage'
+import EastonPage from './pages/EastonPage'
 import { AuthProvider } from './auth/AuthContext.jsx'
 
 export default function App() {
@@ -41,6 +42,7 @@ export default function App() {
           <Route path="/stocks" element={<StocksPage />} />
           <Route path="/travel-plans" element={<TravelPlansPage />} />
           <Route path="/travel-plans/:id" element={<TravelPlanPage />} />
+          <Route path="/easton" element={<EastonPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
