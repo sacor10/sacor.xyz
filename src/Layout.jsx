@@ -19,6 +19,7 @@ const baseNavLinks = [
   { label: 'LIVE STOCKS', to: '/stocks' },
   { label: 'GUESTBOOK',  to: '/guestbook' },
   { label: 'CONTACT',    to: '/contact' },
+  { label: 'EASTON',     to: '/easton', icon: '☺' },
 ]
 
 const ownerNavLink = { label: 'TRAVEL PLANS', to: '/travel-plans' }
@@ -277,7 +278,7 @@ export default function Layout({ mainContent, rightSidebar, pageWideContent = nu
                       {navLinks.map((nav) => (
                         <tr key={nav.label}>
                           <td className="navbtn">
-                            <Link to={nav.to}>&#9733; {nav.label} &#9733;</Link>
+                            <Link to={nav.to}>{nav.icon || '★'} {nav.label} {nav.icon || '★'}</Link>
                           </td>
                         </tr>
                       ))}
