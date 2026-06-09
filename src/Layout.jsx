@@ -4,25 +4,49 @@ import './App.css'
 import GoogleSignInButton from './auth/GoogleSignInButton'
 import { useAuth } from './auth/useAuth'
 
-const baseNavLinks = [
-  { label: 'HOME',       to: '/' },
-  { label: 'ABOUT ME',   to: '/#about-me' },
-  { label: 'BLOG POSTS', to: '/blog' },
-  { label: 'QUOTES',     to: '/quotes' },
-  { label: 'DOWNLOADS',  to: '/ytmp4' },
-  { label: 'INSTA DL',   to: '/instagram-downloader' },
-  { label: 'X DL',       to: '/x-downloader' },
-  { label: 'TIKTOK DL',  to: '/tiktok-downloader' },
-  { label: 'LINKEDIN DL', to: '/linkedin-downloader' },
-  { label: 'FACEBOOK DL', to: '/facebook-downloader' },
-  { label: 'MTS LIVE',   to: '/mts' },
-  { label: 'LIVE STOCKS', to: '/stocks' },
-  { label: 'GUESTBOOK',  to: '/guestbook' },
-  { label: 'CONTACT',    to: '/contact' },
-  { label: 'EASTON',     to: '/easton', icon: '☺' },
+const NAV_GROUPS = [
+  {
+    title: 'MAIN',
+    links: [
+      { label: 'HOME',     to: '/' },
+      { label: 'ABOUT ME', to: '/#about-me' },
+    ],
+  },
+  {
+    title: 'DOWNLOADS',
+    links: [
+      { label: 'DOWNLOADS', to: '/downloads' },
+    ],
+  },
+  {
+    title: 'READS & MEDIA',
+    links: [
+      { label: 'BLOG POSTS', to: '/blog' },
+      { label: 'QUOTES',     to: '/quotes' },
+      { label: 'MTS LIVE',   to: '/mts' },
+    ],
+  },
+  {
+    title: 'TOOLS',
+    links: [
+      { label: 'LIVE STOCKS',  to: '/stocks' },
+      { label: 'TRAVEL PLANS', to: '/travel-plans', owner: true },
+    ],
+  },
+  {
+    title: 'SAY HI',
+    links: [
+      { label: 'GUESTBOOK', to: '/guestbook' },
+      { label: 'CONTACT',   to: '/contact' },
+    ],
+  },
+  {
+    title: 'FRIENDS',
+    links: [
+      { label: 'EASTON', to: '/easton', icon: '☺' },
+    ],
+  },
 ]
-
-const ownerNavLink = { label: 'TRAVEL PLANS', to: '/travel-plans' }
 
 function useMediaQuery(query) {
   const get = () => typeof window !== 'undefined' && window.matchMedia(query).matches
@@ -37,7 +61,6 @@ function useMediaQuery(query) {
 }
 
 const PANE_LABELS = ['Show navigation', 'Show main content', 'Show sidebar']
-const ownerNavIndex = baseNavLinks.findIndex((nav) => nav.label === 'GUESTBOOK')
 
 const LOCKED_ZONE_SELECTOR = '.itinerary-map-zone, .leaflet-container, .stock-chart-zone'
 
@@ -46,9 +69,12 @@ export default function Layout({ mainContent, rightSidebar, pageWideContent = nu
   const location = useLocation()
   const [pane, setPane] = useState(1)
   const { canAccessTravelPlans } = useAuth()
-  const navLinks = canAccessTravelPlans
-    ? [...baseNavLinks.slice(0, ownerNavIndex), ownerNavLink, ...baseNavLinks.slice(ownerNavIndex)]
-    : baseNavLinks
+  const visibleGroups = NAV_GROUPS
+    .map((group) => ({
+      ...group,
+      links: group.links.filter((link) => !link.owner || canAccessTravelPlans),
+    }))
+    .filter((group) => group.links.length > 0)
   const viewportRef = useRef(null)
   const paneRef = useRef(pane)
   const pathRef = useRef(location.pathname)
@@ -273,17 +299,32 @@ export default function Layout({ mainContent, rightSidebar, pageWideContent = nu
                     <br />
                   </center>
 
-                  <table width="100%" cellPadding="0" cellSpacing="6" border="0">
-                    <tbody>
-                      {navLinks.map((nav) => (
-                        <tr key={nav.label}>
-                          <td className="navbtn">
-                            <Link to={nav.to}>{nav.icon || '★'} {nav.label} {nav.icon || '★'}</Link>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  {visibleGroups.map((group) => (
+                    <div key={group.title} className="nav-group">
+                      <center>
+                        <table width="100%" cellPadding="0" cellSpacing="0" border="0">
+                          <tbody>
+                            <tr>
+                              <td align="center" bgcolor="#FF00FF" className="section-bar-sm nav-group-bar">
+                                <font face="Impact" size="3" color="#FFFF00">~ {group.title} ~</font>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </center>
+                      <table width="100%" cellPadding="0" cellSpacing="6" border="0">
+                        <tbody>
+                          {group.links.map((nav) => (
+                            <tr key={nav.label}>
+                              <td className="navbtn">
+                                <Link to={nav.to}>{nav.icon || '★'} {nav.label} {nav.icon || '★'}</Link>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ))}
                   </div>
                 </div>
               </td>

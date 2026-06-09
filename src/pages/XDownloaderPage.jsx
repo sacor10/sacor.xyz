@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import JSZip from 'jszip'
 import Layout from '../Layout'
+import DownloadsNav from '../components/DownloadsNav'
 import { downloadBlob, fetchVideoBlob, openPreviewWindow } from '../lib/download'
 
 const API_ENDPOINT = '/.netlify/functions/x-download'
@@ -169,6 +170,8 @@ export default function XDownloaderPage() {
       </center>
 
       <br />
+
+      <DownloadsNav />
 
       <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="postbox">
         <tbody>

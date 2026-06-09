@@ -1,4 +1,5 @@
 import Layout from '../Layout'
+import DownloadsNav from '../components/DownloadsNav'
 
 const rightSidebar = (
   <>
@@ -94,6 +95,8 @@ const mainContent = (
     </center>
 
     <br />
+
+    <DownloadsNav />
 
     {/* TITLE SECTION BAR */}
     <center>
