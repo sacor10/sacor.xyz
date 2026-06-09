@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Layout from '../Layout'
+import DownloadsNav from '../components/DownloadsNav'
 import { downloadBlob, fetchVideoBlob, openPreviewWindow } from '../lib/download'
 
 const API_ENDPOINT = '/.netlify/functions/facebook-download'
@@ -193,6 +194,8 @@ export default function FacebookDownloaderPage() {
       </center>
 
       <br />
+
+      <DownloadsNav />
 
       <table width="100%" cellPadding="8" cellSpacing="0" border="0" className="postbox">
         <tbody>

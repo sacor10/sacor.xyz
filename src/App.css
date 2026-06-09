@@ -819,3 +819,42 @@
     color: #00FFFF;
   }
 }
+
+/* ---- Grouped sidebar nav ---- */
+.geocities .nav-group {
+  margin-bottom: 14px;
+}
+.geocities .nav-group-bar {
+  padding: 3px 4px;
+}
+
+/* ---- Downloads in-page tab bar ---- */
+.geocities .dl-tabbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+.geocities .dl-tab {
+  margin: 0;
+}
+.geocities .dl-tab-active,
+.geocities .dl-tab-active:hover {
+  background: #FF00FF;
+  color: #FFFF00;
+  border-top-color: #404040;
+  border-left-color: #404040;
+  border-right-color: #FFFFFF;
+  border-bottom-color: #FFFFFF;
+}
+
+@media (max-width: 768px) {
+  .geocities .dl-tabbar {
+    gap: 6px;
+  }
+  .geocities .dl-tab {
+    font-size: 12px;
+    padding: 5px 8px;
+  }
+}

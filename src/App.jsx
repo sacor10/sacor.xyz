@@ -6,6 +6,7 @@ import XDownloaderPage from './pages/XDownloaderPage'
 import TikTokDownloaderPage from './pages/TikTokDownloaderPage'
 import LinkedInDownloaderPage from './pages/LinkedInDownloaderPage'
 import FacebookDownloaderPage from './pages/FacebookDownloaderPage'
+import DownloadsPage from './pages/DownloadsPage'
 import MtsPage from './pages/MtsPage'
 import WebringPage from './pages/WebringPage'
 import BlogIndexPage from './pages/BlogIndexPage'
@@ -25,6 +26,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/downloads" element={<DownloadsPage />} />
           <Route path="/ytmp4" element={<YtMp4Page />} />
           <Route path="/youtube-downloader" element={<Navigate to="/ytmp4" replace />} />
           <Route path="/instagram-downloader" element={<InstagramDownloaderPage />} />
