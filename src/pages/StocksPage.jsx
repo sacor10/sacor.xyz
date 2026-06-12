@@ -4,7 +4,7 @@ import HitCounter from '../components/HitCounter'
 import StockChart from '../components/StockChart'
 import { useAuth } from '../auth/useAuth'
 
-const QUICK_PICKS = ['GLD', 'GDX', 'BTC-USD', 'NVDA']
+const QUICK_PICKS = ['GLD', 'GDX', 'BTC-USD', 'NVDA', 'SPACEX']
 const MAX_PINNED_SYMBOLS = 20
 const POLL_MS = 3000
 const SYMBOL_RE = /^[A-Z.-]{1,8}$/
