@@ -1,7 +1,7 @@
 import { getStore } from '@netlify/blobs'
 import { readSessionCookie, userKeyPrefix } from './_lib/session.mjs'
 
-const DEFAULT_SYMBOLS = ['GLD', 'GC=F', 'BTC-USD', 'NVDA', 'SPCX']
+const DEFAULT_SYMBOLS = ['GC=F', 'GDX', 'BTC-USD', 'NVDA', 'SPCX']
 const SYMBOL_RE = /^[A-Z0-9.=^-]{1,12}$/
 const MAX_SYMBOLS = 20
 

@@ -4,7 +4,7 @@ import HitCounter from '../components/HitCounter'
 import StockChart from '../components/StockChart'
 import { useAuth } from '../auth/useAuth'
 
-const QUICK_PICKS = ['GLD', 'GC=F', 'BTC-USD', 'NVDA', 'SPCX']
+const QUICK_PICKS = ['GC=F', 'GDX', 'BTC-USD', 'NVDA', 'SPCX']
 // Display labels for tickers whose data symbol is not friendly to read.
 // GC=F is Yahoo's COMEX front-month gold futures contract.
 const SYMBOL_LABELS = { 'GC=F': 'GOLD' }
@@ -113,8 +113,8 @@ function Sidebar() {
 
 export default function StocksPage() {
   const { loading: authLoading, isSignedIn } = useAuth()
-  const [symbol, setSymbol] = useState('GLD')
-  const [input, setInput] = useState('GLD')
+  const [symbol, setSymbol] = useState('GC=F')
+  const [input, setInput] = useState('GC=F')
   const [pinnedSymbols, setPinnedSymbols] = useState(QUICK_PICKS)
   const [pinsError, setPinsError] = useState('')
   const [pinsSaving, setPinsSaving] = useState(false)
