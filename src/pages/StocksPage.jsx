@@ -4,10 +4,14 @@ import HitCounter from '../components/HitCounter'
 import StockChart from '../components/StockChart'
 import { useAuth } from '../auth/useAuth'
 
-const QUICK_PICKS = ['GLD', 'GDX', 'BTC-USD', 'NVDA', 'SPCX']
+const QUICK_PICKS = ['GLD', 'GC=F', 'BTC-USD', 'NVDA', 'SPCX']
+// Display labels for tickers whose data symbol is not friendly to read.
+// GC=F is Yahoo's COMEX front-month gold futures contract.
+const SYMBOL_LABELS = { 'GC=F': 'GOLD' }
+const labelFor = (s) => SYMBOL_LABELS[s] ?? s
 const MAX_PINNED_SYMBOLS = 20
 const POLL_MS = 3000
-const SYMBOL_RE = /^[A-Z.-]{1,8}$/
+const SYMBOL_RE = /^[A-Z0-9.=^-]{1,12}$/
 
 const formatPrice = (n) =>
   typeof n === 'number' && Number.isFinite(n) ? n.toFixed(2) : '--'
@@ -258,7 +262,7 @@ export default function StocksPage() {
   const pinCurrentSymbol = () => {
     const next = symbol.trim().toUpperCase()
     if (pinnedSymbols.includes(next)) {
-      setPinsError(`${next} is already pinned.`)
+      setPinsError(`${labelFor(next)} is already pinned.`)
       return
     }
     if (pinnedSymbols.length >= MAX_PINNED_SYMBOLS) {
@@ -337,8 +341,8 @@ export default function StocksPage() {
                 <input
                   value={input}
                   onChange={(e) => setInput(e.target.value.toUpperCase())}
-                  maxLength={8}
-                  size={8}
+                  maxLength={12}
+                  size={10}
                   style={{
                     fontFamily: 'Courier New, monospace',
                     fontSize: '16px',
@@ -367,7 +371,7 @@ export default function StocksPage() {
                       disabled={pinsSaving}
                       onClick={pinCurrentSymbol}
                     >
-                      &#9733; PIN {symbol} &#9733;
+                      &#9733; PIN {labelFor(symbol)} &#9733;
                     </button>
                   </>
                 )}
@@ -392,7 +396,7 @@ export default function StocksPage() {
                                 pickSymbol(s)
                               }}
                             >
-                              &#9733; {s} &#9733;
+                              &#9733; {labelFor(s)} &#9733;
                             </a>
                             {isSignedIn && (
                               <>
@@ -465,7 +469,7 @@ export default function StocksPage() {
             <tr>
               <td align="center" bgcolor="#00FFFF" className="section-bar">
                 <font face="Impact" size="5" color="#000000">
-                  ~ {symbol} QUOTE ~
+                  ~ {labelFor(symbol)} QUOTE ~
                 </font>
               </td>
             </tr>
@@ -540,14 +544,14 @@ export default function StocksPage() {
               {historyState === 'error' && (
                 <center>
                   <font face="Impact" size="4" color="#FF0000">
-                    &#9888; FAILED TO LOAD HISTORY FOR {symbol} &#9888;
+                    &#9888; FAILED TO LOAD HISTORY FOR {labelFor(symbol)} &#9888;
                   </font>
                 </center>
               )}
               {historyState === 'ready' && bars.length === 0 && (
                 <center>
                   <font face="Impact" size="4" color="#FF00FF">
-                    NO BARS RETURNED FOR {symbol}
+                    NO BARS RETURNED FOR {labelFor(symbol)}
                   </font>
                 </center>
               )}

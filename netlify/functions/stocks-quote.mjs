@@ -1,4 +1,4 @@
-const SYMBOL_RE = /^[A-Z.-]{1,8}$/
+const SYMBOL_RE = /^[A-Z0-9.=^-]{1,12}$/
 const DEBOUNCE_MS = 1000
 const FETCH_TIMEOUT_MS = 8000
 const lastFetch = new Map()
