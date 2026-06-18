@@ -5,6 +5,13 @@ const DEFAULT_SYMBOLS = ['GC=F', 'GDX', 'BTC-USD', 'NVDA', 'SPCX']
 const SYMBOL_RE = /^[A-Z0-9.=^-]{1,12}$/
 const MAX_SYMBOLS = 20
 
+// Legacy ticker symbols that get rewritten to their current equivalent the
+// first time an existing pin set is read. Bump PINS_SCHEMA whenever this map
+// changes so each stored record is migrated exactly once and a later, deliberate
+// re-pin of an old symbol is left untouched.
+const LEGACY_SYMBOL_ALIASES = { GLD: 'GC=F' }
+const PINS_SCHEMA = 1
+
 const json = (data, init = {}) =>
   new Response(JSON.stringify(data), {
     ...init,
@@ -35,12 +42,19 @@ const normalizeSymbols = (value) => {
   return symbols
 }
 
+const migrateSymbols = (symbols) =>
+  normalizeSymbols(symbols.map((symbol) => LEGACY_SYMBOL_ALIASES[symbol] ?? symbol))
+
+const sameSymbols = (a, b) =>
+  a.length === b.length && a.every((symbol, i) => symbol === b[i])
+
 const parseSavedPins = (raw) => {
   const parsed = JSON.parse(raw)
   const symbols = normalizeSymbols(Array.isArray(parsed) ? parsed : parsed?.symbols)
   return {
     symbols,
     updatedAt: typeof parsed?.updatedAt === 'string' ? parsed.updatedAt : null,
+    schema: Number.isInteger(parsed?.schema) ? parsed.schema : 0,
   }
 }
 
@@ -58,7 +72,14 @@ export default async (req) => {
 
     try {
       const saved = parseSavedPins(raw)
-      return json({ ...saved, defaulted: false })
+      if (saved.schema < PINS_SCHEMA) {
+        const symbols = migrateSymbols(saved.symbols)
+        const changed = !sameSymbols(symbols, saved.symbols)
+        const updatedAt = changed ? new Date().toISOString() : saved.updatedAt
+        await store.set(key, JSON.stringify({ symbols, updatedAt, schema: PINS_SCHEMA }))
+        return json({ symbols, defaulted: false, updatedAt })
+      }
+      return json({ symbols: saved.symbols, defaulted: false, updatedAt: saved.updatedAt })
     } catch {
       return json({ error: 'Saved stock pins are corrupt' }, { status: 500 })
     }
@@ -82,7 +103,7 @@ export default async (req) => {
     const store = getStore('stock-pins')
     const key = pinsKey(session.email)
     const updatedAt = new Date().toISOString()
-    await store.set(key, JSON.stringify({ symbols, updatedAt }))
+    await store.set(key, JSON.stringify({ symbols, updatedAt, schema: PINS_SCHEMA }))
     return json({ symbols, defaulted: false, updatedAt })
   }
 
