@@ -607,6 +607,26 @@ body.su-active {
   cursor: default;
 }
 
+/* Low-emphasis "skip" affordance shown to guests in the onboarding picker. */
+.su-skip {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--su-muted);
+  padding: 11px 8px;
+  text-decoration: underline;
+}
+.su-skip:hover:not(:disabled) {
+  color: var(--su-ink);
+}
+.su-skip:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* --- Responsive ---------------------------------------------------------- */
 @media (max-width: 720px) {
   .su-tagline,

@@ -2,7 +2,15 @@ import { useState } from 'react'
 
 // Onboarding interest picker (PRD §6.1): signed-in users pick >= minInterests
 // before their stumbles get personalized.
-export default function InterestPicker({ catalog, initial, minInterests, busy, onSave }) {
+export default function InterestPicker({
+  catalog,
+  initial,
+  minInterests,
+  busy,
+  onSave,
+  allowSkip = false,
+  onSkip,
+}) {
   const [selected, setSelected] = useState(() => new Set(initial || []))
 
   const toggle = (slug) => {
@@ -41,6 +49,16 @@ export default function InterestPicker({ catalog, initial, minInterests, busy, o
         </div>
 
         <div className="su-dialog-footer">
+          {allowSkip && (
+            <button
+              type="button"
+              className="su-skip"
+              disabled={busy}
+              onClick={onSkip}
+            >
+              Skip — surprise me
+            </button>
+          )}
           <span className="su-dialog-hint">
             {enough
               ? `${selected.size} selected`

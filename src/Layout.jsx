@@ -30,6 +30,7 @@ const NAV_GROUPS = [
     title: 'TOOLS',
     links: [
       { label: 'LIVE STOCKS',  to: '/stocks' },
+      { label: 'STUMBLE!',     to: '/stumble', icon: '🎲' },
       { label: 'TRAVEL PLANS', to: '/travel-plans', owner: true },
     ],
   },
