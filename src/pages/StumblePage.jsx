@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../auth/useAuth'
 import { isKnownInterest } from '../data/stumbleInterests'
 import StumbleToolbar from './stumble/StumbleToolbar'
-import PreviewCard from './stumble/PreviewCard'
+import StumbleFrame from './stumble/StumbleFrame'
 import InterestPicker from './stumble/InterestPicker'
 import SignInModal from './stumble/SignInModal'
 import './stumble/stumble.css'
@@ -206,6 +206,11 @@ export default function StumblePage() {
     stumble()
   }, [stumble])
 
+  const openExternal = useCallback(() => {
+    if (!card?.url) return
+    window.open(card.url, '_blank', 'noopener,noreferrer')
+  }, [card])
+
   const toggleNewTab = useCallback(() => {
     setNewTab((v) => {
       const next = !v
@@ -394,10 +399,11 @@ export default function StumblePage() {
     )
   } else if (card) {
     content = (
-      <PreviewCard
+      <StumbleFrame
         card={card}
         onLike={() => rate(1)}
         onDislike={() => rate(-1)}
+        onOpenExternal={openExternal}
         busy={ratingBusy || status === 'loading'}
         canRate={isSignedIn}
       />
@@ -424,6 +430,11 @@ export default function StumblePage() {
         onToggleNewTab={toggleNewTab}
         onRepickInterests={() => setShowOnboarding(true)}
         onStartOver={startOver}
+        card={card}
+        onLike={() => rate(1)}
+        onDislike={() => rate(-1)}
+        onOpenExternal={openExternal}
+        canRate={isSignedIn}
       />
 
       <main className="su-stage">{content}</main>

@@ -40,6 +40,7 @@ body.su-active {
   --su-pill: #e9e9e9;
 
   min-height: 100vh;
+  height: 100vh;
   background: var(--su-canvas);
   color: var(--su-ink);
   font-family: Arial, Helvetica, "Segoe UI", "Helvetica Neue", sans-serif;
@@ -48,6 +49,9 @@ body.su-active {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   cursor: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* --- Bar 1: top toolbar (charcoal) --------------------------------------- */
@@ -55,6 +59,7 @@ body.su-active {
   position: sticky;
   top: 0;
   z-index: 30;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -172,6 +177,7 @@ body.su-active {
   position: sticky;
   top: 56px;
   z-index: 20;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -239,6 +245,41 @@ body.su-active {
   user-select: none;
 }
 
+.su-current-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.su-subbar-btn {
+  appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--su-ink);
+  background: #f6f6f6;
+  border: 1px solid var(--su-line);
+  border-radius: 6px;
+  padding: 7px 12px;
+}
+.su-subbar-btn:hover:not(:disabled) {
+  background: #eeeeee;
+}
+.su-subbar-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.su-subbar-btn-primary {
+  color: #fff;
+  background: var(--su-orange);
+  border-color: var(--su-orange-hover);
+}
+.su-subbar-btn-primary:hover:not(:disabled) {
+  background: var(--su-orange-hover);
+}
+
 /* far-right ☰ menu trigger + dropdown */
 .su-menu-wrap {
   position: relative;
@@ -304,10 +345,90 @@ body.su-active {
 
 /* --- Stage / preview card ------------------------------------------------ */
 .su-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
+}
+
+.su-stage > .su-message {
+  align-self: center;
+  margin: 28px 16px 60px;
+}
+
+.su-frame-shell {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  background: #fff;
+  overflow: hidden;
+}
+
+.su-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}
+
+.su-frame-status {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 28px 16px 60px;
+  justify-content: center;
+  gap: 14px;
+  color: var(--su-muted);
+  background: #f8f9fa;
+  font-size: 14px;
+}
+
+.su-frame-fallback {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: minmax(260px, 420px) minmax(300px, 640px);
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 28px 18px 48px;
+  background: var(--su-canvas);
+}
+.su-frame-shell--known-blocked .su-frame-fallback {
+  position: relative;
+  min-height: 100%;
+}
+.su-frame-fallback-overlay {
+  background: rgba(240, 241, 242, 0.96);
+}
+.su-frame-fallback-copy {
+  max-width: 420px;
+  color: var(--su-muted);
+}
+.su-frame-domain {
+  color: var(--su-orange);
+  font-size: 13px;
+  font-weight: bold;
+  text-transform: lowercase;
+  margin-bottom: 8px;
+}
+.su-frame-fallback-copy h2 {
+  color: #1c2024;
+  font-size: 24px;
+  line-height: 1.2;
+  margin-bottom: 10px;
+}
+.su-frame-fallback-copy p {
+  font-size: 15px;
+  margin-bottom: 18px;
 }
 
 .su-card {
@@ -430,6 +551,9 @@ body.su-active {
 }
 .su-visit:hover {
   background: var(--su-orange-hover);
+}
+.su-card-actions .su-visit:only-child {
+  margin-left: 0;
 }
 
 .su-votes {
@@ -635,15 +759,29 @@ body.su-active {
   }
   .su-subbar {
     gap: 10px;
+    flex-wrap: wrap;
   }
   .su-social {
     display: none;
+  }
+  .su-current-actions {
+    order: 2;
+  }
+  .su-frame-fallback {
+    grid-template-columns: minmax(0, 680px);
+    align-items: start;
+  }
+  .su-frame-fallback-copy {
+    max-width: 680px;
   }
 }
 
 @media (max-width: 480px) {
   .su-toolbar {
     flex-wrap: wrap;
+  }
+  .su-subbar-btn {
+    padding: 7px 9px;
   }
   .su-card-title {
     font-size: 20px;

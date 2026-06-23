@@ -41,6 +41,11 @@ export default function StumbleToolbar({
   onToggleNewTab,
   onRepickInterests,
   onStartOver,
+  card,
+  onLike,
+  onDislike,
+  onOpenExternal,
+  canRate,
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
@@ -118,6 +123,36 @@ export default function StumbleToolbar({
           Following • Followers
         </span>
 
+        <span className="su-current-actions" aria-label="Current stumble actions">
+          <button
+            type="button"
+            className="su-subbar-btn"
+            onClick={onLike}
+            disabled={busy || !card}
+            title={canRate ? 'I like this (Up arrow)' : 'Sign in to rate'}
+          >
+            Like
+          </button>
+          <button
+            type="button"
+            className="su-subbar-btn"
+            onClick={onDislike}
+            disabled={busy || !card}
+            title={canRate ? 'Not for me (Down arrow)' : 'Sign in to rate'}
+          >
+            Pass
+          </button>
+          <button
+            type="button"
+            className="su-subbar-btn su-subbar-btn-primary"
+            onClick={onOpenExternal}
+            disabled={!card}
+            title={card ? `Open ${card.title || card.url} externally` : 'No page loaded'}
+          >
+            Open
+          </button>
+        </span>
+
         <span className="su-bar-spacer" />
 
         <span className="su-menu-wrap" ref={menuRef}>
@@ -133,7 +168,7 @@ export default function StumbleToolbar({
           {menuOpen && (
             <div className="su-menu" role="menu">
               <label className="su-menu-item su-menu-toggle">
-                Open in new tab
+                Auto-open externally
                 <input type="checkbox" checked={newTab} onChange={onToggleNewTab} />
               </label>
               <button

@@ -1,8 +1,5 @@
 import { stumbleInterests } from '../../data/stumbleInterests'
 
-// X-Frame-Options DENY (site-wide) + target sites' own frame policies make
-// iframing impossible, so we show a preview card (PRD §3 Option A) and link out.
-
 const interestName = (slug) =>
   stumbleInterests.find((i) => i.slug === slug)?.name || slug
 
@@ -21,7 +18,15 @@ function hueFor(str) {
   return h
 }
 
-export default function PreviewCard({ card, onLike, onDislike, busy, canRate }) {
+export default function PreviewCard({
+  card,
+  onLike,
+  onDislike,
+  busy,
+  canRate,
+  showRatingActions = true,
+  visitLabel = 'Visit site →',
+}) {
   const domain = domainOf(card.url)
   const hue = hueFor(domain)
 
@@ -59,33 +64,37 @@ export default function PreviewCard({ card, onLike, onDislike, busy, canRate }) 
         )}
 
         <div className="su-card-actions">
-          <button
-            type="button"
-            className="su-iconbtn"
-            onClick={onLike}
-            disabled={busy}
-            title={canRate ? 'I like this (↑)' : 'Sign in to rate'}
-            aria-label="Thumbs up"
-          >
-            👍
-          </button>
-          <button
-            type="button"
-            className="su-iconbtn"
-            onClick={onDislike}
-            disabled={busy}
-            title={canRate ? 'Not for me (↓)' : 'Sign in to rate'}
-            aria-label="Thumbs down"
-          >
-            👎
-          </button>
+          {showRatingActions && (
+            <>
+              <button
+                type="button"
+                className="su-iconbtn"
+                onClick={onLike}
+                disabled={busy}
+                title={canRate ? 'I like this (↑)' : 'Sign in to rate'}
+                aria-label="Thumbs up"
+              >
+                👍
+              </button>
+              <button
+                type="button"
+                className="su-iconbtn"
+                onClick={onDislike}
+                disabled={busy}
+                title={canRate ? 'Not for me (↓)' : 'Sign in to rate'}
+                aria-label="Thumbs down"
+              >
+                👎
+              </button>
+            </>
+          )}
           <a
             className="su-visit"
             href={card.url}
             target="_blank"
             rel="noopener noreferrer"
           >
-            Visit site →
+            {visitLabel}
           </a>
         </div>
 

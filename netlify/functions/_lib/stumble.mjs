@@ -13,6 +13,8 @@ export const getPagesStore = () => getStore(PAGES_STORE)
 export const getUsersStore = () => getStore(USERS_STORE)
 
 export const APPROVED_INDEX_KEY = 'index/approved'
+export const SEED_VERSION = 2
+export const SEED_VERSION_KEY = 'index/seed-version'
 export const pageKey = (id) => `pages/${id}`
 export const userInterestsKey = (hash) => `users/${hash}/interests`
 export const userSeenKey = (hash) => `users/${hash}/seen`
@@ -78,6 +80,10 @@ export const summaryOf = (page) => ({
   createdAt: page.createdAt,
 })
 
+const FRAME_POLICIES = new Set(['allow', 'block', 'unknown'])
+const normalizeFramePolicy = (policy) =>
+  FRAME_POLICIES.has(policy) ? policy : 'unknown'
+
 // Browser-facing shape of a page (omits moderation/internal fields).
 export const clientPage = (page) => ({
   id: page.id,
@@ -88,41 +94,103 @@ export const clientPage = (page) => ({
   interests: page.interests || [],
   upVotes: page.upVotes || 0,
   downVotes: page.downVotes || 0,
+  framePolicy: normalizeFramePolicy(page.framePolicy),
 })
 
 // --- Seeding (lazy, like seedIfEmpty in travel-plans.mjs) ------------------
 
-async function seedApprovedPool(store) {
+const sameJson = (a, b) => JSON.stringify(a) === JSON.stringify(b)
+
+function pageFromSeed(seed, canonicalUrl, id, now, existing = {}) {
+  return {
+    ...existing,
+    id,
+    url: seed.url,
+    canonicalUrl,
+    title: seed.title,
+    description: seed.description || '',
+    thumbnailUrl: seed.thumbnailUrl ?? existing.thumbnailUrl ?? null,
+    interests: (seed.interests || []).filter(isKnownInterest),
+    framePolicy: normalizeFramePolicy(seed.framePolicy),
+    status: 'approved',
+    upVotes: existing.upVotes || 0,
+    downVotes: existing.downVotes || 0,
+    submittedBy: 'seed',
+    createdAt: existing.createdAt || now,
+  }
+}
+
+function upsertSummary(index, summary) {
+  const idx = index.findIndex((item) => item.id === summary.id)
+  if (idx === -1) {
+    index.push(summary)
+    return true
+  }
+  if (!sameJson(index[idx], summary)) {
+    index[idx] = summary
+    return true
+  }
+  return false
+}
+
+async function upsertSeedPool(store, existingIndex = []) {
   const now = new Date().toISOString()
-  const index = []
+  const index = Array.isArray(existingIndex) ? [...existingIndex] : []
+  let indexChanged = false
+
   for (const seed of stumbleSeedPages) {
     const canonicalUrl = canonicalizeUrl(seed.url)
     if (!canonicalUrl) continue
+
     const id = pageIdForUrl(canonicalUrl)
-    const page = {
-      id,
-      url: seed.url,
-      canonicalUrl,
-      title: seed.title,
-      description: seed.description || '',
-      thumbnailUrl: seed.thumbnailUrl || null,
-      interests: (seed.interests || []).filter(isKnownInterest),
-      status: 'approved',
-      upVotes: 0,
-      downVotes: 0,
-      submittedBy: 'seed',
-      createdAt: now,
+    const raw = await store.get(pageKey(id))
+
+    if (raw) {
+      let existing
+      try {
+        existing = JSON.parse(raw)
+      } catch {
+        existing = null
+      }
+
+      if (existing && existing.submittedBy !== 'seed') {
+        if (existing.status === 'approved') {
+          indexChanged = upsertSummary(index, summaryOf(existing)) || indexChanged
+        }
+        continue
+      }
+
+      const page = pageFromSeed(seed, canonicalUrl, id, now, existing || {})
+      if (!existing || !sameJson(existing, page)) {
+        await store.set(pageKey(id), JSON.stringify(page))
+      }
+      indexChanged = upsertSummary(index, summaryOf(page)) || indexChanged
+      continue
     }
+
+    const page = pageFromSeed(seed, canonicalUrl, id, now)
     await store.set(pageKey(id), JSON.stringify(page))
-    index.push(summaryOf(page))
+    indexChanged = upsertSummary(index, summaryOf(page)) || indexChanged
   }
-  await saveJson(store, APPROVED_INDEX_KEY, index)
+
+  if (indexChanged || !Array.isArray(existingIndex) || existingIndex.length === 0) {
+    await saveJson(store, APPROVED_INDEX_KEY, index)
+  }
+  await saveJson(store, SEED_VERSION_KEY, SEED_VERSION)
   return index
+}
+
+async function seedApprovedPool(store) {
+  return upsertSeedPool(store, [])
 }
 
 export async function loadApprovedIndex(store) {
   const index = await loadJson(store, APPROVED_INDEX_KEY, null)
-  if (Array.isArray(index) && index.length > 0) return index
+  if (Array.isArray(index) && index.length > 0) {
+    const seedVersion = Number(await loadJson(store, SEED_VERSION_KEY, 0))
+    if (seedVersion >= SEED_VERSION) return index
+    return upsertSeedPool(store, index)
+  }
   return seedApprovedPool(store)
 }
 
