@@ -1,5 +1,12 @@
 import { readSessionCookie, userHash } from './_lib/session.mjs'
-import { getUsersStore, loadJson, saveJson, userInterestsKey, json } from './_lib/stumble.mjs'
+import {
+  getUsersStore,
+  loadJson,
+  saveJson,
+  userInterestsKey,
+  userLikesKey,
+  json,
+} from './_lib/stumble.mjs'
 import {
   stumbleInterests,
   isKnownInterest,
@@ -14,15 +21,23 @@ export default async (req) => {
 
   if (req.method === 'GET') {
     let selected = []
+    let likesCount = 0
     if (session) {
-      const stored = await loadJson(
-        getUsersStore(),
-        userInterestsKey(userHash(session.email)),
-        [],
-      )
+      const usersStore = getUsersStore()
+      const hash = userHash(session.email)
+      const [stored, likes] = await Promise.all([
+        loadJson(usersStore, userInterestsKey(hash), []),
+        loadJson(usersStore, userLikesKey(hash), []),
+      ])
       if (Array.isArray(stored)) selected = stored.filter(isKnownInterest)
+      if (Array.isArray(likes)) likesCount = likes.length
     }
-    return json({ interests: stumbleInterests, selected, minInterests: MIN_INTERESTS })
+    return json({
+      interests: stumbleInterests,
+      selected,
+      minInterests: MIN_INTERESTS,
+      likesCount,
+    })
   }
 
   if (req.method === 'PUT') {

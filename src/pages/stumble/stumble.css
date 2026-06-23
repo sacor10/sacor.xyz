@@ -1,5 +1,5 @@
 /* ===========================================================================
-   /stumble — a self-contained StumbleUpon-style world.
+   /stumble — a self-contained, late-era StumbleUpon-style world.
 
    This route renders OUTSIDE src/Layout.jsx, so none of the GeoCities theme
    (App.css, all scoped under `.geocities`) applies. The only globals that can
@@ -23,19 +23,24 @@
 /* Neutralize the site's purple body background while on /stumble.
    StumblePage adds/removes `su-active` on mount/unmount. */
 body.su-active {
-  background: #f1f2f4 !important;
+  background: #f0f1f2 !important;
 }
 
 .su-root {
-  --su-green: #66bb44;
-  --su-green-dark: #4f9a31;
-  --su-green-light: #76c043;
-  --su-ink: #2b2b2b;
-  --su-muted: #767b82;
-  --su-line: #e2e5e9;
+  --su-orange: #eb4e25;
+  --su-orange-hover: #d8401b;
+  --su-bar: #2f2f2f;
+  --su-bar-text: #ffffff;
+  --su-bar-muted: #b8b8b8;
+  --su-subbar: #ffffff;
+  --su-line: #e2e2e2;
+  --su-canvas: #f0f1f2;
+  --su-ink: #3a3a3a;
+  --su-muted: #767676;
+  --su-pill: #e9e9e9;
 
   min-height: 100vh;
-  background: #f1f2f4;
+  background: var(--su-canvas);
   color: var(--su-ink);
   font-family: Arial, Helvetica, "Segoe UI", "Helvetica Neue", sans-serif;
   font-size: 16px;
@@ -45,45 +50,18 @@ body.su-active {
   cursor: auto;
 }
 
-/* --- Top toolbar (the StumbleUpon bar) ----------------------------------- */
+/* --- Bar 1: top toolbar (charcoal) --------------------------------------- */
 .su-toolbar {
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: 30;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 14px;
-  background: linear-gradient(180deg, var(--su-green-light), var(--su-green));
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
-}
-
-.su-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: #fff;
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: bold;
-  padding: 6px 10px;
-  border-radius: 4px;
-  white-space: nowrap;
-}
-.su-back:hover {
-  background: rgba(255, 255, 255, 0.18);
-}
-
-.su-brand {
-  color: #fff;
-  font-weight: bold;
-  font-size: 16px;
-  letter-spacing: 0.2px;
-  padding-right: 4px;
-  user-select: none;
-}
-.su-brand b {
-  font-weight: 900;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 16px;
+  background: var(--su-bar);
+  color: var(--su-bar-text);
 }
 
 .su-stumble-btn {
@@ -91,17 +69,16 @@ body.su-active {
   border: 0;
   cursor: pointer;
   font-family: inherit;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: bold;
   color: #fff;
-  background: var(--su-green-dark);
-  border-radius: 6px;
-  padding: 9px 22px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 1px 2px rgba(0, 0, 0, 0.2);
+  background: var(--su-orange);
+  border-radius: 14px;
+  padding: 10px 26px;
   white-space: nowrap;
 }
 .su-stumble-btn:hover:not(:disabled) {
-  background: #45881f;
+  background: var(--su-orange-hover);
 }
 .su-stumble-btn:active:not(:disabled) {
   transform: translateY(1px);
@@ -111,56 +88,217 @@ body.su-active {
   cursor: default;
 }
 
-.su-controls {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.su-tagline {
+  color: var(--su-bar-muted);
+  font-size: 14px;
+  white-space: nowrap;
+  user-select: none;
 }
 
-.su-iconbtn {
+.su-bar-spacer {
+  flex: 1 1 auto;
+}
+
+.su-join {
+  color: var(--su-bar-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* "Connect with Google" pill (guest) */
+.su-google-pill {
+  appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: bold;
+  color: #3a3a3a;
+  background: #fff;
+  border: 1px solid #dadce0;
+  border-radius: 18px;
+  padding: 7px 16px 7px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.su-google-pill:hover {
+  background: #f5f5f5;
+}
+.su-g-glyph {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+.su-g-glyph svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Signed-in slot in Bar 1 */
+.su-account {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+.su-account-email {
+  color: var(--su-bar-text);
+  font-size: 13px;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.su-signout {
+  appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--su-bar-muted);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  padding: 4px 10px;
+}
+.su-signout:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* --- Bar 2: profile sub-bar (white) -------------------------------------- */
+.su-subbar {
+  position: sticky;
+  top: 56px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 52px;
+  padding: 8px 16px;
+  background: var(--su-subbar);
+  border-bottom: 1px solid var(--su-line);
+}
+
+.su-avatar {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border-radius: 4px;
+  background: #d6d6d6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: bold;
+  font-size: 16px;
+  user-select: none;
+}
+
+.su-handle {
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--su-ink);
+  white-space: nowrap;
+}
+
+.su-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 6px 2px;
+  background: var(--su-line);
+}
+
+.su-likes-pill {
+  appearance: none;
+  cursor: default;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--su-ink);
+  background: var(--su-pill);
+  border: 1px solid var(--su-line);
+  border-radius: 16px;
+  padding: 6px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.su-likes-pill .su-caret {
+  color: var(--su-muted);
+  font-size: 10px;
+}
+
+.su-social {
+  color: var(--su-muted);
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+}
+
+/* far-right ☰ menu trigger + dropdown */
+.su-menu-wrap {
+  position: relative;
+}
+.su-menu-btn {
   appearance: none;
   cursor: pointer;
   font-family: inherit;
   font-size: 18px;
   line-height: 1;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 5px;
-  padding: 8px 10px;
-  min-width: 40px;
+  color: var(--su-muted);
+  background: transparent;
+  border: 1px solid var(--su-line);
+  border-radius: 6px;
+  padding: 6px 10px;
 }
-.su-iconbtn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.3);
+.su-menu-btn:hover,
+.su-menu-btn[aria-expanded="true"] {
+  background: #f4f4f4;
+  color: var(--su-ink);
 }
-.su-iconbtn:disabled {
-  opacity: 0.5;
-  cursor: default;
+
+.su-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  min-width: 200px;
+  background: #fff;
+  border: 1px solid var(--su-line);
+  border-radius: 8px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16);
+  padding: 6px;
 }
-.su-iconbtn-text {
-  font-size: 13px;
-  font-weight: bold;
-  text-decoration: none;
-  display: inline-flex;
+.su-menu-item {
+  appearance: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--su-ink);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  padding: 9px 12px;
+  display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: space-between;
+  gap: 10px;
 }
-
-.su-spacer {
-  flex: 1 1 auto;
+.su-menu-item:hover {
+  background: #f4f4f4;
 }
-
-.su-toggle {
+.su-menu-toggle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #fff;
-  font-size: 12px;
-  white-space: nowrap;
-  cursor: pointer;
-  user-select: none;
 }
-.su-toggle input {
+.su-menu-toggle input {
   cursor: pointer;
 }
 
@@ -212,7 +350,7 @@ body.su-active {
 }
 
 .su-card-domain {
-  color: var(--su-green-dark);
+  color: var(--su-orange);
   font-size: 13px;
   font-weight: bold;
   text-transform: lowercase;
@@ -242,27 +380,56 @@ body.su-active {
   font-weight: bold;
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  color: var(--su-green-dark);
-  background: #eef7e9;
-  border: 1px solid #d6ead0;
+  color: var(--su-orange);
+  background: #fdeee9;
+  border: 1px solid #f6d2c6;
   border-radius: 999px;
   padding: 3px 9px;
+}
+
+/* On-card action row: 👍 / 👎 + Visit */
+.su-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+.su-iconbtn {
+  appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--su-ink);
+  background: #f3f3f3;
+  border: 1px solid var(--su-line);
+  border-radius: 8px;
+  padding: 9px 14px;
+  min-width: 48px;
+}
+.su-iconbtn:hover:not(:disabled) {
+  background: #e9e9e9;
+}
+.su-iconbtn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .su-visit {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: var(--su-green);
+  background: var(--su-orange);
   color: #fff;
   text-decoration: none;
   font-weight: bold;
   font-size: 15px;
   padding: 10px 18px;
-  border-radius: 6px;
+  border-radius: 8px;
+  margin-left: auto;
 }
 .su-visit:hover {
-  background: var(--su-green-dark);
+  background: var(--su-orange-hover);
 }
 
 .su-votes {
@@ -289,11 +456,6 @@ body.su-active {
 }
 .su-message .su-stumble-btn {
   margin-top: 16px;
-  color: #fff;
-  background: var(--su-green);
-}
-.su-message .su-stumble-btn:hover:not(:disabled) {
-  background: var(--su-green-dark);
 }
 
 .su-spinner {
@@ -301,7 +463,7 @@ body.su-active {
   width: 28px;
   height: 28px;
   border: 3px solid #d7dbe0;
-  border-top-color: var(--su-green);
+  border-top-color: var(--su-orange);
   border-radius: 50%;
   animation: su-spin 0.8s linear infinite;
 }
@@ -311,32 +473,7 @@ body.su-active {
   }
 }
 
-/* --- Sign-in prompt (guest tries to rate) -------------------------------- */
-.su-signin {
-  width: 100%;
-  max-width: 720px;
-  background: #fff;
-  border: 1px solid var(--su-line);
-  border-left: 4px solid var(--su-green);
-  border-radius: 8px;
-  padding: 16px 18px;
-  margin: 0 auto 18px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-.su-signin p {
-  margin: 0;
-  font-size: 14px;
-  color: #44494f;
-  flex: 1 1 240px;
-}
-.su-signin b {
-  color: var(--su-ink);
-}
-
-/* --- Onboarding interest picker (modal) ---------------------------------- */
+/* --- Modal scrim (sign-in + onboarding) ---------------------------------- */
 .su-overlay {
   position: fixed;
   inset: 0;
@@ -347,6 +484,49 @@ body.su-active {
   justify-content: center;
   padding: 20px;
 }
+
+/* Sign-in modal (StumbleUpon-style, Google-wired) */
+.su-modal {
+  position: relative;
+  background: #fff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 380px;
+  padding: 28px 26px 26px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+.su-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  appearance: none;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--su-muted);
+}
+.su-modal-close:hover {
+  color: var(--su-ink);
+}
+.su-modal h2 {
+  font-size: 20px;
+  color: #1c2024;
+  margin-bottom: 6px;
+}
+.su-modal p {
+  color: var(--su-muted);
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+.su-modal-body {
+  display: flex;
+  justify-content: center;
+}
+
+/* --- Onboarding interest picker (modal) ---------------------------------- */
 .su-dialog {
   background: #fff;
   border-radius: 12px;
@@ -387,12 +567,12 @@ body.su-active {
   padding: 8px 16px;
 }
 .su-chip:hover {
-  border-color: var(--su-green-light);
+  border-color: var(--su-orange);
 }
 .su-chip[aria-pressed="true"] {
   color: #fff;
-  background: var(--su-green);
-  border-color: var(--su-green-dark);
+  background: var(--su-orange);
+  border-color: var(--su-orange-hover);
 }
 
 .su-dialog-footer {
@@ -415,12 +595,12 @@ body.su-active {
   font-size: 15px;
   font-weight: bold;
   color: #fff;
-  background: var(--su-green);
+  background: var(--su-orange);
   border-radius: 6px;
   padding: 11px 22px;
 }
 .su-primary:hover:not(:disabled) {
-  background: var(--su-green-dark);
+  background: var(--su-orange-hover);
 }
 .su-primary:disabled {
   opacity: 0.5;
@@ -428,21 +608,22 @@ body.su-active {
 }
 
 /* --- Responsive ---------------------------------------------------------- */
-@media (max-width: 620px) {
+@media (max-width: 720px) {
+  .su-tagline,
+  .su-join {
+    display: none;
+  }
+  .su-subbar {
+    gap: 10px;
+  }
+  .su-social {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
   .su-toolbar {
     flex-wrap: wrap;
-    gap: 8px;
-  }
-  .su-brand {
-    display: none;
-  }
-  .su-spacer {
-    display: none;
-  }
-  .su-toggle {
-    order: 5;
-    width: 100%;
-    justify-content: flex-end;
   }
   .su-card-title {
     font-size: 20px;

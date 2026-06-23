@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../auth/useAuth'
-import GoogleSignInButton from '../auth/GoogleSignInButton'
 import StumbleToolbar from './stumble/StumbleToolbar'
 import PreviewCard from './stumble/PreviewCard'
 import InterestPicker from './stumble/InterestPicker'
+import SignInModal from './stumble/SignInModal'
 import './stumble/stumble.css'
 
 const SEEN_KEY = 'su_seen_v1'
@@ -41,13 +41,14 @@ function clearSeen() {
 // /stumble — StumbleUpon-style discovery loop. Rendered OUTSIDE Layout so it
 // inherits none of the site's GeoCities theme.
 export default function StumblePage() {
-  const { isSignedIn, loading: authLoading } = useAuth()
+  const { user, isSignedIn, loading: authLoading, signOut } = useAuth()
 
   const [card, setCard] = useState(null)
   const [status, setStatus] = useState('loading') // loading | idle | error | exhausted
   const [error, setError] = useState('')
   const [ratingBusy, setRatingBusy] = useState(false)
-  const [signInPrompt, setSignInPrompt] = useState(false)
+  const [showSignIn, setShowSignIn] = useState(false)
+  const [likesCount, setLikesCount] = useState(0)
 
   const [newTab, setNewTab] = useState(() => {
     try {
@@ -89,7 +90,6 @@ export default function StumblePage() {
   }, [])
 
   const stumble = useCallback(async () => {
-    setSignInPrompt(false)
     setStatus('loading')
     setError('')
     try {
@@ -125,17 +125,21 @@ export default function StumblePage() {
     async (value) => {
       if (!card) return
       if (!isSignedIn) {
-        setSignInPrompt(true)
+        setShowSignIn(true)
         return
       }
       setRatingBusy(true)
       try {
-        await fetch('/.netlify/functions/stumble-ratings', {
+        const res = await fetch('/.netlify/functions/stumble-ratings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
           body: JSON.stringify({ pageId: card.id, value }),
         })
+        if (res.ok) {
+          const data = await res.json()
+          if (typeof data.likesCount === 'number') setLikesCount(data.likesCount)
+        }
       } catch {
         /* still advance — a dropped rating shouldn't trap the user */
       }
@@ -144,10 +148,6 @@ export default function StumblePage() {
     },
     [card, isSignedIn, stumble],
   )
-
-  const visit = useCallback(() => {
-    if (card) window.open(card.url, '_blank', 'noopener,noreferrer')
-  }, [card])
 
   const startOver = useCallback(() => {
     clearSeen()
@@ -204,6 +204,7 @@ export default function StumblePage() {
         setCatalog(data.interests || [])
         setSelected(data.selected || [])
         setMinInterests(data.minInterests || 3)
+        if (typeof data.likesCount === 'number') setLikesCount(data.likesCount)
         setCatalogReady(true)
       })
       .catch(() => {
@@ -233,12 +234,13 @@ export default function StumblePage() {
     const was = prevSignedInRef.current
     prevSignedInRef.current = isSignedIn
     if (!isSignedIn || was || !startedRef.current) return
-    setSignInPrompt(false)
+    setShowSignIn(false)
     fetch('/.netlify/functions/stumble-interests', { credentials: 'same-origin' })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         const sel = data?.selected || []
         setSelected(sel)
+        if (typeof data?.likesCount === 'number') setLikesCount(data.likesCount)
         if (sel.length < (data?.minInterests || minInterests)) {
           setShowOnboarding(true)
         } else {
@@ -251,7 +253,7 @@ export default function StumblePage() {
   // Keyboard shortcuts (PRD §6.2): Space = stumble, ↑ = like, ↓ = dislike.
   useEffect(() => {
     const onKey = (e) => {
-      if (showOnboarding) return
+      if (showOnboarding || showSignIn) return
       const t = e.target
       if (
         t &&
@@ -275,7 +277,7 @@ export default function StumblePage() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [stumble, rate, showOnboarding])
+  }, [stumble, rate, showOnboarding, showSignIn])
 
   let content
   if (status === 'loading') {
@@ -312,7 +314,15 @@ export default function StumblePage() {
       </div>
     )
   } else if (card) {
-    content = <PreviewCard card={card} />
+    content = (
+      <PreviewCard
+        card={card}
+        onLike={() => rate(1)}
+        onDislike={() => rate(-1)}
+        busy={ratingBusy || status === 'loading'}
+        canRate={isSignedIn}
+      />
+    )
   } else {
     content = (
       <div className="su-message">
@@ -325,28 +335,21 @@ export default function StumblePage() {
     <div className="su-root">
       <StumbleToolbar
         onStumble={stumble}
-        onLike={() => rate(1)}
-        onDislike={() => rate(-1)}
-        onVisit={visit}
         busy={status === 'loading' || ratingBusy}
-        canRate={isSignedIn}
-        hasCard={!!card}
+        user={user}
+        isSignedIn={isSignedIn}
+        likesCount={likesCount}
+        onOpenSignIn={() => setShowSignIn(true)}
+        onSignOut={signOut}
         newTab={newTab}
         onToggleNewTab={toggleNewTab}
+        onRepickInterests={() => setShowOnboarding(true)}
+        onStartOver={startOver}
       />
 
-      <main className="su-stage">
-        {signInPrompt && !isSignedIn && (
-          <div className="su-signin">
-            <p>
-              <b>Sign in to rate.</b> Your 👍/👎 tune future stumbles — and guests can
-              keep stumbling without an account.
-            </p>
-            <GoogleSignInButton />
-          </div>
-        )}
-        {content}
-      </main>
+      <main className="su-stage">{content}</main>
+
+      {showSignIn && <SignInModal onClose={() => setShowSignIn(false)} />}
 
       {showOnboarding && (
         <InterestPicker

@@ -1,75 +1,171 @@
-import { Link } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
 
-// The slim StumbleUpon-style toolbar. Intentionally minified: a way back to the
-// main site plus the core Stumble controls — no GeoCities chrome, no links to
-// the rest of sacor.xyz.
+// The Google "G" glyph, inlined so the guest pill matches the real button.
+function GoogleGlyph() {
+  return (
+    <span className="su-g-glyph" aria-hidden="true">
+      <svg viewBox="0 0 48 48">
+        <path
+          fill="#EA4335"
+          d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+        />
+        <path
+          fill="#4285F4"
+          d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+        />
+        <path
+          fill="#FBBC05"
+          d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+        />
+        <path
+          fill="#34A853"
+          d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+        />
+      </svg>
+    </span>
+  )
+}
+
+// The two stacked StumbleUpon bars: a charcoal top toolbar (Stumble + auth) and
+// a white profile sub-bar (avatar, likes, social, menu). Rendered with none of
+// the GeoCities chrome — it lives outside Layout under `.su-root`.
 export default function StumbleToolbar({
   onStumble,
-  onLike,
-  onDislike,
-  onVisit,
   busy,
-  canRate,
-  hasCard,
+  user,
+  isSignedIn,
+  likesCount,
+  onOpenSignIn,
+  onSignOut,
   newTab,
   onToggleNewTab,
+  onRepickInterests,
+  onStartOver,
 }) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef(null)
+
+  const handle = isSignedIn && user?.email ? `@${user.email.split('@')[0]}` : '@'
+  const avatarChar = isSignedIn && user?.email ? user.email.charAt(0).toUpperCase() : '?'
+
+  // Close the ☰ menu on outside click / Escape.
+  useEffect(() => {
+    if (!menuOpen) return
+    const onDown = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false)
+    }
+    const onKey = (e) => {
+      if (e.key === 'Escape') setMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [menuOpen])
+
   return (
-    <header className="su-toolbar">
-      <Link className="su-back" to="/">
-        ← Back to sacor.xyz
-      </Link>
-      <span className="su-brand">
-        <b>Stumble</b>Upon
-      </span>
+    <>
+      {/* Bar 1 — charcoal top toolbar */}
+      <header className="su-toolbar">
+        <button
+          type="button"
+          className="su-stumble-btn"
+          onClick={onStumble}
+          disabled={busy}
+        >
+          Stumble!
+        </button>
+        <span className="su-tagline">to discover the best of the web</span>
 
-      <button
-        type="button"
-        className="su-stumble-btn"
-        onClick={onStumble}
-        disabled={busy}
-      >
-        Stumble!
-      </button>
+        <span className="su-bar-spacer" />
 
-      <div className="su-controls">
-        <button
-          type="button"
-          className="su-iconbtn"
-          onClick={onLike}
-          disabled={!hasCard || busy}
-          title={canRate ? 'I like this (↑)' : 'Sign in to rate'}
-          aria-label="Thumbs up"
-        >
-          👍
+        {isSignedIn ? (
+          <span className="su-account">
+            <span className="su-account-email">{user?.email}</span>
+            <button type="button" className="su-signout" onClick={onSignOut}>
+              Sign Out
+            </button>
+          </span>
+        ) : (
+          <>
+            <span className="su-join">Join for free:</span>
+            <button type="button" className="su-google-pill" onClick={onOpenSignIn}>
+              <GoogleGlyph />
+              Connect with Google
+            </button>
+          </>
+        )}
+      </header>
+
+      {/* Bar 2 — white profile sub-bar */}
+      <div className="su-subbar">
+        <span className="su-avatar" aria-hidden="true">
+          {avatarChar}
+        </span>
+        <span className="su-handle">{handle}</span>
+
+        <span className="su-divider" />
+
+        <button type="button" className="su-likes-pill" title="Your likes">
+          {likesCount} {likesCount === 1 ? 'Like' : 'Likes'}
+          <span className="su-caret" aria-hidden="true">
+            ▾
+          </span>
         </button>
-        <button
-          type="button"
-          className="su-iconbtn"
-          onClick={onDislike}
-          disabled={!hasCard || busy}
-          title={canRate ? 'Not for me (↓)' : 'Sign in to rate'}
-          aria-label="Thumbs down"
-        >
-          👎
-        </button>
-        <button
-          type="button"
-          className="su-iconbtn su-iconbtn-text"
-          onClick={onVisit}
-          disabled={!hasCard}
-          title="Open this page in a new tab"
-        >
-          Visit ↗
-        </button>
+        <span className="su-social" title="Coming soon">
+          Following • Followers
+        </span>
+
+        <span className="su-bar-spacer" />
+
+        <span className="su-menu-wrap" ref={menuRef}>
+          <button
+            type="button"
+            className="su-menu-btn"
+            aria-label="Menu"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            ☰
+          </button>
+          {menuOpen && (
+            <div className="su-menu" role="menu">
+              <label className="su-menu-item su-menu-toggle">
+                Open in new tab
+                <input type="checkbox" checked={newTab} onChange={onToggleNewTab} />
+              </label>
+              {isSignedIn && (
+                <button
+                  type="button"
+                  className="su-menu-item"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    onRepickInterests()
+                  }}
+                >
+                  Re-pick interests
+                </button>
+              )}
+              {!isSignedIn && (
+                <button
+                  type="button"
+                  className="su-menu-item"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    onStartOver()
+                  }}
+                >
+                  Start over
+                </button>
+              )}
+            </div>
+          )}
+        </span>
       </div>
-
-      <span className="su-spacer" />
-
-      <label className="su-toggle">
-        <input type="checkbox" checked={newTab} onChange={onToggleNewTab} />
-        Open in new tab
-      </label>
-    </header>
+    </>
   )
 }
