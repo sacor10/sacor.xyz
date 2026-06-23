@@ -652,10 +652,11 @@ body.su-active {
 
 /* --- Onboarding interest picker (modal) ---------------------------------- */
 .su-dialog {
+  position: relative;
   background: #fff;
   border-radius: 12px;
   width: 100%;
-  max-width: 560px;
+  max-width: 680px;
   max-height: 90vh;
   overflow-y: auto;
   padding: 26px 26px 22px;
@@ -672,11 +673,23 @@ body.su-active {
   margin-bottom: 18px;
 }
 
+.su-interest-groups {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.su-interest-group h3,
+.su-submit-topics h3 {
+  color: #1c2024;
+  font-size: 13px;
+  line-height: 1.2;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
 .su-chip-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 22px;
 }
 .su-chip {
   appearance: none;
@@ -729,6 +742,48 @@ body.su-active {
 .su-primary:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+.su-submit-dialog {
+  max-width: 720px;
+}
+.su-field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+  color: var(--su-ink);
+  font-size: 13px;
+  font-weight: bold;
+}
+.su-input {
+  width: 100%;
+  border: 1px solid var(--su-line);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--su-ink);
+  font: inherit;
+  font-size: 14px;
+  padding: 10px 12px;
+}
+.su-input:focus {
+  outline: 2px solid rgba(235, 78, 37, 0.25);
+  border-color: var(--su-orange);
+}
+.su-textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+.su-submit-topics {
+  margin: 18px 0 20px;
+}
+.su-form-error {
+  margin: 0 0 14px;
+  color: #9b1c1c;
+  background: #fdeaea;
+  border: 1px solid #f3c1c1;
+  border-radius: 6px;
+  padding: 9px 11px;
+  font-size: 13px;
 }
 
 /* Low-emphasis "skip" affordance shown to guests in the onboarding picker. */

@@ -40,6 +40,7 @@ export default function StumbleToolbar({
   newTab,
   onToggleNewTab,
   onRepickInterests,
+  onOpenSubmit,
   onStartOver,
   card,
   onLike,
@@ -181,6 +182,17 @@ export default function StumbleToolbar({
                 }}
               >
                 Re-pick interests
+              </button>
+              <button
+                type="button"
+                className="su-menu-item"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false)
+                  onOpenSubmit()
+                }}
+              >
+                Submit a site
               </button>
               {!isSignedIn && (
                 <button

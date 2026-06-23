@@ -4,6 +4,7 @@ import { useState } from 'react'
 // before their stumbles get personalized.
 export default function InterestPicker({
   catalog,
+  groups = [],
   initial,
   minInterests,
   busy,
@@ -24,6 +25,17 @@ export default function InterestPicker({
 
   const enough = selected.size >= minInterests
   const remaining = Math.max(0, minInterests - selected.size)
+  const labels = new Map(groups.map((group) => [group.id, group.name]))
+  const grouped = catalog.reduce((acc, interest) => {
+    const id = interest.group || 'other'
+    if (!acc.has(id)) acc.set(id, { id, name: labels.get(id) || 'More', interests: [] })
+    acc.get(id).interests.push(interest)
+    return acc
+  }, new Map())
+  const orderedGroups = [
+    ...groups.map((group) => grouped.get(group.id)).filter(Boolean),
+    ...[...grouped.values()].filter((group) => !groups.some((item) => item.id === group.id)),
+  ]
 
   return (
     <div className="su-overlay" role="dialog" aria-modal="true" aria-label="Pick your interests">
@@ -34,17 +46,24 @@ export default function InterestPicker({
           change these any time.
         </p>
 
-        <div className="su-chip-grid">
-          {catalog.map((interest) => (
-            <button
-              key={interest.slug}
-              type="button"
-              className="su-chip"
-              aria-pressed={selected.has(interest.slug)}
-              onClick={() => toggle(interest.slug)}
-            >
-              {interest.name}
-            </button>
+        <div className="su-interest-groups">
+          {orderedGroups.map((group) => (
+            <section key={group.id} className="su-interest-group" aria-label={group.name}>
+              <h3>{group.name}</h3>
+              <div className="su-chip-grid">
+                {group.interests.map((interest) => (
+                  <button
+                    key={interest.slug}
+                    type="button"
+                    className="su-chip"
+                    aria-pressed={selected.has(interest.slug)}
+                    onClick={() => toggle(interest.slug)}
+                  >
+                    {interest.name}
+                  </button>
+                ))}
+              </div>
+            </section>
           ))}
         </div>
 

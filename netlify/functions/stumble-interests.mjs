@@ -9,6 +9,7 @@ import {
 } from './_lib/stumble.mjs'
 import {
   stumbleInterests,
+  stumbleInterestGroups,
   isKnownInterest,
   MIN_INTERESTS,
 } from '../../src/data/stumbleInterests.js'
@@ -34,6 +35,7 @@ export default async (req) => {
     }
     return json({
       interests: stumbleInterests,
+      groups: stumbleInterestGroups,
       selected,
       minInterests: MIN_INTERESTS,
       likesCount,

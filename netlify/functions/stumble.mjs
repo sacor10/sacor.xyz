@@ -33,6 +33,7 @@ export default async (req) => {
   const excluded = new Set()
   let interests = null
   let seen = []
+  let recentSeenIds = []
 
   if (session) {
     const [storedSeen, ratings, userInterests] = await Promise.all([
@@ -41,6 +42,7 @@ export default async (req) => {
       loadJson(usersStore, userInterestsKey(hash), []),
     ])
     seen = Array.isArray(storedSeen) ? storedSeen : []
+    recentSeenIds = seen
     for (const id of seen) excluded.add(id)
     if (ratings && typeof ratings === 'object') {
       for (const id of Object.keys(ratings)) excluded.add(id)
@@ -51,7 +53,8 @@ export default async (req) => {
   } else {
     const ex = url.searchParams.get('exclude')
     if (ex) {
-      ex.split(',').map((s) => s.trim()).filter(Boolean).forEach((id) => excluded.add(id))
+      recentSeenIds = ex.split(',').map((s) => s.trim()).filter(Boolean)
+      recentSeenIds.forEach((id) => excluded.add(id))
     }
     const ints = url.searchParams.get('interests')
     if (ints) {
@@ -72,7 +75,12 @@ export default async (req) => {
     return json({ page: null, exhausted: true, remaining: 0 })
   }
 
-  const picked = pickFromPool(pool, Date.now())
+  const summariesById = new Map(index.map((summary) => [summary.id, summary]))
+  const recentSummaries = recentSeenIds
+    .slice(-24)
+    .map((id) => summariesById.get(id))
+    .filter(Boolean)
+  const picked = pickFromPool(pool, Date.now(), { recentSummaries })
   const raw = await pagesStore.get(pageKey(picked.id))
   if (!raw) {
     // index/page drift — report gracefully instead of 500.

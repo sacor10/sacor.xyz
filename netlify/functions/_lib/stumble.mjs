@@ -13,9 +13,12 @@ export const getPagesStore = () => getStore(PAGES_STORE)
 export const getUsersStore = () => getStore(USERS_STORE)
 
 export const APPROVED_INDEX_KEY = 'index/approved'
-export const SEED_VERSION = 2
+export const PENDING_INDEX_KEY = 'index/pending'
+export const REJECTED_INDEX_KEY = 'index/rejected'
+export const SEED_VERSION = 3
 export const SEED_VERSION_KEY = 'index/seed-version'
 export const pageKey = (id) => `pages/${id}`
+export const submitterRateKey = (hash, day) => `rate/submissions/${day}/${hash}`
 export const userInterestsKey = (hash) => `users/${hash}/interests`
 export const userSeenKey = (hash) => `users/${hash}/seen`
 export const userRatingsKey = (hash) => `users/${hash}/ratings`
@@ -50,6 +53,14 @@ export const saveJson = (store, key, value) => store.set(key, JSON.stringify(val
 
 const TRACKING_PARAM = /^(utm_.*|fbclid|gclid|dclid|mc_eid|mc_cid|ref|ref_src|igshid|si)$/i
 
+export function domainOf(input) {
+  try {
+    return new URL(String(input || '')).hostname.toLowerCase().replace(/^www\./, '')
+  } catch {
+    return ''
+  }
+}
+
 export function canonicalizeUrl(input) {
   let u
   try {
@@ -60,9 +71,13 @@ export function canonicalizeUrl(input) {
   if (u.protocol !== 'http:' && u.protocol !== 'https:') return null
   u.hash = ''
   u.hostname = u.hostname.toLowerCase()
+  if ((u.protocol === 'http:' && u.port === '80') || (u.protocol === 'https:' && u.port === '443')) {
+    u.port = ''
+  }
   for (const key of [...u.searchParams.keys()]) {
     if (TRACKING_PARAM.test(key)) u.searchParams.delete(key)
   }
+  u.searchParams.sort()
   if (u.pathname.length > 1) u.pathname = u.pathname.replace(/\/+$/, '')
   return u.toString()
 }
@@ -70,19 +85,121 @@ export function canonicalizeUrl(input) {
 export const pageIdForUrl = (canonicalUrl) =>
   createHash('sha256').update(canonicalUrl).digest('hex').slice(0, 16)
 
+const FRAME_POLICIES = new Set(['allow', 'block', 'unknown'])
+export const CONTENT_TYPES = new Set([
+  'archive',
+  'article',
+  'audio',
+  'book',
+  'collection',
+  'course',
+  'gallery',
+  'game',
+  'interactive',
+  'map',
+  'museum',
+  'recipe',
+  'reference',
+  'tool',
+  'video',
+])
+
+export const normalizeFramePolicy = (policy) =>
+  FRAME_POLICIES.has(policy) ? policy : 'unknown'
+
+export const normalizeContentType = (type, fallback = 'article') =>
+  CONTENT_TYPES.has(type) ? type : fallback
+
+export function inferContentType(page = {}) {
+  if (CONTENT_TYPES.has(page.contentType)) return page.contentType
+  const interests = new Set(page.interests || [])
+  const url = String(page.url || '')
+  if (interests.has('gaming')) return 'game'
+  if (interests.has('maps')) return 'map'
+  if (interests.has('museums')) return 'museum'
+  if (interests.has('archives')) return 'archive'
+  if (interests.has('tools')) return 'tool'
+  if (interests.has('books')) return 'book'
+  if (interests.has('food') && /recipe/i.test(`${page.title || ''} ${url}`)) return 'recipe'
+  if (interests.has('interactives') || /experiment|interactive|lab|fun/i.test(url)) return 'interactive'
+  if (interests.has('photography') || interests.has('art')) return 'gallery'
+  if (interests.has('learning')) return 'course'
+  return 'article'
+}
+
+export const qualityScore = (value, fallback = 0.75) => {
+  const n = Number(value)
+  if (!Number.isFinite(n)) return fallback
+  return Math.max(0, Math.min(1, n))
+}
+
+export function normalizeInterests(interests) {
+  return [...new Set((Array.isArray(interests) ? interests : []).filter(isKnownInterest))]
+}
+
+export function normalizePageRecord(page = {}) {
+  const canonicalUrl = canonicalizeUrl(page.canonicalUrl || page.url)
+  const url = page.url || canonicalUrl || ''
+  const interests = normalizeInterests(page.interests)
+  const now = new Date().toISOString()
+  const status = page.status || 'approved'
+  return {
+    ...page,
+    id: page.id || (canonicalUrl ? pageIdForUrl(canonicalUrl) : ''),
+    url,
+    canonicalUrl,
+    domain: page.domain || domainOf(canonicalUrl || url),
+    title: String(page.title || domainOf(url) || 'Untitled stumble').trim(),
+    description: String(page.description || '').trim(),
+    thumbnailUrl: page.thumbnailUrl || null,
+    interests,
+    contentType: normalizeContentType(page.contentType, inferContentType({ ...page, interests })),
+    language: page.language || 'en',
+    source: page.source || (page.submittedBy === 'seed' ? 'curated-seed' : 'community'),
+    status,
+    qualityScore: qualityScore(page.qualityScore),
+    safetyFlags: Array.isArray(page.safetyFlags) ? page.safetyFlags : [],
+    framePolicy: normalizeFramePolicy(page.framePolicy),
+    upVotes: page.upVotes || 0,
+    downVotes: page.downVotes || 0,
+    submittedBy: page.submittedBy || page.source || 'unknown',
+    submittedAt: page.submittedAt || page.createdAt || now,
+    approvedAt: page.approvedAt || (status === 'approved' ? page.createdAt || now : null),
+    createdAt: page.createdAt || now,
+    lastCheckedAt: page.lastCheckedAt || null,
+  }
+}
+
 // --- Index summaries -------------------------------------------------------
 
-export const summaryOf = (page) => ({
-  id: page.id,
-  interests: page.interests || [],
-  upVotes: page.upVotes || 0,
-  downVotes: page.downVotes || 0,
-  createdAt: page.createdAt,
-})
+export const summaryOf = (page) => {
+  const normalized = normalizePageRecord(page)
+  return {
+    id: normalized.id,
+    canonicalUrl: normalized.canonicalUrl,
+    domain: normalized.domain,
+    interests: normalized.interests,
+    contentType: normalized.contentType,
+    qualityScore: normalized.qualityScore,
+    framePolicy: normalized.framePolicy,
+    upVotes: normalized.upVotes,
+    downVotes: normalized.downVotes,
+    createdAt: normalized.createdAt,
+    approvedAt: normalized.approvedAt,
+  }
+}
 
-const FRAME_POLICIES = new Set(['allow', 'block', 'unknown'])
-const normalizeFramePolicy = (policy) =>
-  FRAME_POLICIES.has(policy) ? policy : 'unknown'
+export const moderationSummaryOf = (page) => {
+  const normalized = normalizePageRecord(page)
+  return {
+    id: normalized.id,
+    canonicalUrl: normalized.canonicalUrl,
+    domain: normalized.domain,
+    title: normalized.title,
+    status: normalized.status,
+    submittedAt: normalized.submittedAt,
+  }
+}
 
 // Browser-facing shape of a page (omits moderation/internal fields).
 export const clientPage = (page) => ({
@@ -92,6 +209,7 @@ export const clientPage = (page) => ({
   description: page.description || '',
   thumbnailUrl: page.thumbnailUrl || null,
   interests: page.interests || [],
+  contentType: normalizeContentType(page.contentType, inferContentType(page)),
   upVotes: page.upVotes || 0,
   downVotes: page.downVotes || 0,
   framePolicy: normalizeFramePolicy(page.framePolicy),
@@ -102,25 +220,34 @@ export const clientPage = (page) => ({
 const sameJson = (a, b) => JSON.stringify(a) === JSON.stringify(b)
 
 function pageFromSeed(seed, canonicalUrl, id, now, existing = {}) {
-  return {
+  return normalizePageRecord({
     ...existing,
     id,
     url: seed.url,
     canonicalUrl,
+    domain: domainOf(canonicalUrl),
     title: seed.title,
     description: seed.description || '',
     thumbnailUrl: seed.thumbnailUrl ?? existing.thumbnailUrl ?? null,
-    interests: (seed.interests || []).filter(isKnownInterest),
+    interests: normalizeInterests(seed.interests),
+    contentType: seed.contentType || existing.contentType,
+    language: seed.language || existing.language || 'en',
+    source: seed.source || existing.source || 'curated-seed',
     framePolicy: normalizeFramePolicy(seed.framePolicy),
     status: 'approved',
+    qualityScore: qualityScore(seed.qualityScore, existing.qualityScore ?? 0.78),
+    safetyFlags: seed.safetyFlags || existing.safetyFlags || [],
     upVotes: existing.upVotes || 0,
     downVotes: existing.downVotes || 0,
     submittedBy: 'seed',
+    submittedAt: existing.submittedAt || existing.createdAt || now,
+    approvedAt: existing.approvedAt || existing.createdAt || now,
     createdAt: existing.createdAt || now,
-  }
+    lastCheckedAt: existing.lastCheckedAt || null,
+  })
 }
 
-function upsertSummary(index, summary) {
+export function upsertSummary(index, summary) {
   const idx = index.findIndex((item) => item.id === summary.id)
   if (idx === -1) {
     index.push(summary)
@@ -131,6 +258,65 @@ function upsertSummary(index, summary) {
     return true
   }
   return false
+}
+
+export function removeSummary(index, id) {
+  const idx = index.findIndex((item) => item.id === id)
+  if (idx === -1) return false
+  index.splice(idx, 1)
+  return true
+}
+
+function summaryNeedsMigration(summary) {
+  return (
+    !summary ||
+    !summary.canonicalUrl ||
+    !summary.domain ||
+    !summary.contentType ||
+    typeof summary.qualityScore !== 'number' ||
+    !summary.framePolicy ||
+    !summary.approvedAt
+  )
+}
+
+async function normalizeApprovedIndex(store, existingIndex = []) {
+  const index = []
+  let changed = false
+
+  for (const summary of existingIndex) {
+    if (!summary?.id) {
+      changed = true
+      continue
+    }
+    if (!summaryNeedsMigration(summary)) {
+      index.push(summary)
+      continue
+    }
+
+    const raw = await store.get(pageKey(summary.id))
+    if (!raw) {
+      changed = true
+      continue
+    }
+
+    let page
+    try {
+      page = JSON.parse(raw)
+    } catch {
+      changed = true
+      continue
+    }
+
+    const normalized = normalizePageRecord(page)
+    if (!sameJson(page, normalized)) {
+      await store.set(pageKey(normalized.id), JSON.stringify(normalized))
+    }
+    index.push(summaryOf(normalized))
+    changed = true
+  }
+
+  if (changed) await saveJson(store, APPROVED_INDEX_KEY, index)
+  return index
 }
 
 async function upsertSeedPool(store, existingIndex = []) {
@@ -173,11 +359,18 @@ async function upsertSeedPool(store, existingIndex = []) {
     indexChanged = upsertSummary(index, summaryOf(page)) || indexChanged
   }
 
-  if (indexChanged || !Array.isArray(existingIndex) || existingIndex.length === 0) {
-    await saveJson(store, APPROVED_INDEX_KEY, index)
+  const normalizedIndex = await normalizeApprovedIndex(store, index)
+
+  if (
+    indexChanged ||
+    !sameJson(index, normalizedIndex) ||
+    !Array.isArray(existingIndex) ||
+    existingIndex.length === 0
+  ) {
+    await saveJson(store, APPROVED_INDEX_KEY, normalizedIndex)
   }
   await saveJson(store, SEED_VERSION_KEY, SEED_VERSION)
-  return index
+  return normalizedIndex
 }
 
 async function seedApprovedPool(store) {
@@ -188,7 +381,8 @@ export async function loadApprovedIndex(store) {
   const index = await loadJson(store, APPROVED_INDEX_KEY, null)
   if (Array.isArray(index) && index.length > 0) {
     const seedVersion = Number(await loadJson(store, SEED_VERSION_KEY, 0))
-    if (seedVersion >= SEED_VERSION) return index
+    if (seedVersion >= SEED_VERSION && !index.some(summaryNeedsMigration)) return index
+    if (seedVersion >= SEED_VERSION) return normalizeApprovedIndex(store, index)
     return upsertSeedPool(store, index)
   }
   return seedApprovedPool(store)
@@ -196,24 +390,67 @@ export async function loadApprovedIndex(store) {
 
 // --- Recommendation engine (PRD §7 Phase 1) --------------------------------
 
-export function scoreSummary(summary, now) {
+function frequencyMap(values) {
+  const map = new Map()
+  for (const value of values.filter(Boolean)) map.set(value, (map.get(value) || 0) + 1)
+  return map
+}
+
+export function scoreSummary(summary, now, context = {}) {
   const net = (summary.upVotes || 0) - (summary.downVotes || 0)
   const votePart = Math.tanh(net / 5) // -1..1, saturates so a few votes don't dominate
   const ageDays = Math.max(0, (now - new Date(summary.createdAt).getTime()) / 86_400_000)
   const freshness = 1 / (1 + ageDays / 30) // ~1 for new, decays over months
   const random = Math.random() // serendipity — the StumbleUpon magic
-  return 0.5 * votePart + 0.2 * freshness + 0.8 * random
+  const recentDomains = context.recentDomains || new Set()
+  const recentContentTypes = context.recentContentTypes || new Map()
+  const domainPenalty = recentDomains.has(summary.domain) ? -0.45 : 0
+  const typePenalty = Math.min(0.3, (recentContentTypes.get(summary.contentType) || 0) * 0.08)
+
+  // Serendipity stays the largest signal; votes, freshness, and quality nudge
+  // the pool, while recent-domain/type penalties keep one site from clumping.
+  return (
+    0.35 * qualityScore(summary.qualityScore) +
+    0.25 * votePart +
+    0.15 * freshness +
+    0.8 * random +
+    domainPenalty -
+    typePenalty
+  )
 }
 
 // Score the pool, keep the top N, then pick randomly within it so picks never
 // feel deterministic (PRD §7 Phase 1).
-export function pickFromPool(pool, now, topN = 10) {
+export function buildRecommendationContext(recentSummaries = []) {
+  const recent = Array.isArray(recentSummaries) ? recentSummaries : []
+  return {
+    recentDomains: new Set(recent.slice(-8).map((summary) => summary.domain).filter(Boolean)),
+    recentContentTypes: frequencyMap(recent.slice(-12).map((summary) => summary.contentType)),
+  }
+}
+
+// Score a broad candidate shelf, then perform a weighted random pick. This is
+// less deterministic than "top result wins" but still avoids stale clusters.
+export function pickFromPool(pool, now, options = {}) {
   if (!pool.length) return null
+  const topN = options.topN || 40
+  const context = buildRecommendationContext(options.recentSummaries || [])
   const scored = pool
-    .map((summary) => ({ summary, score: scoreSummary(summary, now) }))
+    .map((summary) => ({ summary, score: scoreSummary(summary, now, context) }))
     .sort((a, b) => b.score - a.score)
   const top = scored.slice(0, Math.min(topN, scored.length))
-  return top[Math.floor(Math.random() * top.length)].summary
+  const floor = Math.min(...top.map((item) => item.score))
+  const weighted = top.map((item) => ({
+    ...item,
+    weight: Math.max(0.05, item.score - floor + 0.05),
+  }))
+  const total = weighted.reduce((sum, item) => sum + item.weight, 0)
+  let cursor = Math.random() * total
+  for (const item of weighted) {
+    cursor -= item.weight
+    if (cursor <= 0) return item.summary
+  }
+  return weighted[weighted.length - 1].summary
 }
 
 // Append an id to the seen list, de-duped and capped to a rolling window.

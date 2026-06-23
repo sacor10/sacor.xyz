@@ -5,6 +5,7 @@ import { isKnownInterest } from '../data/stumbleInterests'
 import StumbleToolbar from './stumble/StumbleToolbar'
 import StumbleFrame from './stumble/StumbleFrame'
 import InterestPicker from './stumble/InterestPicker'
+import SubmitSiteModal from './stumble/SubmitSiteModal'
 import SignInModal from './stumble/SignInModal'
 import './stumble/stumble.css'
 
@@ -124,6 +125,7 @@ export default function StumblePage() {
   })
 
   const [catalog, setCatalog] = useState([])
+  const [catalogGroups, setCatalogGroups] = useState([])
   const [selected, setSelected] = useState([])
   // Guest topic selection, seeded from localStorage. Drives the picker's
   // pre-fill; signed-in users use `selected` (their server-saved interests).
@@ -131,6 +133,7 @@ export default function StumblePage() {
   const [minInterests, setMinInterests] = useState(3)
   const [catalogReady, setCatalogReady] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [showSubmit, setShowSubmit] = useState(false)
   const [savingInterests, setSavingInterests] = useState(false)
 
   const newTabRef = useRef(newTab)
@@ -289,6 +292,18 @@ export default function StumblePage() {
     [isSignedIn, stumble],
   )
 
+  const submitSite = useCallback(async (payload) => {
+    const res = await fetch('/.netlify/functions/stumble-submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify(payload),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(data.error || 'Could not submit that site.')
+    return data
+  }, [])
+
   // Guest chose "surprise me": record that they onboarded (empty list) so we
   // don't re-prompt next visit, then stumble the broad pool.
   const skipInterests = useCallback(() => {
@@ -310,6 +325,7 @@ export default function StumblePage() {
           return
         }
         setCatalog(data.interests || [])
+        setCatalogGroups(data.groups || [])
         setSelected(data.selected || [])
         setMinInterests(data.minInterests || 3)
         if (typeof data.likesCount === 'number') setLikesCount(data.likesCount)
@@ -460,6 +476,7 @@ export default function StumblePage() {
         newTab={newTab}
         onToggleNewTab={toggleNewTab}
         onRepickInterests={() => setShowOnboarding(true)}
+        onOpenSubmit={() => setShowSubmit(true)}
         onStartOver={startOver}
         card={card}
         onLike={() => rate(1)}
@@ -472,9 +489,19 @@ export default function StumblePage() {
 
       {showSignIn && <SignInModal onClose={() => setShowSignIn(false)} />}
 
+      {showSubmit && (
+        <SubmitSiteModal
+          catalog={catalog}
+          groups={catalogGroups}
+          onSubmit={submitSite}
+          onClose={() => setShowSubmit(false)}
+        />
+      )}
+
       {showOnboarding && (
         <InterestPicker
           catalog={catalog}
+          groups={catalogGroups}
           initial={isSignedIn ? selected : guestInterests}
           minInterests={minInterests}
           busy={savingInterests}

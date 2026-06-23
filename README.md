@@ -9,6 +9,7 @@ Most pages are static React (home, blog index/post, contact, guestbook, MTS, web
 - `/stocks` — candlestick chart + live price ticker (see below).
 - `/travel-plans` — private and shared markdown itinerary CRUD (see below).
 
+- `/stumble` - StumbleUpon-style web discovery backed by a curated and moderated corpus (see below).
 - `/instagram-downloader` - public Instagram Reel/post downloader backed by a separate Node API (see below).
 - `/x-downloader` - public X/Twitter post video downloader backed by a separate Node API (see below).
 - `/facebook-downloader` - public Facebook reel/watch/video downloader backed by the `facebook-download` Netlify Function (resolves share & fb.watch links, streams the MP4 via the `facebook-video` proxy).
@@ -19,8 +20,37 @@ Most pages are static React (home, blog index/post, contact, guestbook, MTS, web
 - `npx netlify dev` — Vite + Functions on `http://localhost:8888`.
 - `npm run build` / `npm run preview` / `npm run lint`.
 
+- `npm run stumble:validate` - validate the `/stumble` corpus for duplicates, domain caps, metadata, interest coverage, and URL hygiene.
+- `npm run stumble:report` - print `/stumble` corpus distribution by domain, topic, content type, frame policy, and status.
+
 - `npm --prefix services/instagram-downloader run dev` - local Instagram downloader API on `http://localhost:8787`.
 - `npm --prefix services/x-downloader run dev` - local X/Twitter downloader API on `http://localhost:8788`.
+
+## Stumble (`/stumble`)
+
+`/stumble` is a StumbleUpon-style discovery loop. Guests can stumble with local seen exclusion; signed-in users get server-side seen/rated exclusion, saved interests, and thumbs feedback.
+
+The approved pool is stored in Netlify Blobs (`stumble-pages`) and lazily seeded from [`src/data/stumblePages.js`](src/data/stumblePages.js). The seed corpus is curated, English-first, safe-for-work, and tagged with interests, content type, frame policy, source, quality score, and safety metadata. Existing Blob records are migrated lazily when the seed version changes so votes and user state are preserved.
+
+### Corpus maintenance
+
+1. Add or edit curated seeds in `src/data/stumblePages.js`.
+2. Keep domains under the soft cap of 4 pages unless there is a deliberate reason to expand a source.
+3. Run:
+   ```sh
+   npm run stumble:validate
+   npm run stumble:report
+   ```
+4. Run `npx netlify dev` and visit `http://localhost:8888/stumble` to exercise the function-backed route.
+
+### Submissions and moderation
+
+- `POST /.netlify/functions/stumble-submissions` accepts public site submissions, canonicalizes/dedupes the URL, fetches bounded preview metadata, rate-limits submitters, and stores the page as `pending`.
+- `GET /.netlify/functions/stumble-moderation?status=pending` lists pending submissions for owner accounts only.
+- `POST /.netlify/functions/stumble-moderation` with `{ "id": "...", "action": "approve" }` approves a pending page into the live pool. `{ "action": "reject" }` moves it to the rejected index.
+- Owner access uses the existing Google session owner check (`TRAVEL_PLAN_EMAILS` / `OWNER_EMAIL`).
+
+The recommender preserves seen/rated exclusion, relaxes interest filters when they would starve the user, and uses a weighted random pick with recent domain/content-type penalties so the feed stays broad instead of clustering around one site.
 
 ## Live Stocks (`/stocks`)
 

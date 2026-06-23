@@ -8,6 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "stumble:validate": "node scripts/stumble-corpus.mjs validate",
+    "stumble:report": "node scripts/stumble-corpus.mjs report",
     "instagram-api": "npm --prefix services/instagram-downloader run dev",
     "instagram-api:test": "npm --prefix services/instagram-downloader test",
     "x-api": "npm --prefix services/x-downloader run dev",

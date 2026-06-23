@@ -1,316 +1,231 @@
-// Seed pool for the /stumble discovery feature (PRD §6.6 "bulk-seed pages").
+// Curated seed pool for the /stumble discovery feature.
 //
-// This fixture bootstraps an empty pool: stumble.mjs lazy-loads it into the
-// `stumble-pages` Blobs store when the approved index is empty (mirrors the
-// seedIfEmpty pattern in travel-plans.mjs). Real submissions + moderation
-// (M3) grow the pool beyond these seeds.
-//
-// Every entry is an evergreen, safe-for-work, reputable destination. `interests`
-// are slugs from stumbleInterests.js. `thumbnailUrl` is intentionally null for
-// seeds — the preview card renders a deterministic placeholder; scraped OG
-// images arrive with user submissions in M3. `framePolicy` is advisory metadata
-// for the iframe-first UI: "allow", "block", or omitted/"unknown".
+// Netlify Functions lazily upsert these pages into the `stumble-pages` Blobs
+// store. Seed entries are intentionally metadata-rich enough for validation,
+// reporting, moderation, and diversity-aware recommendation.
+
+const seedPage = ([
+  url,
+  title,
+  description,
+  interests,
+  contentType,
+  framePolicy = 'unknown',
+  qualityScore = 0.78,
+]) => ({
+  url,
+  title,
+  description,
+  interests,
+  contentType,
+  framePolicy,
+  language: 'en',
+  source: 'curated-seed',
+  qualityScore,
+  safetyFlags: [],
+})
 
 export const stumbleSeedPages = [
-  {
-    url: 'https://apod.nasa.gov/apod/',
-    title: 'Astronomy Picture of the Day',
-    description:
-      "NASA's daily window on the cosmos: a new astronomy image each day with a short explanation from a professional astronomer.",
-    interests: ['space', 'science', 'photography'],
-    framePolicy: 'block',
-  },
-  {
-    url: 'https://www.metmuseum.org/art/collection',
-    title: 'The Met Collection',
-    description:
-      'Browse hundreds of thousands of artworks spanning 5,000 years of human creativity, free to explore online.',
-    interests: ['art', 'history'],
-  },
-  {
-    url: 'https://www.atlasobscura.com',
-    title: 'Atlas Obscura',
-    description:
-      "A guide to the world's hidden wonders — the strange, the overlooked, and the extraordinary places worth a detour.",
-    interests: ['travel', 'history', 'weird'],
-  },
-  {
-    url: 'https://xkcd.com',
-    title: 'xkcd',
-    description:
-      'A webcomic of romance, sarcasm, math, and language. Beloved by anyone who has ever loved a good footnote.',
-    interests: ['humor', 'science', 'technology'],
-    framePolicy: 'allow',
-  },
-  {
-    url: 'https://www.quantamagazine.org',
-    title: 'Quanta Magazine',
-    description:
-      'Award-winning, illuminating coverage of developments in mathematics, physics, biology, and computer science.',
-    interests: ['science', 'technology'],
-    framePolicy: 'block',
-  },
-  {
-    url: 'https://radio.garden',
-    title: 'Radio Garden',
-    description:
-      'Spin a globe of live radio stations and drop in on broadcasts from anywhere on Earth in real time.',
-    interests: ['music', 'travel', 'weird'],
-  },
-  {
-    url: 'https://www.gutenberg.org',
-    title: 'Project Gutenberg',
-    description:
-      'Over 70,000 free eBooks — the classics of world literature, digitized and in the public domain.',
-    interests: ['books', 'history'],
-    framePolicy: 'allow',
-  },
-  {
-    url: 'https://neal.fun',
-    title: 'Neal.fun',
-    description:
-      'A playground of interactive toys and explainers: the scale of the universe, the price of life, and other delightful rabbit holes.',
-    interests: ['weird', 'science', 'design'],
-  },
-  {
-    url: 'https://www.seriouseats.com',
-    title: 'Serious Eats',
-    description:
-      'Obsessively tested recipes and the food science behind why they work. Cooking, explained.',
-    interests: ['food', 'science'],
-  },
-  {
-    url: 'https://unsplash.com',
-    title: 'Unsplash',
-    description:
-      'A vast library of striking, freely usable photography contributed by photographers around the world.',
-    interests: ['photography', 'art', 'design'],
-  },
-  {
-    url: 'https://www.worldhistory.org',
-    title: 'World History Encyclopedia',
-    description:
-      'A deep, readable, peer-reviewed reference for the history of civilizations, from antiquity to the modern age.',
-    interests: ['history', 'books'],
-  },
-  {
-    url: 'https://musiclab.chromeexperiments.com',
-    title: 'Chrome Music Lab',
-    description:
-      'Hands-on experiments that make learning music fun and visual — rhythm, harmonics, melody, and more.',
-    interests: ['music', 'technology', 'design'],
-  },
-  {
-    url: 'https://explore.org/livecams',
-    title: 'Explore.org Live Cams',
-    description:
-      'Live nature cams from around the planet: bears, puffins, coral reefs, and aurora, streaming 24/7.',
-    interests: ['nature', 'travel'],
-  },
-  {
-    url: 'https://www.dezeen.com',
-    title: 'Dezeen',
-    description:
-      "The world's most influential architecture and design magazine, covering buildings, interiors, and objects.",
-    interests: ['design', 'art'],
-  },
-  {
-    url: 'https://letterboxd.com',
-    title: 'Letterboxd',
-    description:
-      'A social network for film lovers — track what you watch, write reviews, and find your next great movie.',
-    interests: ['movies', 'art'],
-  },
-  {
-    url: 'https://www.theverge.com',
-    title: 'The Verge',
-    description:
-      'Smart reporting on technology, science, and the way they reshape culture and daily life.',
-    interests: ['technology', 'science'],
-  },
-  {
-    url: 'https://eyes.nasa.gov/apps/solar-system/',
-    title: 'Eyes on the Solar System',
-    description:
-      "NASA's real-time, interactive 3D ride through the solar system, built from real mission data.",
-    interests: ['space', 'science', 'technology'],
-  },
-  {
-    url: 'https://theoatmeal.com',
-    title: 'The Oatmeal',
-    description:
-      'Comics and stories that are funny, occasionally profound, and frequently about why your dog is the way it is.',
-    interests: ['humor', 'art'],
-  },
-  {
-    url: 'https://www.are.na',
-    title: 'Are.na',
-    description:
-      'A quiet, ad-free space for collecting and connecting ideas — like a mood board for your brain.',
-    interests: ['design', 'art', 'books'],
-  },
-  {
-    url: 'https://www.nationalgeographic.com',
-    title: 'National Geographic',
-    description:
-      'Photography and storytelling about our planet, its wildlife, and the people exploring it.',
-    interests: ['nature', 'photography', 'travel'],
-  },
-  {
-    url: 'https://aeon.co',
-    title: 'Aeon',
-    description:
-      'Long-form essays and ideas on philosophy, science, and the human condition — slow reading, well spent.',
-    interests: ['science', 'books', 'history'],
-  },
-  {
-    url: 'https://archive.org',
-    title: 'Internet Archive',
-    description:
-      'A nonprofit library of millions of free books, movies, songs, websites, and software — including the Wayback Machine.',
-    interests: ['history', 'books', 'movies', 'weird'],
-  },
-  {
-    url: 'https://www.openculture.com',
-    title: 'Open Culture',
-    description:
-      'The best free cultural and educational media on the web: courses, films, audiobooks, and more.',
-    interests: ['books', 'movies', 'music', 'history'],
-  },
-  {
-    url: 'https://pudding.cool',
-    title: 'The Pudding',
-    description:
-      'Visual essays that explain ideas debated in culture with playful, beautifully crafted data journalism.',
-    interests: ['design', 'technology', 'weird'],
-    framePolicy: 'allow',
-  },
-  {
-    url: 'https://xkcd.com/353/',
-    title: 'xkcd: Python',
-    description:
-      'A tiny classic about importing antigravity, programming joy, and why xkcd became part of internet folklore.',
-    interests: ['humor', 'technology'],
-    framePolicy: 'allow',
-  },
-  {
-    url: 'https://xkcd.com/936/',
-    title: 'xkcd: Password Strength',
-    description:
-      'The memorable comic that changed how a generation thought about passwords, entropy, and passphrases.',
-    interests: ['humor', 'technology'],
-    framePolicy: 'allow',
-  },
-  {
-    url: 'https://www.gutenberg.org/files/1342/1342-h/1342-h.htm',
-    title: 'Pride and Prejudice',
-    description:
-      'Jane Austen in full public-domain HTML, ready to read without an app, account, or download.',
-    interests: ['books', 'history'],
-    framePolicy: 'allow',
-  },
-  {
-    url: 'https://www.gutenberg.org/files/1661/1661-h/1661-h.htm',
-    title: 'The Adventures of Sherlock Holmes',
-    description:
-      'Arthur Conan Doyle stories in Project Gutenberg form, a direct doorway into classic detective fiction.',
-    interests: ['books', 'history'],
-    framePolicy: 'allow',
-  },
-  {
-    url: 'https://pudding.cool/2017/05/song-repetition/',
-    title: 'The Pudding: Are Pop Lyrics Getting More Repetitive?',
-    description:
-      'A playful data essay about repetition in pop music, with interactive charts and cultural texture.',
-    interests: ['music', 'design', 'technology'],
-    framePolicy: 'allow',
-  },
-  {
-    url: 'https://pudding.cool/2018/08/pockets/',
-    title: 'The Pudding: Pudding Pockets',
-    description:
-      'A visual investigation into clothing pockets, everyday design, and how small measurements reveal big patterns.',
-    interests: ['design', 'weird'],
-    framePolicy: 'allow',
-  },
-  {
-    url: 'https://apod.nasa.gov/apod/ap240101.html',
-    title: 'APOD: A Beautiful Trifid',
-    description:
-      'A specific Astronomy Picture of the Day entry, useful as both a space stumble and a known iframe fallback test.',
-    interests: ['space', 'science', 'photography'],
-    framePolicy: 'block',
-  },
-  {
-    url: 'https://www.quantamagazine.org/the-map-of-mathematics-20200213/',
-    title: 'Quanta: The Map of Mathematics',
-    description:
-      'A guided visual tour of modern mathematics from Quanta Magazine; marked as blocked for iframe fallback testing.',
-    interests: ['science', 'technology'],
-    framePolicy: 'block',
-  },
-  {
-    url: 'https://www.worldhistory.org/article/1048/the-silk-road/',
-    title: 'World History Encyclopedia: The Silk Road',
-    description:
-      'A focused history article on trade routes, exchange, and the movement of ideas across Eurasia.',
-    interests: ['history', 'travel', 'books'],
-  },
-  {
-    url: 'https://musiclab.chromeexperiments.com/Song-Maker/',
-    title: 'Chrome Music Lab: Song Maker',
-    description:
-      'A direct jump into the browser-based music sketchpad for making loops with melody and rhythm.',
-    interests: ['music', 'technology', 'design'],
-  },
-  {
-    url: 'https://neal.fun/deep-sea/',
-    title: 'Neal.fun: The Deep Sea',
-    description:
-      'A scrollable dive from the surface to the deepest ocean trenches, full of creatures and scale surprises.',
-    interests: ['weird', 'science', 'nature'],
-  },
-  {
-    url: 'https://neal.fun/size-of-space/',
-    title: 'Neal.fun: Size of Space',
-    description:
-      'An interactive scale tour that makes the solar system and universe feel both huge and strangely tangible.',
-    interests: ['space', 'science', 'design'],
-  },
-  {
-    url: 'https://archive.org/details/softwarelibrary_msdos_games',
-    title: 'Internet Archive: MS-DOS Games',
-    description:
-      'A deep link into the Archive software library, with playable classic games and computing history.',
-    interests: ['gaming', 'history', 'weird'],
-    framePolicy: 'allow',
-  },
-  {
-    url: 'https://www.openculture.com/freeonlinecourses',
-    title: 'Open Culture: Free Online Courses',
-    description:
-      'A direct catalog of free courses from universities and cultural institutions around the web.',
-    interests: ['books', 'history', 'science'],
-  },
-  {
-    url: 'https://www.metmuseum.org/art/collection/search/436535',
-    title: 'The Met: Van Gogh, Wheat Field with Cypresses',
-    description:
-      'A specific artwork page from The Met collection, with object details and art historical context.',
-    interests: ['art', 'history'],
-  },
-  {
-    url: 'https://www.atlasobscura.com/places/winchester-mystery-house',
-    title: 'Atlas Obscura: Winchester Mystery House',
-    description:
-      "A direct trip to one of Atlas Obscura's strange-place entries: architectural legend, myth, and maze.",
-    interests: ['travel', 'history', 'weird'],
-  },
-  {
-    url: 'https://www.seriouseats.com/the-best-roast-potatoes-ever-recipe',
-    title: 'Serious Eats: The Best Roast Potatoes Ever',
-    description:
-      'A recipe deep link that shows the food-science side of Serious Eats in one crispy, practical page.',
-    interests: ['food', 'science'],
-  },
-]
+  // Science, space, and nature
+  ['https://apod.nasa.gov/apod/', 'Astronomy Picture of the Day', "NASA's daily window on the cosmos: a new astronomy image each day with a short explanation from a professional astronomer.", ['space', 'science', 'photography'], 'reference', 'block', 0.88],
+  ['https://www.quantamagazine.org', 'Quanta Magazine', 'Award-winning, illuminating coverage of developments in mathematics, physics, biology, and computer science.', ['science', 'technology'], 'article', 'block', 0.86],
+  ['https://www.theverge.com', 'The Verge', 'Smart reporting on technology, science, internet culture, gadgets, and the way digital systems reshape daily life.', ['technology', 'science', 'internet-culture'], 'article', 'block', 0.76],
+  ['https://eyes.nasa.gov/apps/solar-system/', 'Eyes on the Solar System', "NASA's real-time, interactive 3D ride through the solar system, built from real mission data.", ['space', 'science', 'technology', 'interactives'], 'interactive', 'unknown', 0.86],
+  ['https://apod.nasa.gov/apod/ap240101.html', 'APOD: A Beautiful Trifid', 'A specific Astronomy Picture of the Day entry, useful as both a space stumble and a known iframe fallback test.', ['space', 'science', 'photography'], 'article', 'block', 0.8],
+  ['https://www.quantamagazine.org/the-map-of-mathematics-20200213/', 'Quanta: The Map of Mathematics', 'A guided visual tour of modern mathematics from Quanta Magazine; marked as blocked for iframe fallback testing.', ['science', 'technology', 'learning'], 'article', 'block', 0.84],
+  ['https://science.nasa.gov', 'NASA Science', 'Mission news, explainers, images, and learning resources from NASA science programs.', ['space', 'science', 'learning'], 'reference', 'unknown', 0.84],
+  ['https://earthobservatory.nasa.gov', 'NASA Earth Observatory', 'Satellite imagery and plain-language stories about Earth systems, climate, storms, fires, and oceans.', ['science', 'nature', 'photography', 'maps'], 'gallery', 'unknown', 0.84],
+  ['https://solarsystem.nasa.gov', 'NASA Solar System Exploration', 'A deep reference for planets, moons, missions, asteroids, comets, and the spacecraft visiting them.', ['space', 'science', 'learning'], 'reference', 'unknown', 0.84],
+  ['https://exoplanets.nasa.gov', 'NASA Exoplanet Exploration', 'A friendly portal into planets beyond our solar system, with interactives, explainers, and mission data.', ['space', 'science', 'interactives'], 'reference', 'unknown', 0.82],
+  ['https://hubblesite.org', 'HubbleSite', 'Images, discoveries, and background on the Hubble Space Telescope and the universe it has photographed.', ['space', 'science', 'photography'], 'gallery', 'unknown', 0.82],
+  ['https://webbtelescope.org', 'Webb Space Telescope', 'Official Webb telescope images, science stories, and mission resources.', ['space', 'science', 'photography'], 'gallery', 'unknown', 0.82],
+  ['https://www.zooniverse.org', 'Zooniverse', 'Citizen-science projects where anyone can help classify galaxies, transcribe history, and support real research.', ['science', 'learning', 'interactives'], 'interactive', 'unknown', 0.82],
+  ['https://scistarter.org', 'SciStarter', 'A searchable catalog of citizen-science projects across nature, astronomy, health, and more.', ['science', 'learning', 'nature'], 'collection', 'unknown', 0.78],
+  ['https://ourworldindata.org', 'Our World in Data', 'Charts, research, and explainers about global living conditions, health, energy, food, and technology.', ['science', 'history', 'maps', 'learning'], 'reference', 'unknown', 0.86],
+  ['https://www.gapminder.org/tools/', 'Gapminder Tools', 'Animated global statistics that make development, health, and population trends easier to explore.', ['science', 'maps', 'learning', 'interactives'], 'interactive', 'unknown', 0.82],
+  ['https://www.physicsclassroom.com', 'The Physics Classroom', 'Clear tutorials, simulations, and practice problems for learning physics concepts online.', ['science', 'learning', 'interactives'], 'course', 'unknown', 0.76],
+  ['https://www.sciencehistory.org/stories/', 'Science History Institute Stories', 'Readable stories about discovery, materials, medicine, chemistry, and the human side of science.', ['science', 'history', 'learning'], 'article', 'unknown', 0.78],
+  ['https://www.biodiversitylibrary.org', 'Biodiversity Heritage Library', 'A giant open archive of biodiversity literature, specimen illustrations, field notes, and natural history books.', ['nature', 'science', 'archives', 'books'], 'archive', 'unknown', 0.84],
+  ['https://www.gbif.org', 'GBIF', 'Open biodiversity data from museums, researchers, and citizen observations around the world.', ['nature', 'science', 'maps'], 'reference', 'unknown', 0.8],
+  ['https://www.allaboutbirds.org', 'All About Birds', 'The Cornell Lab guide to bird identification, behavior, songs, maps, and birdwatching basics.', ['nature', 'science', 'photography'], 'reference', 'unknown', 0.8],
+  ['https://www.inaturalist.org', 'iNaturalist', 'A global nature-observation community for identifying plants, animals, fungi, and the life around you.', ['nature', 'science', 'maps'], 'interactive', 'unknown', 0.78],
+  ['https://ebird.org/explore', 'eBird Explore', 'Bird maps, migration charts, hotspots, and sightings powered by a worldwide birding community.', ['nature', 'science', 'maps'], 'map', 'unknown', 0.78],
+  ['https://tree.opentreeoflife.org', 'Open Tree of Life', 'A browsable tree showing how species are connected across the history of life.', ['nature', 'science', 'interactives'], 'interactive', 'unknown', 0.78],
+  ['https://geology.com', 'Geology.com', 'Earth science maps, rock and mineral guides, volcano resources, and practical geology explainers.', ['science', 'nature', 'maps'], 'reference', 'unknown', 0.74],
+  ['https://volcano.si.edu', 'Global Volcanism Program', 'Smithsonian data, maps, and reports for volcanoes around the world.', ['science', 'nature', 'maps'], 'reference', 'unknown', 0.8],
+  ['https://earthquake.usgs.gov/earthquakes/map/', 'USGS Earthquake Map', 'A live, explorable map of recent earthquakes from the United States Geological Survey.', ['science', 'nature', 'maps', 'interactives'], 'map', 'unknown', 0.8],
+  ['https://oceanexplorer.noaa.gov', 'NOAA Ocean Exploration', 'Expeditions, deep-sea discoveries, maps, videos, and learning resources from ocean exploration missions.', ['science', 'nature', 'learning'], 'reference', 'unknown', 0.8],
+  ['https://biologydictionary.net', 'Biology Dictionary', 'A clear reference for biology terms, concepts, organisms, and study guides.', ['science', 'learning', 'nature'], 'reference', 'unknown', 0.72],
+  ['https://www.cellsalive.com', 'Cells Alive', 'Classic interactive biology animations and explainers about cells, microbes, and immunity.', ['science', 'learning', 'interactives'], 'interactive', 'unknown', 0.72],
+  ['https://ptable.com', 'Ptable', 'An interactive periodic table with properties, orbitals, isotopes, compounds, and quick chemistry reference data.', ['science', 'learning', 'interactives'], 'interactive', 'unknown', 0.78],
+
+  // Art, design, museums, and photography
+  ['https://www.metmuseum.org/art/collection', 'The Met Collection', 'Browse hundreds of thousands of artworks spanning 5,000 years of human creativity, free to explore online.', ['art', 'history', 'museums'], 'museum', 'unknown', 0.86],
+  ['https://www.metmuseum.org/art/collection/search/436535', 'The Met: Van Gogh, Wheat Field with Cypresses', 'A specific artwork page from The Met collection, with object details and art historical context.', ['art', 'history', 'museums'], 'museum', 'unknown', 0.82],
+  ['https://unsplash.com', 'Unsplash', 'A vast library of striking, freely usable photography contributed by photographers around the world.', ['photography', 'art', 'design'], 'gallery', 'unknown', 0.76],
+  ['https://www.dezeen.com', 'Dezeen', "An architecture and design magazine covering buildings, interiors, objects, cities, and creative practice.", ['design', 'art'], 'article', 'unknown', 0.76],
+  ['https://www.are.na', 'Are.na', 'A quiet, ad-free space for collecting and connecting ideas, images, references, and research trails.', ['design', 'art', 'books'], 'collection', 'unknown', 0.76],
+  ['https://artsandculture.google.com', 'Google Arts & Culture', 'High-resolution artworks, museum stories, historic sites, and cultural collections from institutions worldwide.', ['art', 'history', 'museums', 'interactives'], 'museum', 'unknown', 0.82],
+  ['https://www.nga.gov/collection.html', 'National Gallery of Art Collection', 'Search and browse paintings, sculptures, prints, photographs, and decorative arts from the National Gallery.', ['art', 'history', 'museums'], 'museum', 'unknown', 0.8],
+  ['https://www.artic.edu/collection', 'Art Institute of Chicago Collection', 'A large online art collection with essays, object data, images, and exhibition context.', ['art', 'history', 'museums'], 'museum', 'unknown', 0.82],
+  ['https://www.moma.org/collection/', 'MoMA Collection', 'Modern and contemporary artworks, artists, exhibitions, and object records from the Museum of Modern Art.', ['art', 'design', 'museums'], 'museum', 'unknown', 0.8],
+  ['https://www.rijksmuseum.nl/en/rijksstudio', 'Rijksstudio', 'A beautiful browsable collection of Dutch art, design, and high-resolution public-domain images.', ['art', 'history', 'museums'], 'museum', 'unknown', 0.82],
+  ['https://www.getty.edu/art/collection/', 'Getty Museum Collection', 'Explore artworks, manuscripts, photographs, and decorative objects from the Getty collection.', ['art', 'photography', 'museums'], 'museum', 'unknown', 0.8],
+  ['https://www.britishmuseum.org/collection', 'British Museum Collection', 'Search objects, images, and stories from the British Museum collection.', ['history', 'art', 'museums'], 'museum', 'unknown', 0.78],
+  ['https://wellcomecollection.org/collections', 'Wellcome Collection', 'Medical history, art, archives, and objects exploring health and human experience.', ['science', 'history', 'museums', 'archives'], 'museum', 'unknown', 0.8],
+  ['https://collection.cooperhewitt.org', 'Cooper Hewitt Collection', 'A design museum collection full of objects, textiles, posters, patterns, and product design.', ['design', 'art', 'museums'], 'museum', 'unknown', 0.78],
+  ['https://www.si.edu/museums', 'Smithsonian Museums', 'A gateway to Smithsonian museums, research centers, collections, and online learning resources.', ['museums', 'history', 'science'], 'collection', 'unknown', 0.78],
+  ['https://publicdomainreview.org', 'The Public Domain Review', 'Essays and collections celebrating strange, beautiful, and important works in the public domain.', ['archives', 'art', 'history', 'weird'], 'archive', 'unknown', 0.84],
+  ['https://letterformarchive.org', 'Letterform Archive', 'A visual archive for typography, lettering, graphic design, books, posters, and written culture.', ['design', 'art', 'archives'], 'archive', 'unknown', 0.78],
+  ['https://fonts.google.com', 'Google Fonts', 'Browse, compare, and use open-source typefaces with specimens and pairing tools.', ['design', 'tools'], 'tool', 'unknown', 0.76],
+  ['https://m3.material.io', 'Material Design', 'Google design guidance, components, tokens, interaction patterns, and visual-system documentation.', ['design', 'technology', 'learning'], 'reference', 'unknown', 0.76],
+  ['https://designmuseum.org', 'Design Museum', 'Stories, exhibitions, objects, and ideas from a museum dedicated to contemporary design.', ['design', 'art', 'museums'], 'museum', 'unknown', 0.74],
+  ['https://www.webdesignmuseum.org', 'Web Design Museum', 'A nostalgia-rich archive of websites, interfaces, icons, and web-design history.', ['design', 'internet-culture', 'archives'], 'archive', 'unknown', 0.78],
+  ['https://www.rawpixel.com/category/53/public-domain', 'Rawpixel Public Domain Collection', 'Public-domain art, illustrations, prints, and historical images prepared for browsing and reuse.', ['art', 'photography', 'archives'], 'gallery', 'unknown', 0.72],
+  ['https://commons.wikimedia.org/wiki/Commons:Featured_pictures', 'Wikimedia Commons Featured Pictures', 'A rotating showcase of excellent free images from Wikimedia Commons.', ['photography', 'art', 'archives'], 'gallery', 'unknown', 0.76],
+  ['https://www.flickr.com/commons', 'The Flickr Commons', 'Historical public photography collections from libraries, museums, and archives around the world.', ['photography', 'archives', 'history'], 'gallery', 'unknown', 0.76],
+  ['https://earthview.withgoogle.com', 'Earth View from Google Earth', 'Thousands of beautiful satellite images from Google Earth, presented as a visual gallery.', ['photography', 'maps', 'nature'], 'gallery', 'unknown', 0.78],
+  ['https://images.nasa.gov', 'NASA Images', 'NASA image, video, and audio assets from missions, research programs, and agency history.', ['space', 'photography', 'archives'], 'archive', 'unknown', 0.8],
+  ['https://color.adobe.com', 'Adobe Color', 'Create and explore color palettes, gradients, accessibility checks, and visual trends.', ['design', 'tools', 'art'], 'tool', 'unknown', 0.74],
+  ['https://coolors.co', 'Coolors', 'A fast color-palette generator and browser for designers, artists, and interface builders.', ['design', 'tools', 'art'], 'tool', 'unknown', 0.74],
+  ['https://whocanuse.com', 'Who Can Use', 'A color-accessibility tool that shows how contrast choices land for different kinds of vision.', ['design', 'tools', 'learning'], 'tool', 'unknown', 0.74],
+  ['https://www.datavizproject.com', 'Data Viz Project', 'A browsable catalog of chart types, visual forms, and data-visualization inspiration.', ['design', 'science', 'tools'], 'reference', 'unknown', 0.74],
+
+  // History, books, and archives
+  ['https://www.gutenberg.org', 'Project Gutenberg', 'Over 70,000 free eBooks: the classics of world literature, digitized and in the public domain.', ['books', 'history', 'archives'], 'book', 'allow', 0.86],
+  ['https://www.gutenberg.org/files/1342/1342-h/1342-h.htm', 'Pride and Prejudice', 'Jane Austen in full public-domain HTML, ready to read without an app, account, or download.', ['books', 'history'], 'book', 'allow', 0.82],
+  ['https://www.gutenberg.org/files/1661/1661-h/1661-h.htm', 'The Adventures of Sherlock Holmes', 'Arthur Conan Doyle stories in Project Gutenberg form, a direct doorway into classic detective fiction.', ['books', 'history'], 'book', 'allow', 0.82],
+  ['https://www.gutenberg.org/ebooks/bookshelf/', 'Project Gutenberg Bookshelves', 'Human-curated shelves for browsing public-domain books by topic, genre, language, and collection.', ['books', 'archives', 'learning'], 'collection', 'allow', 0.8],
+  ['https://www.worldhistory.org', 'World History Encyclopedia', 'A deep, readable, peer-reviewed reference for the history of civilizations, from antiquity to the modern age.', ['history', 'books', 'learning'], 'reference', 'unknown', 0.84],
+  ['https://www.worldhistory.org/article/1048/the-silk-road/', 'World History Encyclopedia: The Silk Road', 'A focused history article on trade routes, exchange, and the movement of ideas across Eurasia.', ['history', 'travel', 'books'], 'article', 'unknown', 0.8],
+  ['https://archive.org', 'Internet Archive', 'A nonprofit library of millions of free books, movies, songs, websites, and software, including the Wayback Machine.', ['history', 'books', 'movies', 'archives', 'weird'], 'archive', 'allow', 0.86],
+  ['https://archive.org/details/softwarelibrary_msdos_games', 'Internet Archive: MS-DOS Games', 'A deep link into the Archive software library, with playable classic games and computing history.', ['gaming', 'history', 'weird', 'archives'], 'archive', 'allow', 0.82],
+  ['https://www.openculture.com', 'Open Culture', 'The best free cultural and educational media on the web: courses, films, audiobooks, and more.', ['books', 'movies', 'music', 'history', 'learning'], 'collection', 'unknown', 0.82],
+  ['https://www.openculture.com/freeonlinecourses', 'Open Culture: Free Online Courses', 'A direct catalog of free courses from universities and cultural institutions around the web.', ['books', 'history', 'science', 'learning'], 'course', 'unknown', 0.8],
+  ['https://aeon.co', 'Aeon', 'Long-form essays and ideas on philosophy, science, and the human condition; slow reading, well spent.', ['science', 'books', 'history'], 'article', 'unknown', 0.8],
+  ['https://www.loc.gov/collections/', 'Library of Congress Digital Collections', 'Primary sources, photographs, newspapers, maps, books, recordings, and manuscripts from the Library of Congress.', ['archives', 'history', 'books'], 'archive', 'unknown', 0.84],
+  ['https://chroniclingamerica.loc.gov', 'Chronicling America', 'Historic American newspapers, browsable by date, state, title, and search.', ['history', 'archives', 'books'], 'archive', 'unknown', 0.8],
+  ['https://digitalcollections.nypl.org', 'NYPL Digital Collections', 'Hundreds of thousands of digitized images, maps, manuscripts, posters, photographs, and books.', ['archives', 'history', 'photography'], 'archive', 'unknown', 0.82],
+  ['https://www.davidrumsey.com', 'David Rumsey Map Collection', 'A remarkable historical map collection with beautiful scans and exploratory map tools.', ['maps', 'history', 'archives'], 'map', 'unknown', 0.84],
+  ['https://www.oldmapsonline.org', 'Old Maps Online', 'A search engine for historical maps from libraries and collections around the world.', ['maps', 'history', 'archives'], 'map', 'unknown', 0.8],
+  ['https://www.europeana.eu/en', 'Europeana', 'European cultural heritage collections: artworks, books, music, objects, newspapers, and archival treasures.', ['archives', 'museums', 'history'], 'archive', 'unknown', 0.8],
+  ['https://dp.la', 'Digital Public Library of America', 'A portal to photographs, manuscripts, books, art, objects, and primary sources from U.S. institutions.', ['archives', 'history', 'books'], 'archive', 'unknown', 0.78],
+  ['https://www.archives.gov/research', 'U.S. National Archives Research', 'Research tools, records, photographs, documents, and guides from the U.S. National Archives.', ['archives', 'history', 'learning'], 'archive', 'unknown', 0.78],
+  ['https://www.nationalarchives.gov.uk', 'The National Archives', 'UK government records, historical research guides, exhibitions, and archival collections.', ['archives', 'history', 'learning'], 'archive', 'unknown', 0.78],
+  ['https://www.smithsonianmag.com/history/', 'Smithsonian Magazine: History', 'Readable historical reporting, archaeology, culture, science history, and unexpected archival stories.', ['history', 'science', 'museums'], 'article', 'unknown', 0.76],
+  ['https://standardebooks.org', 'Standard Ebooks', 'Carefully produced public-domain ebooks with modern typography, metadata, and beautiful covers.', ['books', 'design', 'archives'], 'book', 'unknown', 0.82],
+  ['https://openlibrary.org', 'Open Library', 'A giant catalog and lending library project from the Internet Archive.', ['books', 'archives', 'learning'], 'book', 'unknown', 0.78],
+  ['https://librivox.org', 'LibriVox', 'Free public-domain audiobooks read by volunteers from around the world.', ['books', 'archives', 'music'], 'audio', 'unknown', 0.78],
+  ['https://www.poetryfoundation.org/poems', 'Poetry Foundation Poems', 'A large browsable poetry collection with biographies, themes, audio, and criticism.', ['books', 'art', 'learning'], 'book', 'unknown', 0.78],
+  ['https://www.folger.edu/explore/shakespeares-works/', 'Folger Shakespeare Works', 'Readable Shakespeare texts and learning resources from the Folger Shakespeare Library.', ['books', 'history', 'learning'], 'book', 'unknown', 0.78],
+  ['https://www.perseus.tufts.edu/hopper/', 'Perseus Digital Library', 'Classical texts, translations, dictionaries, and historical resources for ancient studies.', ['books', 'history', 'archives'], 'archive', 'unknown', 0.8],
+  ['https://comicbookplus.com', 'Comic Book Plus', 'Public-domain and legally shared vintage comics, pulp magazines, fanzines, and illustrated oddities.', ['books', 'archives', 'weird'], 'archive', 'unknown', 0.74],
+  ['https://publicdomainreview.org/collection/', 'Public Domain Review Collection', 'A cabinet of curiosities from public-domain art, books, film, audio, and historical ephemera.', ['archives', 'art', 'weird'], 'archive', 'unknown', 0.82],
+  ['https://web.archive.org', 'Wayback Machine', 'Explore archived snapshots of websites and the layered memory of the public web.', ['archives', 'internet-culture', 'history'], 'archive', 'unknown', 0.84],
+
+  // Weird web, internet culture, and playful rabbit holes
+  ['https://www.atlasobscura.com', 'Atlas Obscura', "A guide to the world's hidden wonders: strange, overlooked, and extraordinary places worth a detour.", ['travel', 'history', 'weird'], 'article', 'unknown', 0.82],
+  ['https://www.atlasobscura.com/places/winchester-mystery-house', 'Atlas Obscura: Winchester Mystery House', "A direct trip to one of Atlas Obscura's strange-place entries: architectural legend, myth, and maze.", ['travel', 'history', 'weird'], 'article', 'unknown', 0.78],
+  ['https://xkcd.com', 'xkcd', 'A webcomic of romance, sarcasm, math, and language. Beloved by anyone who has ever loved a good footnote.', ['humor', 'science', 'technology', 'internet-culture'], 'article', 'allow', 0.84],
+  ['https://xkcd.com/353/', 'xkcd: Python', 'A tiny classic about importing antigravity, programming joy, and why xkcd became part of internet folklore.', ['humor', 'technology', 'programming'], 'article', 'allow', 0.8],
+  ['https://xkcd.com/936/', 'xkcd: Password Strength', 'The memorable comic that changed how a generation thought about passwords, entropy, and passphrases.', ['humor', 'technology', 'programming'], 'article', 'allow', 0.8],
+  ['https://neal.fun', 'Neal.fun', 'A playground of interactive toys and explainers: scale, money, memory, deep sea, and other delightful rabbit holes.', ['weird', 'science', 'design', 'interactives'], 'interactive', 'unknown', 0.84],
+  ['https://neal.fun/deep-sea/', 'Neal.fun: The Deep Sea', 'A scrollable dive from the surface to the deepest ocean trenches, full of creatures and scale surprises.', ['weird', 'science', 'nature', 'interactives'], 'interactive', 'unknown', 0.82],
+  ['https://neal.fun/size-of-space/', 'Neal.fun: Size of Space', 'An interactive scale tour that makes the solar system and universe feel both huge and strangely tangible.', ['space', 'science', 'design', 'interactives'], 'interactive', 'unknown', 0.82],
+  ['https://pudding.cool', 'The Pudding', 'Visual essays that explain ideas debated in culture with playful, beautifully crafted data journalism.', ['design', 'technology', 'weird', 'interactives'], 'interactive', 'allow', 0.84],
+  ['https://pudding.cool/2017/05/song-repetition/', 'The Pudding: Are Pop Lyrics Getting More Repetitive?', 'A playful data essay about repetition in pop music, with interactive charts and cultural texture.', ['music', 'design', 'technology', 'interactives'], 'interactive', 'allow', 0.82],
+  ['https://pudding.cool/2018/08/pockets/', 'The Pudding: Pudding Pockets', 'A visual investigation into clothing pockets, everyday design, and how small measurements reveal big patterns.', ['design', 'weird', 'interactives'], 'interactive', 'allow', 0.82],
+  ['https://theoatmeal.com', 'The Oatmeal', 'Comics and stories that are funny, occasionally profound, and frequently about the odd corners of life.', ['humor', 'art', 'internet-culture'], 'article', 'unknown', 0.74],
+  ['https://theuselessweb.com', 'The Useless Web', 'A big red button that throws you into intentionally silly corners of the web.', ['weird', 'internet-culture', 'interactives'], 'interactive', 'unknown', 0.72],
+  ['https://pointerpointer.com', 'Pointer Pointer', 'Move your pointer and receive a photograph of someone pointing at it. That is the whole magic trick.', ['weird', 'internet-culture', 'photography'], 'interactive', 'unknown', 0.72],
+  ['https://zoomquilt.org', 'Zoomquilt', 'A collaborative infinite zoom painting that keeps folding into new illustrated worlds.', ['art', 'weird', 'interactives'], 'interactive', 'unknown', 0.74],
+  ['https://www.cameronsworld.net', "Cameron's World", 'A lovingly assembled collage of archived GeoCities-era graphics, links, textures, and web nostalgia.', ['internet-culture', 'design', 'weird', 'archives'], 'archive', 'unknown', 0.78],
+  ['https://www.windows93.net', 'Windows 93', 'A fictional operating system in the browser, packed with jokes, toys, apps, and web-culture references.', ['internet-culture', 'weird', 'interactives'], 'interactive', 'unknown', 0.76],
+  ['https://textfiles.com', 'TEXTFILES.COM', 'A giant archive of old BBS text files, hacker lore, ASCII art, zines, and computing history.', ['archives', 'internet-culture', 'history'], 'archive', 'unknown', 0.78],
+  ['https://gifcities.org', 'GifCities', 'A searchable archive of animated GIFs rescued from GeoCities by the Internet Archive.', ['archives', 'internet-culture', 'weird'], 'archive', 'unknown', 0.78],
+  ['https://noclip.website', 'noclip.website', 'Explore 3D worlds and maps from classic games directly in the browser.', ['gaming', 'interactives', 'internet-culture'], 'interactive', 'unknown', 0.78],
+  ['https://radio.garden', 'Radio Garden', 'Spin a globe of live radio stations and drop in on broadcasts from anywhere on Earth in real time.', ['music', 'travel', 'weird', 'maps'], 'audio', 'unknown', 0.82],
+  ['https://poolside.fm', 'Poolside FM', 'A nostalgic web radio and video collage with sun-drenched retro interface energy.', ['music', 'internet-culture', 'weird'], 'audio', 'unknown', 0.72],
+  ['https://www.window-swap.com', 'WindowSwap', 'Watch short videos from windows around the world and borrow someone else\'s view for a minute.', ['travel', 'photography', 'weird'], 'video', 'unknown', 0.74],
+  ['https://quickdraw.withgoogle.com', 'Quick, Draw!', 'A Google experiment where a neural net tries to guess your doodles in real time.', ['art', 'technology', 'interactives'], 'interactive', 'unknown', 0.78],
+  ['https://experiments.withgoogle.com', 'Experiments with Google', 'A gallery of creative coding, AI, AR, Chrome, arts, and learning experiments.', ['technology', 'art', 'interactives'], 'collection', 'unknown', 0.78],
+  ['https://ncase.me', 'Nicky Case', 'A portfolio of deeply human interactive explainers about systems, trust, anxiety, and society.', ['interactives', 'learning', 'weird'], 'interactive', 'unknown', 0.82],
+  ['https://ncase.me/trust/', 'The Evolution of Trust', 'An interactive game-theory explainer about cooperation, cheating, signals, and repeated games.', ['interactives', 'science', 'learning'], 'interactive', 'unknown', 0.84],
+  ['https://ncase.me/loopy/', 'LOOPY', 'A tiny tool for making interactive system diagrams and exploring feedback loops.', ['tools', 'science', 'interactives'], 'tool', 'unknown', 0.8],
+  ['https://futureme.org', 'FutureMe', 'Write an email to your future self and send a small time capsule across your own life.', ['tools', 'weird', 'internet-culture'], 'tool', 'unknown', 0.72],
+  ['https://www.onezoom.org', 'OneZoom Tree of Life Explorer', 'An explorable, zoomable tree showing relationships between living species.', ['nature', 'science', 'interactives'], 'interactive', 'unknown', 0.8],
+
+  // Games, interactives, tools, and programming
+  ['https://musiclab.chromeexperiments.com', 'Chrome Music Lab', 'Hands-on experiments that make learning music fun and visual: rhythm, harmonics, melody, and more.', ['music', 'technology', 'design', 'interactives'], 'interactive', 'unknown', 0.82],
+  ['https://musiclab.chromeexperiments.com/Song-Maker/', 'Chrome Music Lab: Song Maker', 'A direct jump into the browser-based music sketchpad for making loops with melody and rhythm.', ['music', 'technology', 'design', 'interactives'], 'interactive', 'unknown', 0.8],
+  ['https://sandspiel.club', 'Sandspiel', 'A falling-sand and cellular-automata playground for drawing elements, reactions, plants, fire, and chaos.', ['gaming', 'science', 'interactives'], 'game', 'unknown', 0.76],
+  ['https://slowroads.io', 'Slow Roads', 'A mellow procedural driving game for endless browser road trips.', ['gaming', 'travel', 'interactives'], 'game', 'unknown', 0.76],
+  ['https://lichess.org', 'Lichess', 'A free, open-source chess server with puzzles, lessons, studies, variants, and analysis tools.', ['gaming', 'learning', 'tools'], 'game', 'unknown', 0.8],
+  ['https://jstris.jezevec10.com', 'Jstris', 'A fast browser block-stacking game with solo, sprint, cheese race, and multiplayer modes.', ['gaming', 'interactives'], 'game', 'unknown', 0.72],
+  ['https://play2048.co', '2048', 'The minimalist number-sliding puzzle that conquered browsers, phones, and lunch breaks.', ['gaming', 'interactives'], 'game', 'unknown', 0.72],
+  ['https://alexnisnevich.github.io/untrusted/', 'Untrusted', 'A meta JavaScript adventure game where editing the code is how you solve the levels.', ['gaming', 'programming', 'interactives'], 'game', 'unknown', 0.78],
+  ['https://www.openttd.org', 'OpenTTD', 'An open-source transport simulation descended from a classic management game.', ['gaming', 'history', 'technology'], 'game', 'unknown', 0.74],
+  ['https://freeminesweeper.org', 'Free Minesweeper', 'A clean browser version of the classic logic puzzle with familiar modes and instant play.', ['gaming', 'interactives'], 'game', 'unknown', 0.7],
+  ['https://www.cardgames.io', 'CardGames.io', 'Simple browser card and board games: solitaire, hearts, chess, checkers, and more.', ['gaming', 'interactives'], 'game', 'unknown', 0.72],
+  ['https://play.typeracer.com', 'TypeRacer', 'A typing race game that turns text snippets into fast, goofy competition.', ['gaming', 'learning', 'interactives'], 'game', 'unknown', 0.7],
+  ['https://p5js.org/reference/', 'p5.js Reference', 'Creative-coding documentation for drawing, animation, interaction, sound, and browser-based art.', ['programming', 'art', 'learning'], 'reference', 'unknown', 0.78],
+  ['https://threejs.org/examples/', 'Three.js Examples', 'Hundreds of browser 3D examples showing shaders, physics, models, particles, controls, and WebGL tricks.', ['programming', 'technology', 'interactives'], 'reference', 'unknown', 0.8],
+  ['https://regex101.com', 'Regex101', 'A regular-expression tester and explainer with highlighting, examples, flags, and community patterns.', ['programming', 'tools', 'learning'], 'tool', 'unknown', 0.8],
+  ['https://gchq.github.io/CyberChef/', 'CyberChef', 'A powerful browser workbench for encoding, decoding, hashing, parsing, and transforming data.', ['technology', 'programming', 'tools'], 'tool', 'unknown', 0.82],
+  ['https://caniuse.com', 'Can I use', 'Browser-support tables for web platform features, CSS, HTML, JavaScript APIs, and mobile browsers.', ['programming', 'technology', 'tools'], 'reference', 'unknown', 0.8],
+  ['https://explainshell.com', 'explainshell', 'Paste a shell command and get each option explained through man-page matches.', ['programming', 'tools', 'learning'], 'tool', 'unknown', 0.76],
+  ['https://carbon.now.sh', 'Carbon', 'Create shareable images of source code with themes, fonts, syntax highlighting, and export tools.', ['programming', 'design', 'tools'], 'tool', 'unknown', 0.72],
+  ['https://observablehq.com/explore', 'Observable Explore', 'Interactive notebooks, data visualization, creative coding, and explorable explanations from a coding community.', ['programming', 'science', 'interactives'], 'collection', 'unknown', 0.76],
+  ['https://www.photopea.com', 'Photopea', 'A capable browser-based image editor for PSD, vector, raster, and design work.', ['design', 'tools', 'photography'], 'tool', 'unknown', 0.78],
+  ['https://excalidraw.com', 'Excalidraw', 'A collaborative sketching and diagramming tool with hand-drawn charm.', ['design', 'tools', 'interactives'], 'tool', 'unknown', 0.78],
+  ['https://www.tldraw.com', 'tldraw', 'A fast collaborative infinite canvas for sketching, diagramming, and visual thinking.', ['design', 'tools', 'interactives'], 'tool', 'unknown', 0.76],
+  ['https://www.desmos.com/calculator', 'Desmos Graphing Calculator', 'A powerful interactive graphing calculator for functions, sliders, art, and math exploration.', ['science', 'learning', 'tools', 'interactives'], 'tool', 'unknown', 0.82],
+  ['https://www.geogebra.org', 'GeoGebra', 'Interactive tools and learning materials for geometry, algebra, graphing, 3D math, and classrooms.', ['science', 'learning', 'tools'], 'tool', 'unknown', 0.8],
+  ['https://learngitbranching.js.org', 'Learn Git Branching', 'An interactive visual tutorial for Git commits, branches, merges, rebases, and remote workflows.', ['programming', 'learning', 'interactives'], 'course', 'unknown', 0.8],
+  ['https://roadmap.sh', 'roadmap.sh', 'Community-maintained learning roadmaps for programming, infrastructure, data, AI, and engineering roles.', ['programming', 'learning', 'technology'], 'reference', 'unknown', 0.76],
+  ['https://projecteuler.net', 'Project Euler', 'Math and programming challenges that reward careful thinking, algorithms, and persistence.', ['programming', 'science', 'learning'], 'course', 'unknown', 0.78],
+  ['https://codepen.io/trending', 'CodePen Trending', 'A rotating feed of creative front-end experiments, CSS art, animations, and interaction ideas.', ['programming', 'design', 'internet-culture'], 'collection', 'unknown', 0.72],
+  ['https://developer.mozilla.org/en-US/docs/Web', 'MDN Web Docs', 'The core reference for HTML, CSS, JavaScript, browser APIs, and web-platform learning.', ['programming', 'technology', 'learning'], 'reference', 'unknown', 0.86],
+  ['https://www.freecodecamp.org/learn', 'freeCodeCamp Learn', 'Free coding courses covering responsive design, JavaScript, APIs, data, security, and more.', ['programming', 'learning', 'technology'], 'course', 'unknown', 0.78],
+
+  // Maps, travel, music, film, food, and broad learning
+  ['https://www.nationalgeographic.com', 'National Geographic', 'Photography and storytelling about our planet, its wildlife, and the people exploring it.', ['nature', 'photography', 'travel'], 'article', 'unknown', 0.76],
+  ['https://explore.org/livecams', 'Explore.org Live Cams', 'Live nature cams from around the planet: bears, birds, oceans, aurora, and quiet wildlife moments.', ['nature', 'travel', 'photography'], 'video', 'unknown', 0.78],
+  ['https://www.openstreetmap.org', 'OpenStreetMap', 'A collaborative map of the world, built and maintained by volunteers.', ['maps', 'travel', 'tools'], 'map', 'unknown', 0.78],
+  ['https://www.windy.com', 'Windy', 'Interactive weather maps for wind, rain, clouds, waves, pressure, radar, and forecast models.', ['maps', 'science', 'tools'], 'map', 'unknown', 0.78],
+  ['https://www.flightradar24.com', 'Flightradar24', 'A live map of commercial flights, aircraft positions, routes, and aviation data around the world.', ['maps', 'travel', 'technology'], 'map', 'unknown', 0.74],
+  ['https://www.lightpollutionmap.info', 'Light Pollution Map', 'Explore light pollution, dark-sky locations, and night-sky visibility with layered maps.', ['maps', 'space', 'nature'], 'map', 'unknown', 0.76],
+  ['https://worldmapper.org', 'Worldmapper', 'Cartograms that resize countries by population, health, emissions, economics, and other global patterns.', ['maps', 'science', 'learning'], 'map', 'unknown', 0.76],
+  ['https://www.citypopulation.de', 'City Population', 'Population statistics, maps, and administrative geography for cities, regions, and countries.', ['maps', 'history', 'science'], 'reference', 'unknown', 0.72],
+  ['https://geohack.toolforge.org', 'GeoHack', 'A geographic coordinate hub linking maps, satellite views, and geodata tools for any location.', ['maps', 'tools', 'travel'], 'tool', 'unknown', 0.72],
+  ['https://mapcarta.com', 'Mapcarta', 'An atlas-style map and travel guide for discovering places, regions, landmarks, and terrain.', ['maps', 'travel', 'learning'], 'map', 'unknown', 0.72],
+  ['https://www.timeanddate.com/worldclock/', 'World Clock', 'Current times, time zones, daylight-saving details, and practical world-clock tools.', ['tools', 'maps', 'travel'], 'tool', 'unknown', 0.72],
+  ['https://radiooooo.com', 'Radiooooo', 'A musical time machine for exploring songs by country and decade.', ['music', 'maps', 'weird'], 'audio', 'unknown', 0.76],
+  ['https://www.music-map.com', 'Music-Map', 'Type an artist and get a floating map of related musicians.', ['music', 'maps', 'tools'], 'tool', 'unknown', 0.72],
+  ['https://patatap.com', 'Patatap', 'A keyboard-controlled audiovisual instrument for quick bursts of sound, color, and rhythm.', ['music', 'art', 'interactives'], 'interactive', 'unknown', 0.72],
+  ['https://typatone.com', 'Typatone', 'Turn typing into a gentle generative melody and share text as music.', ['music', 'design', 'interactives'], 'interactive', 'unknown', 0.72],
+  ['https://webamp.org', 'Webamp', 'A browser remake of Winamp that brings classic desktop music-player nostalgia to the web.', ['music', 'internet-culture', 'technology'], 'interactive', 'unknown', 0.74],
+  ['https://drumbit.app', 'drumbit', 'A browser drum machine for programming beats, kits, patterns, and quick loops.', ['music', 'tools', 'interactives'], 'tool', 'unknown', 0.72],
+  ['https://learningmusic.ableton.com', 'Learning Music', 'Ableton lessons that teach beats, notes, scales, chords, basslines, melodies, and song structure.', ['music', 'learning', 'interactives'], 'course', 'unknown', 0.8],
+  ['https://www.musicca.com', 'Musicca', 'Music theory exercises, virtual instruments, and tools for learning notes, rhythm, chords, and scales.', ['music', 'learning', 'tools'], 'course', 'unknown', 0.76],
+  ['https://letterboxd.com', 'Letterboxd', 'A social network for film lovers: track what you watch, write reviews, and find your next great movie.', ['movies', 'art', 'internet-culture'], 'collection', 'unknown', 0.76],
+  ['https://www.imdb.com/chart/top/', 'IMDb Top 250 Movies', 'A famous crowd-ranked list of highly rated films, useful for movie rabbit holes and watchlist wandering.', ['movies', 'internet-culture'], 'reference', 'unknown', 0.72],
+  ['https://www.filmsite.org', 'Filmsite', 'A long-running film-history reference with essays, lists, genres, scenes, and classic-movie guides.', ['movies', 'history', 'learning'], 'reference', 'unknown', 0.74],
+  ['https://www.criterion.com/current', 'The Current', 'Essays, interviews, lists, and film writing from the Criterion Collection.', ['movies', 'art', 'history'], 'article', 'unknown', 0.74],
+  ['https://www.seriouseats.com', 'Serious Eats', 'Obsessively tested recipes and the food science behind why they work. Cooking, explained.', ['food', 'science'], 'recipe', 'unknown', 0.8],
+  ['https://www.seriouseats.com/the-best-roast-potatoes-ever-recipe', 'Serious Eats: The Best Roast Potatoes Ever', 'A recipe deep link that shows the food-science side of Serious Eats in one crispy, practical page.', ['food', 'science'], 'recipe', 'unknown', 0.78],
+  ['https://www.foodtimeline.org', 'The Food Timeline', 'A wonderfully old-school food-history reference for ingredients, dishes, brands, meals, and culinary eras.', ['food', 'history', 'weird'], 'reference', 'unknown', 0.78],
+  ['https://www.tasteatlas.com', 'TasteAtlas', 'A global map and encyclopedia of foods, dishes, ingredients, restaurants, and culinary traditions.', ['food', 'travel', 'maps'], 'map', 'unknown', 0.76],
+  ['https://www.budgetbytes.com', 'Budget Bytes', 'Practical recipes with cost breakdowns, meal ideas, and friendly cooking guidance.', ['food', 'learning'], 'recipe', 'unknown', 0.72],
+  ['https://smittenkitchen.com', 'Smitten Kitchen', 'A beloved recipe archive with home cooking, baking, seasonal food, and detailed notes.', ['food', 'books'], 'recipe', 'unknown', 0.74],
+  ['https://www.kingarthurbaking.com/recipes', 'King Arthur Baking Recipes', 'Baking recipes, techniques, ingredient guides, and kitchen learning from King Arthur Baking.', ['food', 'learning'], 'recipe', 'unknown', 0.76],
+  ['https://www.maangchi.com/recipes', 'Maangchi Recipes', 'Korean cooking recipes, videos, pantry guides, and home-kitchen instruction.', ['food', 'learning', 'travel'], 'recipe', 'unknown', 0.76],
+  ['https://www.justonecookbook.com', 'Just One Cookbook', 'Japanese recipes, technique guides, pantry explainers, and travel-food context.', ['food', 'learning', 'travel'], 'recipe', 'unknown', 0.76],
+  ['https://www.mexicanplease.com', 'Mexican Please', 'Mexican cooking tutorials, salsa experiments, pantry guidance, and approachable recipes.', ['food', 'learning'], 'recipe', 'unknown', 0.72],
+  ['https://www.khanacademy.org', 'Khan Academy', 'Free lessons and practice across math, science, history, economics, computing, and more.', ['learning', 'science', 'history'], 'course', 'unknown', 0.82],
+  ['https://ocw.mit.edu', 'MIT OpenCourseWare', 'Free MIT course materials, lectures, notes, assignments, and learning paths.', ['learning', 'science', 'technology'], 'course', 'unknown', 0.86],
+  ['https://openstax.org/subjects', 'OpenStax Textbooks', 'Free peer-reviewed textbooks for college and high-school courses across many subjects.', ['learning', 'books', 'science'], 'book', 'unknown', 0.82],
+  ['https://seeing-theory.brown.edu', 'Seeing Theory', 'An interactive visual introduction to probability and statistics.', ['science', 'learning', 'interactives'], 'interactive', 'unknown', 0.8],
+  ['https://betterexplained.com', 'BetterExplained', 'Intuitive math and programming explanations that favor insight over memorized formulas.', ['learning', 'science', 'programming'], 'article', 'unknown', 0.76],
+  ['https://waitbutwhy.com', 'Wait But Why', 'Long, illustrated essays about life, technology, timelines, space, and human behavior.', ['books', 'science', 'weird'], 'article', 'unknown', 0.76],
+].map(seedPage)
