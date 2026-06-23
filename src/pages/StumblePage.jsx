@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../auth/useAuth'
+import { isKnownInterest } from '../data/stumbleInterests'
 import StumbleToolbar from './stumble/StumbleToolbar'
 import PreviewCard from './stumble/PreviewCard'
 import InterestPicker from './stumble/InterestPicker'
@@ -8,6 +9,7 @@ import './stumble/stumble.css'
 
 const SEEN_KEY = 'su_seen_v1'
 const NEWTAB_KEY = 'su_newtab_v1'
+const INTERESTS_KEY = 'su_interests_v1'
 const GUEST_SEEN_CAP = 150
 
 function readSeen() {
@@ -38,6 +40,40 @@ function clearSeen() {
   }
 }
 
+// Guest topic onboarding is stored as an object sentinel so we can tell
+// "skipped — surprise me" (onboarded, empty list) apart from "never visited"
+// (key absent). Slugs are filtered through isKnownInterest to drop anything
+// stale/renamed before it reaches the backend.
+function readGuestInterests() {
+  try {
+    const raw = localStorage.getItem(INTERESTS_KEY)
+    if (raw == null) return { onboarded: false, interests: [] }
+    const parsed = JSON.parse(raw)
+    const interests = Array.isArray(parsed?.interests)
+      ? parsed.interests.filter(isKnownInterest)
+      : []
+    return { onboarded: true, interests }
+  } catch {
+    return { onboarded: false, interests: [] }
+  }
+}
+
+function writeGuestInterests(list) {
+  try {
+    localStorage.setItem(INTERESTS_KEY, JSON.stringify({ v: 1, interests: list }))
+  } catch {
+    /* ignore */
+  }
+}
+
+function clearGuestInterests() {
+  try {
+    localStorage.removeItem(INTERESTS_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
 // /stumble — StumbleUpon-style discovery loop. Rendered OUTSIDE Layout so it
 // inherits none of the site's GeoCities theme.
 export default function StumblePage() {
@@ -60,6 +96,9 @@ export default function StumblePage() {
 
   const [catalog, setCatalog] = useState([])
   const [selected, setSelected] = useState([])
+  // Guest topic selection, seeded from localStorage. Drives the picker's
+  // pre-fill; signed-in users use `selected` (their server-saved interests).
+  const [guestInterests, setGuestInterests] = useState(() => readGuestInterests().interests)
   const [minInterests, setMinInterests] = useState(3)
   const [catalogReady, setCatalogReady] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
@@ -67,6 +106,11 @@ export default function StumblePage() {
 
   const newTabRef = useRef(newTab)
   const selectedRef = useRef(selected)
+  // Mirror of the guest selection that stumble() reads, so the request can
+  // narrow without re-creating the callback. Kept in sync with `guestInterests`
+  // by the effect below; read only on the guest path (signed-in users filter
+  // server-side).
+  const guestInterestsRef = useRef([])
   const startedRef = useRef(false)
   const prevSignedInRef = useRef(false)
 
@@ -76,6 +120,12 @@ export default function StumblePage() {
   useEffect(() => {
     selectedRef.current = selected
   }, [selected])
+  // Keep the ref stumble() reads in sync with the guest selection so the
+  // request can narrow without widening stumble's dependencies. (Handlers also
+  // set the ref synchronously before calling stumble() to avoid the async gap.)
+  useEffect(() => {
+    guestInterestsRef.current = guestInterests
+  }, [guestInterests])
 
   // Own this route's chrome: neutralize the purple body bg + set the title,
   // restoring both on unmount so other routes are unaffected.
@@ -97,6 +147,8 @@ export default function StumblePage() {
       if (!isSignedIn) {
         const seen = readSeen()
         if (seen.length) params.set('exclude', seen.slice(-100).join(','))
+        const ints = guestInterestsRef.current
+        if (ints.length) params.set('interests', ints.join(','))
       }
       const qs = params.toString()
       const res = await fetch(`/.netlify/functions/stumble${qs ? `?${qs}` : ''}`, {
@@ -168,6 +220,16 @@ export default function StumblePage() {
 
   const saveInterests = useCallback(
     async (list) => {
+      // Guests can't persist server-side (the PUT 401s) — store their picks
+      // locally and feed them to the next stumble() via the ref.
+      if (!isSignedIn) {
+        writeGuestInterests(list)
+        guestInterestsRef.current = list
+        setGuestInterests(list)
+        setShowOnboarding(false)
+        stumble()
+        return
+      }
       setSavingInterests(true)
       try {
         const res = await fetch('/.netlify/functions/stumble-interests', {
@@ -188,8 +250,18 @@ export default function StumblePage() {
         setSavingInterests(false)
       }
     },
-    [stumble],
+    [isSignedIn, stumble],
   )
+
+  // Guest chose "surprise me": record that they onboarded (empty list) so we
+  // don't re-prompt next visit, then stumble the broad pool.
+  const skipInterests = useCallback(() => {
+    writeGuestInterests([])
+    guestInterestsRef.current = []
+    setGuestInterests([])
+    setShowOnboarding(false)
+    stumble()
+  }, [stumble])
 
   // Load the interest catalog (+ this user's saved selection) once.
   useEffect(() => {
@@ -222,11 +294,15 @@ export default function StumblePage() {
     if (authLoading || !catalogReady) return
     startedRef.current = true
     prevSignedInRef.current = isSignedIn
-    if (isSignedIn && selectedRef.current.length < minInterests) {
-      setShowOnboarding(true)
-    } else {
-      stumble()
-    }
+    // Onboard signed-in users without enough interests, and first-visit guests
+    // (returning guests — including those who skipped — carry the sentinel and
+    // skip straight to stumbling). The ref that narrows a guest's feed is seeded
+    // by the sync effect above.
+    const needsOnboarding = isSignedIn
+      ? selectedRef.current.length < minInterests
+      : !readGuestInterests().onboarded
+    if (needsOnboarding) setShowOnboarding(true)
+    else stumble()
   }, [authLoading, catalogReady, isSignedIn, minInterests, stumble])
 
   // React to a guest signing in mid-session (e.g. from the rate prompt).
@@ -235,6 +311,9 @@ export default function StumblePage() {
     prevSignedInRef.current = isSignedIn
     if (!isSignedIn || was || !startedRef.current) return
     setShowSignIn(false)
+    // Their server interests now drive filtering; drop the guest sentinel so a
+    // later sign-out won't resurrect stale local topics.
+    clearGuestInterests()
     fetch('/.netlify/functions/stumble-interests', { credentials: 'same-origin' })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
@@ -354,10 +433,12 @@ export default function StumblePage() {
       {showOnboarding && (
         <InterestPicker
           catalog={catalog}
-          initial={selected}
+          initial={isSignedIn ? selected : guestInterests}
           minInterests={minInterests}
           busy={savingInterests}
           onSave={saveInterests}
+          allowSkip={!isSignedIn}
+          onSkip={skipInterests}
         />
       )}
     </div>

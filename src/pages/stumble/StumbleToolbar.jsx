@@ -136,19 +136,17 @@ export default function StumbleToolbar({
                 Open in new tab
                 <input type="checkbox" checked={newTab} onChange={onToggleNewTab} />
               </label>
-              {isSignedIn && (
-                <button
-                  type="button"
-                  className="su-menu-item"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false)
-                    onRepickInterests()
-                  }}
-                >
-                  Re-pick interests
-                </button>
-              )}
+              <button
+                type="button"
+                className="su-menu-item"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false)
+                  onRepickInterests()
+                }}
+              >
+                Re-pick interests
+              </button>
               {!isSignedIn && (
                 <button
                   type="button"
