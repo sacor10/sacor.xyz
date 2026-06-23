@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 import { isKnownInterest } from '../data/stumbleInterests'
 import StumbleToolbar from './stumble/StumbleToolbar'
@@ -74,9 +75,37 @@ function clearGuestInterests() {
   }
 }
 
+function domainOf(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return url
+  }
+}
+
+function siteNameForUrl(page) {
+  const source = String(page?.title || domainOf(page?.url || '') || 'site').trim()
+  const slug = source
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80)
+  return slug || 'site'
+}
+
+function replaceStumbleUrl(page, navigate) {
+  if (typeof window === 'undefined') return
+  const nextPath = page ? `/stumble/${siteNameForUrl(page)}` : '/stumble'
+  if (window.location.pathname === nextPath) return
+  navigate(nextPath, { replace: true })
+}
+
 // /stumble — StumbleUpon-style discovery loop. Rendered OUTSIDE Layout so it
 // inherits none of the site's GeoCities theme.
 export default function StumblePage() {
+  const navigate = useNavigate()
   const { user, isSignedIn, loading: authLoading, signOut } = useAuth()
 
   const [card, setCard] = useState(null)
@@ -158,10 +187,12 @@ export default function StumblePage() {
       const data = await res.json()
       if (!data.page) {
         setCard(null)
+        replaceStumbleUrl(null, navigate)
         setStatus('exhausted')
         return
       }
       setCard(data.page)
+      replaceStumbleUrl(data.page, navigate)
       setStatus('idle')
       if (!isSignedIn) pushSeen(data.page.id)
       if (newTabRef.current) {
@@ -171,7 +202,7 @@ export default function StumblePage() {
       setStatus('error')
       setError('Could not load the next page. Try again.')
     }
-  }, [isSignedIn])
+  }, [isSignedIn, navigate])
 
   const rate = useCallback(
     async (value) => {

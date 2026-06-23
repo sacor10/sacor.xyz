@@ -46,7 +46,7 @@ export default function App() {
           <Route path="/travel-plans" element={<TravelPlansPage />} />
           <Route path="/travel-plans/:id" element={<TravelPlanPage />} />
           <Route path="/easton" element={<EastonPage />} />
-          <Route path="/stumble" element={<StumblePage />} />
+          <Route path="/stumble/:siteName?" element={<StumblePage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
