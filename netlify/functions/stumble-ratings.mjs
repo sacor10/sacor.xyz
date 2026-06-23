@@ -84,5 +84,10 @@ export default async (req) => {
     await saveJson(usersStore, userSeenKey(hash), appendSeen(seen, pageId))
   }
 
-  return json({ ok: true, upVotes: page.upVotes || 0, downVotes: page.downVotes || 0 })
+  return json({
+    ok: true,
+    upVotes: page.upVotes || 0,
+    downVotes: page.downVotes || 0,
+    likesCount: likeList.length,
+  })
 }

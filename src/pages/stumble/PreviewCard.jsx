@@ -21,7 +21,7 @@ function hueFor(str) {
   return h
 }
 
-export default function PreviewCard({ card }) {
+export default function PreviewCard({ card, onLike, onDislike, busy, canRate }) {
   const domain = domainOf(card.url)
   const hue = hueFor(domain)
 
@@ -58,14 +58,36 @@ export default function PreviewCard({ card }) {
           </div>
         )}
 
-        <a
-          className="su-visit"
-          href={card.url}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Visit site →
-        </a>
+        <div className="su-card-actions">
+          <button
+            type="button"
+            className="su-iconbtn"
+            onClick={onLike}
+            disabled={busy}
+            title={canRate ? 'I like this (↑)' : 'Sign in to rate'}
+            aria-label="Thumbs up"
+          >
+            👍
+          </button>
+          <button
+            type="button"
+            className="su-iconbtn"
+            onClick={onDislike}
+            disabled={busy}
+            title={canRate ? 'Not for me (↓)' : 'Sign in to rate'}
+            aria-label="Thumbs down"
+          >
+            👎
+          </button>
+          <a
+            className="su-visit"
+            href={card.url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Visit site →
+          </a>
+        </div>
 
         {(card.upVotes > 0 || card.downVotes > 0) && (
           <div className="su-votes">
