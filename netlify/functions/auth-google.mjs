@@ -64,10 +64,12 @@ export default async (req) => {
   if (!email) {
     return json({ error: 'Missing Google email' }, { status: 401 })
   }
-  const token = signSession({ email })
+  const picture = typeof claims.picture === 'string' ? claims.picture : ''
+  const token = signSession({ email, picture })
   return json(
     {
       email,
+      picture,
       canAccessTravelPlans: canAccessTravelPlans(email),
       canCreateTravelPlans: canCreateTravelPlans(email),
       isOwner: isOwnerEmail(email),
