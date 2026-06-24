@@ -35,6 +35,9 @@ export default function StumbleToolbar({
   user,
   isSignedIn,
   likesCount,
+  likes = [],
+  onOpenLikes,
+  onUnlike,
   onOpenSignIn,
   onSignOut,
   newTab,
@@ -50,9 +53,16 @@ export default function StumbleToolbar({
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
+  const [likesOpen, setLikesOpen] = useState(false)
+  const likesRef = useRef(null)
+  const [brokenAvatarUrl, setBrokenAvatarUrl] = useState('')
 
   const handle = isSignedIn && user?.email ? `@${user.email.split('@')[0]}` : '@'
   const avatarChar = isSignedIn && user?.email ? user.email.charAt(0).toUpperCase() : '?'
+  const avatarUrl = isSignedIn ? user?.picture || '' : ''
+  // Keying the failure to the URL means a new account's photo is retried
+  // automatically — no reset effect needed when avatarUrl changes.
+  const showAvatarImg = !!avatarUrl && brokenAvatarUrl !== avatarUrl
 
   // Close the ☰ menu on outside click / Escape.
   useEffect(() => {
@@ -70,6 +80,23 @@ export default function StumbleToolbar({
       document.removeEventListener('keydown', onKey)
     }
   }, [menuOpen])
+
+  // Close the Likes dropdown on outside click / Escape.
+  useEffect(() => {
+    if (!likesOpen) return
+    const onDown = (e) => {
+      if (likesRef.current && !likesRef.current.contains(e.target)) setLikesOpen(false)
+    }
+    const onKey = (e) => {
+      if (e.key === 'Escape') setLikesOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [likesOpen])
 
   return (
     <>
@@ -107,19 +134,75 @@ export default function StumbleToolbar({
 
       {/* Bar 2 — white profile sub-bar */}
       <div className="su-subbar">
-        <span className="su-avatar" aria-hidden="true">
-          {avatarChar}
-        </span>
+        {showAvatarImg ? (
+          <img
+            className="su-avatar su-avatar-img"
+            src={avatarUrl}
+            alt=""
+            referrerPolicy="no-referrer"
+            onError={() => setBrokenAvatarUrl(avatarUrl)}
+          />
+        ) : (
+          <span className="su-avatar" aria-hidden="true">
+            {avatarChar}
+          </span>
+        )}
         <span className="su-handle">{handle}</span>
 
         <span className="su-divider" />
 
-        <button type="button" className="su-likes-pill" title="Your likes">
-          {likesCount} {likesCount === 1 ? 'Like' : 'Likes'}
-          <span className="su-caret" aria-hidden="true">
-            ▾
-          </span>
-        </button>
+        <span className="su-likes-wrap" ref={likesRef}>
+          <button
+            type="button"
+            className="su-likes-pill"
+            title="Your likes"
+            aria-expanded={likesOpen}
+            onClick={() =>
+              setLikesOpen((v) => {
+                const next = !v
+                if (next) onOpenLikes?.()
+                return next
+              })
+            }
+          >
+            {likesCount} {likesCount === 1 ? 'Like' : 'Likes'}
+            <span className="su-caret" aria-hidden="true">
+              ▾
+            </span>
+          </button>
+          {likesOpen && (
+            <div className="su-likes-menu" role="menu">
+              {likes.length === 0 ? (
+                <p className="su-likes-empty">
+                  No likes yet — hit Like on a page to save it.
+                </p>
+              ) : (
+                likes.map((item) => (
+                  <div key={item.id} className="su-likes-item">
+                    <a
+                      className="su-likes-link"
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <span className="su-likes-title">{item.title}</span>
+                      <span className="su-likes-domain">{item.domain}</span>
+                    </a>
+                    <button
+                      type="button"
+                      className="su-likes-unlike"
+                      title="Remove from likes"
+                      aria-label={`Remove ${item.title} from likes`}
+                      onClick={() => onUnlike?.(item.id)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </span>
         <span className="su-social" title="Coming soon">
           Following • Followers
         </span>

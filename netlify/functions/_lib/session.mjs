@@ -55,8 +55,12 @@ const getSecret = () => {
   return secret
 }
 
-export function signSession({ email }) {
-  const payload = { email: normalizeEmail(email), exp: Date.now() + SESSION_TTL_MS }
+export function signSession({ email, picture }) {
+  const payload = {
+    email: normalizeEmail(email),
+    picture: typeof picture === 'string' ? picture : '',
+    exp: Date.now() + SESSION_TTL_MS,
+  }
   const body = b64url(JSON.stringify(payload))
   const mac = createHmac('sha256', getSecret()).update(body).digest()
   return `${body}.${b64url(mac)}`
@@ -81,6 +85,7 @@ export function verifySession(token) {
   if (!email) return null
   return {
     email,
+    picture: typeof payload.picture === 'string' ? payload.picture : '',
     canAccessTravelPlans: canAccessTravelPlans(email),
     canCreateTravelPlans: canCreateTravelPlans(email),
     isOwner: isOwnerEmail(email),

@@ -115,6 +115,7 @@ export default function StumblePage() {
   const [ratingBusy, setRatingBusy] = useState(false)
   const [showSignIn, setShowSignIn] = useState(false)
   const [likesCount, setLikesCount] = useState(0)
+  const [likes, setLikes] = useState([])
 
   const [newTab, setNewTab] = useState(() => {
     try {
@@ -244,6 +245,39 @@ export default function StumblePage() {
     if (!card?.url) return
     window.open(card.url, '_blank', 'noopener,noreferrer')
   }, [card])
+
+  // Lazily fetch the user's liked pages when they open the Likes dropdown.
+  const loadLikes = useCallback(async () => {
+    if (!isSignedIn) return
+    try {
+      const res = await fetch('/.netlify/functions/stumble-likes', {
+        credentials: 'same-origin',
+      })
+      if (!res.ok) return
+      const data = await res.json()
+      if (Array.isArray(data.likes)) setLikes(data.likes)
+      if (typeof data.likesCount === 'number') setLikesCount(data.likesCount)
+    } catch {
+      /* leave the current list in place on failure */
+    }
+  }, [isSignedIn])
+
+  const unlike = useCallback(async (pageId) => {
+    try {
+      const res = await fetch('/.netlify/functions/stumble-likes', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ pageId }),
+      })
+      if (!res.ok) return
+      const data = await res.json()
+      if (Array.isArray(data.likes)) setLikes(data.likes)
+      if (typeof data.likesCount === 'number') setLikesCount(data.likesCount)
+    } catch {
+      /* ignore — the row stays until the next successful action */
+    }
+  }, [])
 
   const toggleNewTab = useCallback(() => {
     setNewTab((v) => {
@@ -471,6 +505,9 @@ export default function StumblePage() {
         user={user}
         isSignedIn={isSignedIn}
         likesCount={likesCount}
+        likes={likes}
+        onOpenLikes={loadLikes}
+        onUnlike={unlike}
         onOpenSignIn={() => setShowSignIn(true)}
         onSignOut={signOut}
         newTab={newTab}
