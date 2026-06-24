@@ -23,6 +23,10 @@ export const userInterestsKey = (hash) => `users/${hash}/interests`
 export const userSeenKey = (hash) => `users/${hash}/seen`
 export const userRatingsKey = (hash) => `users/${hash}/ratings`
 export const userLikesKey = (hash) => `users/${hash}/likes`
+export const userProfileKey = (hash) => `users/${hash}/profile`
+export const userFollowingKey = (hash) => `users/${hash}/following`
+export const userFollowersKey = (hash) => `users/${hash}/followers`
+export const usernameKey = (usernameLower) => `usernames/${usernameLower}`
 
 // Cap the per-user "already seen" list so it can't grow without bound.
 export const SEEN_CAP = 500
@@ -48,6 +52,44 @@ export const loadJson = async (store, key, fallback) => {
 }
 
 export const saveJson = (store, key, value) => store.set(key, JSON.stringify(value))
+
+// --- Social identity: usernames + likes shape ------------------------------
+
+// A small set of names we never let users claim, so handles can't impersonate
+// app routes/roles. Compared against the lowercased handle.
+const RESERVED_USERNAMES = new Set([
+  'me', 'admin', 'owner', 'root', 'mod', 'moderator', 'staff', 'system',
+  'stumble', 'stumbleupon', 'sacor', 'user', 'users', 'profile', 'profiles',
+  'following', 'followers', 'feed', 'about', 'help', 'support', 'api',
+  'null', 'undefined', 'anonymous', 'guest',
+])
+
+export const USERNAME_RE = /^[a-z0-9_]{3,20}$/
+
+export const normalizeUsername = (input) => String(input || '').trim().toLowerCase()
+
+export function isValidUsername(input) {
+  const u = normalizeUsername(input)
+  return USERNAME_RE.test(u) && !RESERVED_USERNAMES.has(u)
+}
+
+// Likes evolved from bare pageId strings to { id, at } objects so the feed can
+// sort by recency. Reads stay backward-compatible: a legacy string entry maps
+// to { id, at: 0 }. De-duped by id, newest-write-wins on `at`.
+export function normalizeLikes(likes) {
+  if (!Array.isArray(likes)) return []
+  const byId = new Map()
+  for (const entry of likes) {
+    const id = typeof entry === 'string' ? entry : entry?.id
+    if (!id) continue
+    const at = typeof entry === 'object' && Number.isFinite(entry?.at) ? entry.at : 0
+    const prior = byId.get(id)
+    if (!prior || at > prior.at) byId.set(id, { id, at })
+  }
+  return [...byId.values()]
+}
+
+export const likeIds = (likes) => normalizeLikes(likes).map((entry) => entry.id)
 
 // --- URL hygiene (PRD §9: validate, canonicalize, dedup) -------------------
 
@@ -214,6 +256,21 @@ export const clientPage = (page) => ({
   downVotes: page.downVotes || 0,
   framePolicy: normalizeFramePolicy(page.framePolicy),
 })
+
+// Resolve a stored pageId to its browser-facing card, or null if the page is
+// gone or no longer approved (so a liked page that got pulled won't resurface).
+export async function loadPageCard(pagesStore, id) {
+  const raw = await pagesStore.get(pageKey(id))
+  if (!raw) return null
+  let page
+  try {
+    page = JSON.parse(raw)
+  } catch {
+    return null
+  }
+  if (page.status && page.status !== 'approved') return null
+  return clientPage(page)
+}
 
 // --- Seeding (lazy, like seedIfEmpty in travel-plans.mjs) ------------------
 
@@ -406,6 +463,9 @@ export function scoreSummary(summary, now, context = {}) {
   const recentContentTypes = context.recentContentTypes || new Map()
   const domainPenalty = recentDomains.has(summary.domain) ? -0.45 : 0
   const typePenalty = Math.min(0.3, (recentContentTypes.get(summary.contentType) || 0) * 0.08)
+  // Pages liked by people you follow get a nudge so a trusted curator's taste
+  // surfaces more often, without overpowering serendipity.
+  const socialBonus = context.socialIds && context.socialIds.has(summary.id) ? 0.4 : 0
 
   // Serendipity stays the largest signal; votes, freshness, and quality nudge
   // the pool, while recent-domain/type penalties keep one site from clumping.
@@ -414,6 +474,7 @@ export function scoreSummary(summary, now, context = {}) {
     0.25 * votePart +
     0.15 * freshness +
     0.8 * random +
+    socialBonus +
     domainPenalty -
     typePenalty
   )
@@ -435,6 +496,8 @@ export function pickFromPool(pool, now, options = {}) {
   if (!pool.length) return null
   const topN = options.topN || 40
   const context = buildRecommendationContext(options.recentSummaries || [])
+  // Optional set of pageIds liked by people the user follows (social blend).
+  context.socialIds = options.socialIds || null
   const scored = pool
     .map((summary) => ({ summary, score: scoreSummary(summary, now, context) }))
     .sort((a, b) => b.score - a.score)

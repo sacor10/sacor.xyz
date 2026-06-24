@@ -11,6 +11,7 @@ import {
   userLikesKey,
   summaryOf,
   domainOf,
+  normalizeLikes,
   json,
 } from './_lib/stumble.mjs'
 
@@ -34,13 +35,14 @@ export default async (req) => {
     const pagesStore = getPagesStore()
     const hash = userHash(session.email)
     const likes = await loadJson(usersStore, userLikesKey(hash), [])
-    const ids = Array.isArray(likes) ? likes : []
+    // Likes are stored as { id, at } (legacy bare-id entries normalize to at:0);
+    // resolve newest-first by like time.
+    const ordered = normalizeLikes(likes).sort((a, b) => b.at - a.at)
 
     // Resolve each id to its page record; drop any that have since vanished.
-    // Newest-first: the likes list is appended oldest→newest in stumble-ratings.
     const rows = await Promise.all(
-      [...ids].reverse().map(async (id) => {
-        const raw = await pagesStore.get(pageKey(id))
+      ordered.map(async (entry) => {
+        const raw = await pagesStore.get(pageKey(entry.id))
         if (!raw) return null
         try {
           return likeRow(JSON.parse(raw))
@@ -73,9 +75,9 @@ export default async (req) => {
       loadJson(usersStore, userLikesKey(hash), []),
     ])
     const ratingMap = ratings && typeof ratings === 'object' ? ratings : {}
-    const likeList = Array.isArray(likes) ? likes : []
+    const likeList = normalizeLikes(likes)
 
-    const idx = likeList.indexOf(pageId)
+    const idx = likeList.findIndex((e) => e.id === pageId)
     if (idx >= 0) likeList.splice(idx, 1)
 
     // If the page was up-voted, take that vote back so counts stay honest, then
@@ -107,8 +109,8 @@ export default async (req) => {
 
     // Return the refreshed list so the client can re-render in one round trip.
     const rows = await Promise.all(
-      [...likeList].reverse().map(async (id) => {
-        const raw = await pagesStore.get(pageKey(id))
+      [...likeList].sort((a, b) => b.at - a.at).map(async (entry) => {
+        const raw = await pagesStore.get(pageKey(entry.id))
         if (!raw) return null
         try {
           return likeRow(JSON.parse(raw))

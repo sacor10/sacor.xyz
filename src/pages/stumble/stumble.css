@@ -926,3 +926,327 @@ body.su-active {
     font-size: 20px;
   }
 }
+
+/* ===========================================================================
+   Social layer: usernames, profiles, follow graph, feed.
+   =========================================================================== */
+
+/* Clickable Following · Followers counts (replaces the old placeholder). */
+.su-social-pill {
+  appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--su-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  padding: 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.su-social-pill strong {
+  color: var(--su-ink);
+}
+.su-social-pill:hover {
+  background: #f3f3f3;
+  border-color: var(--su-line);
+}
+.su-social-dot {
+  color: #c9c9c9;
+}
+
+/* "Stumble their likes" mode banner on the main page. */
+.su-frommode {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: #fdeee9;
+  border-bottom: 1px solid #f6d2c6;
+  color: var(--su-ink);
+  font-size: 14px;
+}
+.su-frommode strong {
+  color: var(--su-orange);
+}
+.su-frommode-exit {
+  appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--su-orange);
+  background: #fff;
+  border: 1px solid #f6d2c6;
+  border-radius: 12px;
+  padding: 4px 12px;
+}
+.su-frommode-exit:hover {
+  background: var(--su-orange);
+  color: #fff;
+}
+
+/* Username claim modal input ( @ prefix + field ). */
+.su-claim-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--su-muted);
+}
+.su-claim-input .su-input {
+  font-size: 16px;
+  font-weight: normal;
+}
+
+/* --- Profile page -------------------------------------------------------- */
+.su-profile-bar {
+  gap: 14px;
+}
+.su-avatar--lg {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  font-size: 22px;
+}
+.su-avatar--sm {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  font-size: 13px;
+}
+.su-profile-id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.su-profile-counts {
+  display: inline-flex;
+  gap: 14px;
+}
+.su-countlink {
+  appearance: none;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--su-muted);
+}
+.su-countlink strong {
+  color: var(--su-ink);
+}
+.su-countlink:hover {
+  color: var(--su-orange);
+}
+.su-countlink:hover strong {
+  color: var(--su-orange);
+}
+
+.su-follow-btn {
+  appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff;
+  background: var(--su-orange);
+  border: 1px solid var(--su-orange-hover);
+  border-radius: 18px;
+  padding: 8px 20px;
+  white-space: nowrap;
+}
+.su-follow-btn:hover:not(:disabled) {
+  background: var(--su-orange-hover);
+}
+.su-follow-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.su-follow-btn--on {
+  color: var(--su-ink);
+  background: #fff;
+  border-color: var(--su-line);
+}
+.su-follow-btn--on:hover:not(:disabled) {
+  color: #9b1c1c;
+  background: #fdeaea;
+  border-color: #f3c1c1;
+}
+.su-self-badge {
+  font-size: 13px;
+  color: var(--su-muted);
+  white-space: nowrap;
+}
+
+.su-tabs {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 4px;
+  padding: 0 16px;
+  background: var(--su-subbar);
+  border-bottom: 1px solid var(--su-line);
+}
+.su-tab {
+  appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--su-muted);
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  padding: 12px 14px;
+}
+.su-tab:hover {
+  color: var(--su-ink);
+}
+.su-tab[aria-selected='true'] {
+  color: var(--su-ink);
+  border-bottom-color: var(--su-orange);
+}
+
+.su-profile-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 16px 60px;
+}
+.su-root > .su-message {
+  align-self: center;
+  margin: 28px 16px 60px;
+}
+
+.su-likes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+.su-like-card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid var(--su-line);
+  border-radius: 10px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 2px 8px rgba(20, 30, 40, 0.06);
+}
+.su-like-card:hover {
+  box-shadow: 0 6px 18px rgba(20, 30, 40, 0.12);
+  border-color: #d2d6da;
+}
+.su-like-thumb {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #dfe3e8;
+  overflow: hidden;
+  display: block;
+}
+.su-like-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.su-like-thumb-ph {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 40px;
+  font-weight: 900;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #c0c6cc, #99a1a8);
+}
+.su-like-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 14px 14px;
+  min-width: 0;
+}
+.su-like-domain {
+  color: var(--su-orange);
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: lowercase;
+}
+.su-like-title {
+  color: #1c2024;
+  font-size: 15px;
+  font-weight: bold;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.su-like-by {
+  margin-top: 2px;
+  color: var(--su-muted);
+  font-size: 12px;
+}
+
+.su-userlist {
+  list-style: none;
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.su-userrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid var(--su-line);
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+}
+.su-userrow:hover {
+  border-color: var(--su-orange);
+}
+
+.su-empty {
+  max-width: 520px;
+  margin: 28px auto;
+  text-align: center;
+  color: var(--su-muted);
+  font-size: 14px;
+}
+.su-link {
+  appearance: none;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--su-orange);
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+@media (max-width: 720px) {
+  .su-social-pill {
+    display: none;
+  }
+}

@@ -7,6 +7,7 @@ import StumbleFrame from './stumble/StumbleFrame'
 import InterestPicker from './stumble/InterestPicker'
 import SubmitSiteModal from './stumble/SubmitSiteModal'
 import SignInModal from './stumble/SignInModal'
+import ClaimUsernameModal from './stumble/ClaimUsernameModal'
 import './stumble/stumble.css'
 
 const SEEN_KEY = 'su_seen_v1'
@@ -114,8 +115,24 @@ export default function StumblePage() {
   const [error, setError] = useState('')
   const [ratingBusy, setRatingBusy] = useState(false)
   const [showSignIn, setShowSignIn] = useState(false)
+  const [showClaim, setShowClaim] = useState(false)
   const [likesCount, setLikesCount] = useState(0)
   const [likes, setLikes] = useState([])
+
+  // Own public identity (for the toolbar likes pill + follow counts).
+  const [myUsername, setMyUsername] = useState(null)
+  const [followingCount, setFollowingCount] = useState(0)
+  const [followerCount, setFollowerCount] = useState(0)
+
+  // "Stumble their likes" mode — captured once from ?from=<username> so the
+  // path rewrites that follow each stumble don't clear it.
+  const [fromUser, setFromUser] = useState(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('from') || ''
+    } catch {
+      return ''
+    }
+  })
 
   const [newTab, setNewTab] = useState(() => {
     try {
@@ -146,6 +163,11 @@ export default function StumblePage() {
   const guestInterestsRef = useRef([])
   const startedRef = useRef(false)
   const prevSignedInRef = useRef(false)
+  // Mirror fromUser so stumble() can read it without widening its deps.
+  const fromUserRef = useRef(fromUser)
+  useEffect(() => {
+    fromUserRef.current = fromUser
+  }, [fromUser])
 
   useEffect(() => {
     newTabRef.current = newTab
@@ -182,6 +204,9 @@ export default function StumblePage() {
         if (seen.length) params.set('exclude', seen.slice(-100).join(','))
         const ints = guestInterestsRef.current
         if (ints.length) params.set('interests', ints.join(','))
+      } else if (fromUserRef.current) {
+        // Signed-in "stumble their likes" mode (server honors it only with a session).
+        params.set('from', fromUserRef.current)
       }
       const qs = params.toString()
       const res = await fetch(`/.netlify/functions/stumble${qs ? `?${qs}` : ''}`, {
@@ -348,6 +373,44 @@ export default function StumblePage() {
     stumble()
   }, [stumble])
 
+  // Open my own profile — prompting sign-in or a username claim if needed.
+  const openMyProfile = useCallback(() => {
+    if (!isSignedIn) {
+      setShowSignIn(true)
+      return
+    }
+    if (!myUsername) {
+      setShowClaim(true)
+      return
+    }
+    navigate(`/stumble/u/${myUsername}`)
+  }, [isSignedIn, myUsername, navigate])
+
+  const claimUsername = useCallback(
+    async (name) => {
+      const res = await fetch('/.netlify/functions/stumble-profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ username: name }),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(d.error || 'Could not claim that username.')
+      setMyUsername(d.username)
+      setShowClaim(false)
+      navigate(`/stumble/u/${d.username}`)
+    },
+    [navigate],
+  )
+
+  // Leave "stumble their likes" mode and return to the normal feed.
+  const exitFromUser = useCallback(() => {
+    fromUserRef.current = ''
+    setFromUser('')
+    navigate('/stumble', { replace: true })
+    stumble()
+  }, [navigate, stumble])
+
   // Load the interest catalog (+ this user's saved selection) once.
   useEffect(() => {
     let cancelled = false
@@ -372,6 +435,26 @@ export default function StumblePage() {
       cancelled = true
     }
   }, [])
+
+  // Load my own public identity (username + follow counts) for the toolbar,
+  // refreshing whenever sign-in state flips.
+  useEffect(() => {
+    // Always fetch — the endpoint returns nulls when signed out, so this also
+    // resets the toolbar on sign-out without a synchronous setState.
+    let cancelled = false
+    fetch('/.netlify/functions/stumble-profile', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled) return
+        setMyUsername(d?.username || null)
+        setFollowingCount(d?.followingCount || 0)
+        setFollowerCount(d?.followerCount || 0)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [isSignedIn])
 
   // Kick off once auth + catalog are ready: onboard signed-in users without
   // enough interests, otherwise start stumbling.
@@ -418,7 +501,7 @@ export default function StumblePage() {
   // Keyboard shortcuts (PRD §6.2): Space = stumble, ↑ = like, ↓ = dislike.
   useEffect(() => {
     const onKey = (e) => {
-      if (showOnboarding || showSignIn) return
+      if (showOnboarding || showSignIn || showClaim) return
       const t = e.target
       if (
         t &&
@@ -442,7 +525,7 @@ export default function StumblePage() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [stumble, rate, showOnboarding, showSignIn])
+  }, [stumble, rate, showOnboarding, showSignIn, showClaim])
 
   let content
   if (status === 'loading') {
@@ -462,7 +545,15 @@ export default function StumblePage() {
       </div>
     )
   } else if (status === 'exhausted') {
-    content = (
+    content = fromUser && isSignedIn ? (
+      <div className="su-message">
+        <h2>That’s all of @{fromUser}’s likes</h2>
+        <p>You’ve stumbled every page @{fromUser} liked that you hadn’t already seen.</p>
+        <button type="button" className="su-stumble-btn" onClick={exitFromUser}>
+          Back to your feed
+        </button>
+      </div>
+    ) : (
       <div className="su-message">
         <h2>You’ve seen it all!</h2>
         <p>
@@ -505,6 +596,10 @@ export default function StumblePage() {
         user={user}
         isSignedIn={isSignedIn}
         likesCount={likesCount}
+        username={myUsername}
+        followingCount={followingCount}
+        followerCount={followerCount}
+        onOpenProfile={openMyProfile}
         likes={likes}
         onOpenLikes={loadLikes}
         onUnlike={unlike}
@@ -522,9 +617,27 @@ export default function StumblePage() {
         canRate={isSignedIn}
       />
 
+      {fromUser && isSignedIn && (
+        <div className="su-frommode">
+          <span>
+            Stumbling <strong>@{fromUser}</strong>’s likes
+          </span>
+          <button type="button" className="su-frommode-exit" onClick={exitFromUser}>
+            Exit
+          </button>
+        </div>
+      )}
+
       <main className="su-stage">{content}</main>
 
       {showSignIn && <SignInModal onClose={() => setShowSignIn(false)} />}
+
+      {showClaim && (
+        <ClaimUsernameModal
+          onClose={() => setShowClaim(false)}
+          onClaim={claimUsername}
+        />
+      )}
 
       {showSubmit && (
         <SubmitSiteModal

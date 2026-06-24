@@ -35,6 +35,10 @@ export default function StumbleToolbar({
   user,
   isSignedIn,
   likesCount,
+  username,
+  followingCount,
+  followerCount,
+  onOpenProfile,
   likes = [],
   onOpenLikes,
   onUnlike,
@@ -203,9 +207,28 @@ export default function StumbleToolbar({
             </div>
           )}
         </span>
-        <span className="su-social" title="Coming soon">
-          Following • Followers
-        </span>
+        {isSignedIn ? (
+          <button
+            type="button"
+            className="su-social-pill"
+            onClick={onOpenProfile}
+            title={username ? 'Your profile' : 'Pick a username'}
+          >
+            <span>
+              <strong>{followingCount || 0}</strong> Following
+            </span>
+            <span className="su-social-dot" aria-hidden="true">
+              •
+            </span>
+            <span>
+              <strong>{followerCount || 0}</strong> Followers
+            </span>
+          </button>
+        ) : (
+          <span className="su-social" title="Sign in to follow people">
+            Following • Followers
+          </span>
+        )}
 
         <span className="su-current-actions" aria-label="Current stumble actions">
           <button
@@ -251,6 +274,19 @@ export default function StumbleToolbar({
           </button>
           {menuOpen && (
             <div className="su-menu" role="menu">
+              {isSignedIn && (
+                <button
+                  type="button"
+                  className="su-menu-item"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    onOpenProfile()
+                  }}
+                >
+                  {username ? 'Your profile' : 'Pick a username'}
+                </button>
+              )}
               <label className="su-menu-item su-menu-toggle">
                 Auto-open externally
                 <input type="checkbox" checked={newTab} onChange={onToggleNewTab} />
