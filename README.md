@@ -174,8 +174,15 @@ The itinerary **FIND A PLACE** control calls Google Places API (New) [Text Searc
 1. Use the same (or linked) GCP project where you configured OAuth credentials, enable **[Places API (New)](https://console.cloud.google.com/apis/library/places.googleapis.com)** and ensure billing is active.
 2. Create a **second API key used only by Netlify Functions** (do **not** reuse your OAuth/Web client secrets). Restrict it under **API restrictions** to **Places API (Under “Places APIs (New)” / Places API)**. Under **Application restrictions**, choose **None** — not “HTTP referrers”. Referrer-locked keys are for browser Maps/JS requests; server-side `fetch` to Places has **no Referer**, so Google returns `Requests from referer <empty> are blocked.`
 3. Set `GOOGLE_PLACES_API_KEY` in `.env` for `netlify dev` and add it to Netlify environment variables, then redeploy.
+4. **Cap worst-case spend in Google Cloud (strongly recommended).** Because the key uses **None** application restrictions (see step 2 — server-side `fetch` sends no Referer, and Netlify egress IPs are dynamic so IP locking is impractical), bound the bill at the platform level: set a **daily request quota cap** on *Places API (New)* under **APIs &amp; Services → Quotas**, and add a **Cloud Billing budget + alert**. These backstop the app-layer controls if anything regresses.
 
-**Endpoint:** `POST /.netlify/functions/geocode` with JSON `{ "q": "<search text>", "limit": 5 }` → `{ results: [{ id, name, lat, lng, type, address }] }`. (A `GET` with `?q=` is supported for debugging if the incoming URL includes query params.) Responses use `Cache-Control: no-store` so each query is fresh. Omitting the API key yields `503`; follow [Places policies](https://developers.google.com/maps/documentation/places/web-service/policies) for attribution shown in the editor.
+**Abuse controls.** Places is billed per request, so the `geocode` proxy is hardened against being scripted into a runaway bill:
+
+- **Requires a signed-in session** — the endpoint calls `requireTravelAccess`, so anonymous requests get `401` (`{ error: "Sign in to search places." }`). The session cookie is sent automatically because the editor calls the same-origin function. This is the primary defense; the only legitimate caller is the login-gated Travel Plans editor.
+- **Per-user rate limit** — daily (`DAILY_LIMIT`) and short burst (`PER_MINUTE_LIMIT`) caps are tracked per user in Netlify Blobs (store `geocode`); exceeding them yields `429`.
+- **Short-TTL dedup cache** — identical recent queries are served from memory (`CACHE_TTL_MS`) without re-billing Google.
+
+**Endpoint:** `POST /.netlify/functions/geocode` with JSON `{ "q": "<search text>", "limit": 5 }` → `{ results: [{ id, name, lat, lng, type, address }] }`. (A `GET` with `?q=` is supported for debugging if the incoming URL includes query params.) Requires a valid session cookie. Responses use `Cache-Control: no-store` so each query is fresh. Omitting the API key yields `503`; follow [Places policies](https://developers.google.com/maps/documentation/places/web-service/policies) for attribution shown in the editor.
 
 ### Endpoints
 
@@ -184,4 +191,4 @@ The itinerary **FIND A PLACE** control calls Google Places API (New) [Text Searc
 - `POST /.netlify/functions/auth-logout` &mdash; clears the session cookie.
 - `GET|POST|PUT|DELETE /.netlify/functions/travel-plans[?id=...&owner=...]` &mdash; CRUD for owned and shared travel plans. Owned plans live under the creator's user hash; shared access uses recipient indexes plus the canonical owner plan. Saves require a matching `version` and return `409` for stale edits.
 - `GET|POST|DELETE /.netlify/functions/travel-plan-sharing?id=...` &mdash; owner-only share management. Adds/removes collaborator emails, stores saved contacts, and sends first-share invite emails through Resend.
-- `POST /.netlify/functions/geocode` (`{ q, limit }`) &mdash; server-side Places Text Search proxy for Travel Plan stops (requires `GOOGLE_PLACES_API_KEY`). `GET` with `q` is accepted for manual checks.
+- `POST /.netlify/functions/geocode` (`{ q, limit }`) &mdash; server-side Places Text Search proxy for Travel Plan stops (requires `GOOGLE_PLACES_API_KEY` and a signed-in session; per-user rate-limited). `GET` with `q` is accepted for manual checks.
