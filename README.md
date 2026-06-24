@@ -50,7 +50,20 @@ The approved pool is stored in Netlify Blobs (`stumble-pages`) and lazily seeded
 - `POST /.netlify/functions/stumble-moderation` with `{ "id": "...", "action": "approve" }` approves a pending page into the live pool. `{ "action": "reject" }` moves it to the rejected index.
 - Owner access uses the existing Google session owner check (`TRAVEL_PLAN_EMAILS` / `OWNER_EMAIL`).
 
-The recommender preserves seen/rated exclusion, relaxes interest filters when they would starve the user, and uses a weighted random pick with recent domain/content-type penalties so the feed stays broad instead of clustering around one site.
+The recommender preserves seen/rated exclusion, relaxes interest filters when they would starve the user, and uses a weighted random pick with recent domain/content-type penalties so the feed stays broad instead of clustering around one site. Signed-in users also get a social nudge: pages liked by people they follow score a small bonus.
+
+### Profiles and following
+
+Signed-in users can claim a public `@username` (immutable in v1) and get a profile page at `/stumble/u/:username`.
+
+- `GET /.netlify/functions/stumble-profile?username=foo` — public profile (follower/following counts + handles). A signed-in viewer also gets the profile's liked pages and `isFollowing`/`isSelf` flags; guests get `signInRequired` and no likes.
+- `GET /.netlify/functions/stumble-profile` (no param) — the signed-in caller's own handle + counts, so the UI knows whether to prompt a username claim.
+- `PUT /.netlify/functions/stumble-profile` with `{ "username": "..." }` — claim a handle (`409` if taken/already set, `400` if invalid).
+- `POST /.netlify/functions/stumble-follow` with `{ "username": "...", "action": "follow" | "unfollow" }` — mutate the follow graph (both sides updated; deduped).
+- `GET /.netlify/functions/stumble-feed` — recent likes from the people you follow, newest first, each tagged with who liked it.
+- `GET /.netlify/functions/stumble?from=<username>` — "stumble their likes" mode: restrict the pool to one person's liked pages (signed-in only).
+
+The social graph and handles live in the existing `stumble-users` Blob store (`users/{hash}/profile`, `users/{hash}/following`, `users/{hash}/followers`, and a `usernames/{handle}` → hash index). Likes carry a timestamp (`{ id, at }`, migrated lazily from the legacy id-only form) so the feed can sort by recency. Blobs has no transactions, so username claims and follow writes are best-effort and idempotent.
 
 ## Live Stocks (`/stocks`)
 

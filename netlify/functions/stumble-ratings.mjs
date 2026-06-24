@@ -12,6 +12,7 @@ import {
   userLikesKey,
   summaryOf,
   appendSeen,
+  normalizeLikes,
   json,
 } from './_lib/stumble.mjs'
 
@@ -47,7 +48,8 @@ export default async (req) => {
     loadJson(usersStore, userLikesKey(hash), []),
   ])
   const ratingMap = ratings && typeof ratings === 'object' ? ratings : {}
-  const likeList = Array.isArray(likes) ? likes : []
+  // Normalize legacy string entries to { id, at } so the feed can sort by time.
+  const likeList = normalizeLikes(likes)
 
   const prior = ratingMap[pageId]
   if (prior !== value) {
@@ -68,10 +70,10 @@ export default async (req) => {
       await saveJson(pagesStore, APPROVED_INDEX_KEY, index)
     }
 
-    // Maintain the Liked list index.
-    const inLikes = likeList.includes(pageId)
-    if (value === 1 && !inLikes) likeList.push(pageId)
-    if (value === -1 && inLikes) likeList.splice(likeList.indexOf(pageId), 1)
+    // Maintain the Liked list index ({ id, at } entries, newest stamped now).
+    const likeIdx = likeList.findIndex((entry) => entry.id === pageId)
+    if (value === 1 && likeIdx === -1) likeList.push({ id: pageId, at: Date.now() })
+    if (value === -1 && likeIdx >= 0) likeList.splice(likeIdx, 1)
 
     await Promise.all([
       saveJson(usersStore, userRatingsKey(hash), ratingMap),
