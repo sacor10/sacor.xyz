@@ -200,6 +200,10 @@ body.su-active {
   font-weight: bold;
   font-size: 16px;
   user-select: none;
+  overflow: hidden;
+}
+.su-avatar-img {
+  object-fit: cover;
 }
 
 .su-handle {
@@ -216,9 +220,12 @@ body.su-active {
   background: var(--su-line);
 }
 
+.su-likes-wrap {
+  position: relative;
+}
 .su-likes-pill {
   appearance: none;
-  cursor: default;
+  cursor: pointer;
   font-family: inherit;
   font-size: 13px;
   font-weight: bold;
@@ -232,9 +239,86 @@ body.su-active {
   gap: 6px;
   white-space: nowrap;
 }
+.su-likes-pill:hover,
+.su-likes-pill[aria-expanded="true"] {
+  background: #ececec;
+}
 .su-likes-pill .su-caret {
   color: var(--su-muted);
   font-size: 10px;
+}
+
+.su-likes-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 40;
+  min-width: 300px;
+  max-height: 360px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--su-line);
+  border-radius: 8px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16);
+  padding: 6px;
+}
+.su-likes-empty {
+  margin: 0;
+  padding: 12px;
+  font-size: 13px;
+  color: var(--su-muted);
+}
+.su-likes-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 6px;
+}
+.su-likes-item:hover {
+  background: #f4f4f4;
+}
+.su-likes-link {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  text-decoration: none;
+  color: var(--su-ink);
+}
+.su-likes-title {
+  font-size: 14px;
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.su-likes-domain {
+  font-size: 12px;
+  color: var(--su-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.su-likes-unlike {
+  appearance: none;
+  cursor: pointer;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  margin-right: 4px;
+  font-family: inherit;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--su-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+}
+.su-likes-unlike:hover {
+  color: var(--su-ink);
+  background: #e8e8e8;
 }
 
 .su-social {

@@ -51,6 +51,7 @@ export function AuthProvider({ children }) {
       const canCreateTravelPlans = !!(data.canCreateTravelPlans || data.isOwner)
       setUser({
         email: data.email,
+        picture: data.picture || '',
         canAccessTravelPlans,
         canCreateTravelPlans,
         isOwner: !!data.isOwner,
