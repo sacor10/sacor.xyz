@@ -9,8 +9,13 @@ import { isKnownInterest } from '../../../src/data/stumbleInterests.js'
 export const PAGES_STORE = 'stumble-pages'
 export const USERS_STORE = 'stumble-users'
 
-export const getPagesStore = () => getStore(PAGES_STORE)
-export const getUsersStore = () => getStore(USERS_STORE)
+// Strong consistency gives read-your-writes within a single request, which the
+// read-modify-write flows here depend on (likes, ratings, follows, the approved
+// index, vote counts). Under the default eventual consistency a delete can read
+// a stale list and resurrect an entry that a prior delete just removed — the
+// classic "unlike leaves one like, alternating between them" bug.
+export const getPagesStore = () => getStore({ name: PAGES_STORE, consistency: 'strong' })
+export const getUsersStore = () => getStore({ name: USERS_STORE, consistency: 'strong' })
 
 export const APPROVED_INDEX_KEY = 'index/approved'
 export const PENDING_INDEX_KEY = 'index/pending'
@@ -71,6 +76,21 @@ export const normalizeUsername = (input) => String(input || '').trim().toLowerCa
 export function isValidUsername(input) {
   const u = normalizeUsername(input)
   return USERNAME_RE.test(u) && !RESERVED_USERNAMES.has(u)
+}
+
+// Returns a human-facing reason a handle can't be claimed, or null if it's
+// fine. Kept separate from isValidUsername so callers can tell a malformed
+// handle (wrong characters/length) apart from a reserved one and message
+// accordingly — they fail for very different reasons.
+export function usernameError(input) {
+  const u = normalizeUsername(input)
+  if (!USERNAME_RE.test(u)) {
+    return '3–20 characters: lowercase letters, numbers, or underscores.'
+  }
+  if (RESERVED_USERNAMES.has(u)) {
+    return 'That username is reserved. Please choose another.'
+  }
+  return null
 }
 
 // Likes evolved from bare pageId strings to { id, at } objects so the feed can
