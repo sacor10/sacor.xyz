@@ -61,7 +61,14 @@ export default function StumbleToolbar({
   const likesRef = useRef(null)
   const [brokenAvatarUrl, setBrokenAvatarUrl] = useState('')
 
-  const handle = isSignedIn && user?.email ? `@${user.email.split('@')[0]}` : '@'
+  // Prefer the claimed public handle; fall back to the email local-part only
+  // until one is claimed (or '@' when signed out). The claimed username is the
+  // identity others see, so it must win once it loads.
+  const handle = username
+    ? `@${username}`
+    : isSignedIn && user?.email
+      ? `@${user.email.split('@')[0]}`
+      : '@'
   const avatarChar = isSignedIn && user?.email ? user.email.charAt(0).toUpperCase() : '?'
   const avatarUrl = isSignedIn ? user?.picture || '' : ''
   // Keying the failure to the URL means a new account's photo is retried
