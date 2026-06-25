@@ -365,7 +365,7 @@ export default function StumbleProfilePage() {
   }
 
   return (
-    <div className="su-root">
+    <div className="su-root su-root--profile">
       <header className="su-toolbar">
         <button type="button" className="su-stumble-btn" onClick={() => navigate('/stumble')}>
           Stumble!

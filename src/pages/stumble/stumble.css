@@ -1033,31 +1033,34 @@ body.su-active {
     height: 100dvh;
   }
 
-  /* Bar 1 — keep account/auth, drop the now-duplicate top Stumble button
-     (the bottom bar owns the primary action on phones). */
+  /* Bar 1 — compact account/auth strip on both the feed and profile routes. */
   .su-toolbar {
     flex-wrap: nowrap;
     min-height: 48px;
     padding: 6px 12px;
     gap: 8px;
   }
-  .su-toolbar .su-stumble-btn {
+  /* Feed only: drop the duplicate top Stumble button (the bottom bar owns the
+     primary action). The profile route keeps it — it's the way back to Stumble. */
+  .su-root--feed .su-toolbar .su-stumble-btn {
     display: none;
   }
 
-  /* Bar 2 — compact identity strip: avatar + @handle + ☰ only. The Likes
-     pill, social pill, and Like/Pass/Open actions all move to the bottom bar. */
-  .su-subbar {
+  /* Feed Bar 2 — compact identity strip: avatar + @handle + ☰ only. The Likes
+     pill, social pill, and Like/Pass/Open actions all move to the bottom bar.
+     Scoped to the feed so the profile header (also a .su-subbar) is free to
+     wrap and stack instead of being forced onto one line. */
+  .su-root--feed .su-subbar {
     flex-wrap: nowrap;
     gap: 10px;
     min-height: 46px;
     padding: 6px 12px;
   }
-  .su-subbar .su-likes-wrap,
-  .su-subbar .su-social-pill,
-  .su-subbar .su-social,
-  .su-subbar .su-divider,
-  .su-current-actions {
+  .su-root--feed .su-subbar .su-likes-wrap,
+  .su-root--feed .su-subbar .su-social-pill,
+  .su-root--feed .su-subbar .su-social,
+  .su-root--feed .su-subbar .su-divider,
+  .su-root--feed .su-current-actions {
     display: none;
   }
 
@@ -1078,6 +1081,42 @@ body.su-active {
     top: auto;
     min-width: 0;
     max-height: 50vh;
+  }
+
+  /* Profile header — let it wrap and stack instead of cramming the avatar,
+     handle, counts, and action buttons onto one overlapping line. Avatar +
+     identity share the top row; each action button drops to its own full-width
+     row for comfortable tap targets. */
+  .su-root--profile .su-profile-bar {
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 12px;
+    min-height: 0;
+    padding: 12px;
+  }
+  .su-root--profile .su-profile-bar .su-bar-spacer {
+    display: none;
+  }
+  .su-root--profile .su-self-badge,
+  .su-root--profile .su-profile-bar .su-follow-btn,
+  .su-root--profile .su-profile-bar .su-subbar-btn-primary {
+    flex: 1 0 100%;
+  }
+  .su-root--profile .su-self-badge {
+    justify-content: space-between;
+  }
+  .su-root--profile .su-profile-bar .su-subbar-btn-primary {
+    text-align: center;
+    padding: 11px 12px;
+  }
+
+  /* Let the profile tab row scroll horizontally if the four tabs don't fit. */
+  .su-root--profile .su-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .su-root--profile .su-tab {
+    white-space: nowrap;
   }
 }
 
