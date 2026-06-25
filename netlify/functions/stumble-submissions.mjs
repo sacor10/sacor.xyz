@@ -5,6 +5,7 @@ import {
   canonicalizeUrl,
   domainOf,
   getPagesStore,
+  getUsersStore,
   inferContentType,
   json,
   loadApprovedIndex,
@@ -19,6 +20,7 @@ import {
   saveJson,
   submitterRateKey,
   upsertSummary,
+  userProfileKey,
 } from './_lib/stumble.mjs'
 
 const DAILY_SUBMISSION_LIMIT = 8
@@ -180,6 +182,16 @@ export default async (req) => {
   const allowed = await checkRateLimit(pagesStore, hash)
   if (!allowed) return json({ error: 'Submission limit reached for today' }, { status: 429 })
 
+  // Denormalize the submitter's claimed public handle onto the page so the card
+  // can credit them ("Submitted by @handle") without a read-time hash→handle
+  // lookup. Stays null for guests and signed-in users who haven't claimed one —
+  // we never surface an email.
+  let submitterUsername = null
+  if (session?.email) {
+    const profile = await loadJson(getUsersStore(), userProfileKey(userHash(session.email)), null)
+    submitterUsername = profile?.username || null
+  }
+
   const [approvedIndex, pendingIndex] = await Promise.all([
     loadApprovedIndex(pagesStore),
     loadJson(pagesStore, PENDING_INDEX_KEY, []),
@@ -223,6 +235,7 @@ export default async (req) => {
     safetyFlags: [],
     framePolicy: normalizeFramePolicy(metadata.framePolicy),
     submittedBy: session?.email ? `user:${session.email}` : 'guest',
+    submitterUsername,
     submitterHash: hash,
     submitterNote: trimText(body?.note, 500),
     submittedAt: new Date().toISOString(),

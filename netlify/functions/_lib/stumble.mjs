@@ -226,6 +226,7 @@ export function normalizePageRecord(page = {}) {
     upVotes: page.upVotes || 0,
     downVotes: page.downVotes || 0,
     submittedBy: page.submittedBy || page.source || 'unknown',
+    submitterUsername: page.submitterUsername || null,
     submittedAt: page.submittedAt || page.createdAt || now,
     approvedAt: page.approvedAt || (status === 'approved' ? page.createdAt || now : null),
     createdAt: page.createdAt || now,
@@ -280,6 +281,9 @@ export const clientPage = (page) => ({
   upVotes: page.upVotes || 0,
   downVotes: page.downVotes || 0,
   framePolicy: normalizeFramePolicy(page.framePolicy),
+  // Public handle of the community member who submitted this page, when they
+  // had claimed one. null for curated seed pages and anonymous/guest submits.
+  submitterUsername: page.submitterUsername || null,
 })
 
 // Find an approved-index summary by its /stumble/<slug> segment. Matched

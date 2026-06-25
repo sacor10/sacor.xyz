@@ -51,6 +51,11 @@ export default function PreviewCard({
       <div className="su-card-body">
         <div className="su-card-domain">{domain}</div>
         <h1 className="su-card-title">{card.title}</h1>
+        {card.submitterUsername && (
+          <a className="su-card-submitter" href={`/stumble/u/${card.submitterUsername}`}>
+            Submitted by @{card.submitterUsername}
+          </a>
+        )}
         {card.description && <p className="su-card-desc">{card.description}</p>}
 
         {card.interests?.length > 0 && (
