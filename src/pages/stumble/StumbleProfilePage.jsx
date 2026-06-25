@@ -66,6 +66,7 @@ export default function StumbleProfilePage() {
   const [followBusy, setFollowBusy] = useState(false)
   const [showSignIn, setShowSignIn] = useState(false)
   const [showClaim, setShowClaim] = useState(false)
+  const [showRename, setShowRename] = useState(false)
   const [feed, setFeed] = useState(null)
   const [reloadKey, setReloadKey] = useState(0)
 
@@ -194,6 +195,24 @@ export default function StumbleProfilePage() {
     [doFollow],
   )
 
+  // Rename: PATCH the handle, then jump to the new profile URL (the old one no
+  // longer resolves once its pointer is freed).
+  const renameUsername = useCallback(
+    async (name) => {
+      const res = await fetch('/.netlify/functions/stumble-profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ username: name }),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(d.error || 'Could not change your username.')
+      setShowRename(false)
+      navigate(`/stumble/u/${d.username}`)
+    },
+    [navigate],
+  )
+
   const stumbleTheirLikes = useCallback(() => {
     navigate(`/stumble?from=${encodeURIComponent(username)}`)
   }, [navigate, username])
@@ -247,7 +266,16 @@ export default function StumbleProfilePage() {
           <span className="su-bar-spacer" />
 
           {isSelf ? (
-            <span className="su-self-badge">This is you</span>
+            <span className="su-self-badge">
+              This is you
+              <button
+                type="button"
+                className="su-link su-rename-link"
+                onClick={() => setShowRename(true)}
+              >
+                Change username
+              </button>
+            </span>
           ) : (
             <button
               type="button"
@@ -366,6 +394,16 @@ export default function StumbleProfilePage() {
           onClose={() => setShowClaim(false)}
           onClaim={claimUsername}
           reason="Claim a username before you can follow people."
+        />
+      )}
+      {showRename && (
+        <ClaimUsernameModal
+          onClose={() => setShowRename(false)}
+          onClaim={renameUsername}
+          title="Change your username"
+          submitLabel="Save"
+          initialValue={data?.username || ''}
+          reason="Pick a new public @handle. Your old one is freed and anyone linking to it will need the new one."
         />
       )}
     </div>

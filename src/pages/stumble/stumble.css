@@ -1083,9 +1083,17 @@ body.su-active {
   border-color: #f3c1c1;
 }
 .su-self-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   font-size: 13px;
   color: var(--su-muted);
   white-space: nowrap;
+}
+
+.su-rename-link {
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .su-tabs {
