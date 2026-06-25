@@ -890,6 +890,104 @@ body.su-active {
   cursor: default;
 }
 
+/* --- Mobile bottom toolbar (StumbleUpon-app-style) -----------------------
+   Hidden by default; the ≤640px block below flips it on. Lives at the bottom
+   of the viewport (position:fixed) so the stumbled page fills the middle and
+   the core controls stay in thumb reach. */
+.su-mobilebar {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 35;
+  align-items: stretch;
+  gap: 6px;
+  padding: 6px 8px;
+  padding-bottom: calc(6px + env(safe-area-inset-bottom));
+  background: var(--su-bar);
+  border-top: 1px solid #000;
+}
+.su-mobilebar-btn {
+  appearance: none;
+  cursor: pointer;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 48px;
+  height: 48px;
+  font-family: inherit;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--su-bar-text);
+  background: #3d3d3d;
+  border: 1px solid #4a4a4a;
+  border-radius: 10px;
+  padding: 0 10px;
+}
+.su-mobilebar-btn:hover:not(:disabled) {
+  background: #474747;
+}
+.su-mobilebar-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.su-mobilebar-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.su-mobilebar-count {
+  font-size: 13px;
+  font-weight: bold;
+}
+.su-mobilebar-stumble {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  flex: 1 1 auto;
+  height: 48px;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: bold;
+  color: #fff;
+  background: var(--su-orange);
+  border-radius: 12px;
+  white-space: nowrap;
+}
+.su-mobilebar-stumble:hover:not(:disabled) {
+  background: var(--su-orange-hover);
+}
+.su-mobilebar-stumble:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.su-mobilebar-stumble:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.su-mobilebar-profile {
+  appearance: none;
+  cursor: pointer;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: #3d3d3d;
+  border: 1px solid #4a4a4a;
+  border-radius: 10px;
+  padding: 0;
+}
+.su-mobilebar-profile:hover {
+  background: #474747;
+}
+.su-mobilebar-likes {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+}
+
 /* --- Responsive ---------------------------------------------------------- */
 @media (max-width: 720px) {
   .su-tagline,
@@ -924,6 +1022,62 @@ body.su-active {
   }
   .su-card-title {
     font-size: 20px;
+  }
+}
+
+/* --- Rigid phone layout (StumbleUpon-app shell) -------------------------- */
+@media (max-width: 640px) {
+  /* Track the dynamic viewport so the fixed bottom bar stays pinned without
+     the 100vh address-bar jump. */
+  .su-root {
+    height: 100dvh;
+  }
+
+  /* Bar 1 — keep account/auth, drop the now-duplicate top Stumble button
+     (the bottom bar owns the primary action on phones). */
+  .su-toolbar {
+    flex-wrap: nowrap;
+    min-height: 48px;
+    padding: 6px 12px;
+    gap: 8px;
+  }
+  .su-toolbar .su-stumble-btn {
+    display: none;
+  }
+
+  /* Bar 2 — compact identity strip: avatar + @handle + ☰ only. The Likes
+     pill, social pill, and Like/Pass/Open actions all move to the bottom bar. */
+  .su-subbar {
+    flex-wrap: nowrap;
+    gap: 10px;
+    min-height: 46px;
+    padding: 6px 12px;
+  }
+  .su-subbar .su-likes-wrap,
+  .su-subbar .su-social-pill,
+  .su-subbar .su-social,
+  .su-subbar .su-divider,
+  .su-current-actions {
+    display: none;
+  }
+
+  /* Show the fixed bottom toolbar and reserve room so it never covers content. */
+  .su-mobilebar {
+    display: flex;
+  }
+  .su-stage {
+    padding-bottom: calc(60px + env(safe-area-inset-bottom));
+  }
+
+  /* Likes dropdown becomes a full-width bottom sheet anchored above the bar. */
+  .su-mobilebar-sheet {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: calc(60px + env(safe-area-inset-bottom));
+    top: auto;
+    min-width: 0;
+    max-height: 50vh;
   }
 }
 

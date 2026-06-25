@@ -59,6 +59,10 @@ export default function StumbleToolbar({
   const menuRef = useRef(null)
   const [likesOpen, setLikesOpen] = useState(false)
   const likesRef = useRef(null)
+  // The mobile bottom bar has its own Likes trigger + sheet; tracked with a
+  // separate ref so the outside-click handler doesn't treat a tap on it as
+  // "outside" and immediately re-close the dropdown it just opened.
+  const mobileLikesRef = useRef(null)
   const [brokenAvatarUrl, setBrokenAvatarUrl] = useState('')
 
   // Prefer the claimed public handle; fall back to the email local-part only
@@ -92,11 +96,16 @@ export default function StumbleToolbar({
     }
   }, [menuOpen])
 
-  // Close the Likes dropdown on outside click / Escape.
+  // Close the Likes dropdown on outside click / Escape. Both the desktop pill
+  // (likesRef) and the mobile bottom-bar trigger + sheet (mobileLikesRef) share
+  // the likesOpen state, so a click counts as "outside" only when it's in
+  // neither subtree.
   useEffect(() => {
     if (!likesOpen) return
     const onDown = (e) => {
-      if (likesRef.current && !likesRef.current.contains(e.target)) setLikesOpen(false)
+      const inDesktop = likesRef.current && likesRef.current.contains(e.target)
+      const inMobile = mobileLikesRef.current && mobileLikesRef.current.contains(e.target)
+      if (!inDesktop && !inMobile) setLikesOpen(false)
     }
     const onKey = (e) => {
       if (e.key === 'Escape') setLikesOpen(false)
@@ -337,6 +346,122 @@ export default function StumbleToolbar({
           )}
         </span>
       </div>
+
+      {/* Mobile-only fixed bottom toolbar (shown ≤640px via CSS). Reuses the
+          same handlers + likes state as the bars above; on desktop it's
+          display:none, so DOM order vs. the stage doesn't matter. */}
+      <nav className="su-mobilebar" aria-label="Stumble controls">
+        <button
+          type="button"
+          className="su-mobilebar-btn"
+          onClick={onDislike}
+          disabled={busy || !card}
+          title={canRate ? 'Not for me' : 'Sign in to rate'}
+          aria-label="Pass"
+        >
+          👎
+        </button>
+        <button
+          type="button"
+          className="su-mobilebar-btn"
+          onClick={onLike}
+          disabled={busy || !card}
+          title={canRate ? 'I like this' : 'Sign in to rate'}
+          aria-label="Like"
+        >
+          👍
+        </button>
+        <button
+          type="button"
+          className="su-mobilebar-stumble"
+          onClick={onStumble}
+          disabled={busy}
+        >
+          Stumble!
+        </button>
+        <button
+          type="button"
+          className="su-mobilebar-btn"
+          onClick={onOpenExternal}
+          disabled={!card}
+          title={card ? 'Open externally' : 'No page loaded'}
+          aria-label="Open externally"
+        >
+          ↗
+        </button>
+        <span className="su-mobilebar-likes" ref={mobileLikesRef}>
+          <button
+            type="button"
+            className="su-mobilebar-btn"
+            aria-expanded={likesOpen}
+            onClick={() =>
+              setLikesOpen((v) => {
+                const next = !v
+                if (next) onOpenLikes?.()
+                return next
+              })
+            }
+            title="Your likes"
+            aria-label={`Likes (${likesCount})`}
+          >
+            <span aria-hidden="true">♥</span>
+            <span className="su-mobilebar-count">{likesCount}</span>
+          </button>
+          {likesOpen && (
+            <div className="su-likes-menu su-mobilebar-sheet" role="menu">
+              {likes.length === 0 ? (
+                <p className="su-likes-empty">
+                  No likes yet — hit Like on a page to save it.
+                </p>
+              ) : (
+                likes.map((item) => (
+                  <div key={item.id} className="su-likes-item">
+                    <a
+                      className="su-likes-link"
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <span className="su-likes-title">{item.title}</span>
+                      <span className="su-likes-domain">{item.domain}</span>
+                    </a>
+                    <button
+                      type="button"
+                      className="su-likes-unlike"
+                      title="Remove from likes"
+                      aria-label={`Remove ${item.title} from likes`}
+                      onClick={() => onUnlike?.(item.id)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </span>
+        <button
+          type="button"
+          className="su-mobilebar-profile"
+          onClick={onOpenProfile}
+          title={username ? 'Your profile' : 'Profile'}
+          aria-label="Profile"
+        >
+          {showAvatarImg ? (
+            <img
+              className="su-avatar su-avatar--sm su-avatar-img"
+              src={avatarUrl}
+              alt=""
+              referrerPolicy="no-referrer"
+              onError={() => setBrokenAvatarUrl(avatarUrl)}
+            />
+          ) : (
+            <span className="su-avatar su-avatar--sm" aria-hidden="true">
+              {avatarChar}
+            </span>
+          )}
+        </button>
+      </nav>
     </>
   )
 }
