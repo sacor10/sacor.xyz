@@ -9,8 +9,13 @@ import { isKnownInterest } from '../../../src/data/stumbleInterests.js'
 export const PAGES_STORE = 'stumble-pages'
 export const USERS_STORE = 'stumble-users'
 
-export const getPagesStore = () => getStore(PAGES_STORE)
-export const getUsersStore = () => getStore(USERS_STORE)
+// Strong consistency gives read-your-writes within a single request, which the
+// read-modify-write flows here depend on (likes, ratings, follows, the approved
+// index, vote counts). Under the default eventual consistency a delete can read
+// a stale list and resurrect an entry that a prior delete just removed — the
+// classic "unlike leaves one like, alternating between them" bug.
+export const getPagesStore = () => getStore({ name: PAGES_STORE, consistency: 'strong' })
+export const getUsersStore = () => getStore({ name: USERS_STORE, consistency: 'strong' })
 
 export const APPROVED_INDEX_KEY = 'index/approved'
 export const PENDING_INDEX_KEY = 'index/pending'
