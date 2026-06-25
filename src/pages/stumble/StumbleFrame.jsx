@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import PreviewCard from './PreviewCard'
 
+// Backstop only: the server-side probe is the source of truth for whether a site
+// can be framed. This timeout just covers the rare case where the probe itself
+// never returns, so the user isn't stuck on a spinner.
 const FRAME_TIMEOUT_MS = 7000
 
 function domainOf(url) {
@@ -11,6 +14,20 @@ function domainOf(url) {
   }
 }
 
+// Body copy under the headline, tailored to why the site won't load. Framing
+// blocks get the X-Frame-Options/CSP explanation; reachability problems get a
+// plainer note. Falls back to the framing copy when we have no specific reason
+// (known-blocked curation, or the timeout backstop).
+function fallbackBody(reason) {
+  if (reason === 'http-error') {
+    return 'The site responded with an error, so there’s nothing to show here. You can still try opening it externally.'
+  }
+  if (reason === 'unreachable' || reason === 'timeout') {
+    return 'The site couldn’t be reached right now. It may be down or blocking automated requests — try opening it externally.'
+  }
+  return 'Some sites use X-Frame-Options or Content-Security-Policy rules to stay out of iframes. You can still open this stumble externally.'
+}
+
 export default function StumbleFrame({
   card,
   onLike,
@@ -19,18 +36,49 @@ export default function StumbleFrame({
   busy,
   canRate,
 }) {
+  // Iframe load / timeout tracking.
   const [frameState, setFrameState] = useState({ cardKey: '', status: 'loading' })
+  // Server-side probe verdict: 'pending' | 'ok' | 'failed' (+ reason/message).
+  const [probe, setProbe] = useState({ cardKey: '', status: 'pending' })
+
   const cardKey = card?.id || card?.url || ''
   const framePolicy = card?.framePolicy
-  const currentFrameState =
-    framePolicy === 'block'
-      ? 'known-blocked'
-      : frameState.cardKey === cardKey
-        ? frameState.status
-        : 'loading'
+  const knownBlocked = framePolicy === 'block'
+
+  const frameStatus = frameState.cardKey === cardKey ? frameState.status : 'loading'
+  const probeForCard = probe.cardKey === cardKey ? probe : { status: 'pending' }
+
+  // Probe whether the site can actually be framed. The browser can't read why a
+  // cross-origin frame failed (an X-Frame-Options block still fires onLoad), so
+  // this verdict — not onLoad — decides whether we show the fallback. Fails open:
+  // a probe error is treated as "ok" so a flaky probe never hides a good site.
+  useEffect(() => {
+    if (!cardKey || knownBlocked) return undefined
+    // No synchronous "pending" set needed: until this resolves, probe.cardKey
+    // won't match the current card, so probeForCard already reads as pending.
+    let cancelled = false
+    fetch(`/.netlify/functions/stumble-frame-check?url=${encodeURIComponent(card.url)}`, {
+      credentials: 'same-origin',
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled) return
+        if (data && data.ok === false) {
+          setProbe({ cardKey, status: 'failed', reason: data.reason, message: data.message })
+        } else {
+          setProbe({ cardKey, status: 'ok' })
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setProbe({ cardKey, status: 'ok' })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [cardKey, knownBlocked, card?.url])
 
   useEffect(() => {
-    if (!cardKey || framePolicy === 'block') return undefined
+    if (!cardKey || knownBlocked) return undefined
 
     const timer = window.setTimeout(() => {
       setFrameState((state) => {
@@ -41,14 +89,38 @@ export default function StumbleFrame({
     }, FRAME_TIMEOUT_MS)
 
     return () => window.clearTimeout(timer)
-  }, [cardKey, framePolicy])
+  }, [cardKey, knownBlocked])
 
   if (!card) return null
 
-  const knownBlocked = currentFrameState === 'known-blocked'
-  const suspectedBlocked = currentFrameState === 'suspected-blocked'
-  const showFallback = knownBlocked || suspectedBlocked
+  const probeFailed = probeForCard.status === 'failed'
+  const timedOut = frameStatus === 'suspected-blocked'
+  // Only call the iframe "loaded" once the probe has cleared it — onLoad alone
+  // fires even on a blocked frame showing the browser's raw error page.
+  const loaded = frameStatus === 'loaded' && probeForCard.status === 'ok'
+
+  const showFallback = knownBlocked || probeFailed || timedOut
+  const overlay = showFallback && !knownBlocked
+  const showSpinner = !showFallback && !loaded
+
   const domain = domainOf(card.url)
+  const reason = probeFailed ? probeForCard.reason : undefined
+  let heading
+  if (probeFailed && probeForCard.message) {
+    heading = probeForCard.message
+  } else if (knownBlocked) {
+    heading = 'This site blocks embedded browsing.'
+  } else {
+    heading = 'This page may not allow embedded browsing.'
+  }
+
+  const currentFrameState = knownBlocked
+    ? 'known-blocked'
+    : showFallback
+      ? 'suspected-blocked'
+      : loaded
+        ? 'loaded'
+        : 'loading'
 
   return (
     <section className={`su-frame-shell su-frame-shell--${currentFrameState}`}>
@@ -65,7 +137,7 @@ export default function StumbleFrame({
         />
       )}
 
-      {currentFrameState === 'loading' && (
+      {showSpinner && (
         <div className="su-frame-status" role="status" aria-live="polite">
           <span className="su-spinner" />
           <span>Loading {domain}...</span>
@@ -73,24 +145,11 @@ export default function StumbleFrame({
       )}
 
       {showFallback && (
-        <div
-          className={
-            knownBlocked
-              ? 'su-frame-fallback'
-              : 'su-frame-fallback su-frame-fallback-overlay'
-          }
-        >
+        <div className={overlay ? 'su-frame-fallback su-frame-fallback-overlay' : 'su-frame-fallback'}>
           <div className="su-frame-fallback-copy">
             <p className="su-frame-domain">{domain}</p>
-            <h2>
-              {knownBlocked
-                ? 'This site blocks embedded browsing.'
-                : 'This page may not allow embedded browsing.'}
-            </h2>
-            <p>
-              Some sites use X-Frame-Options or Content-Security-Policy rules to
-              stay out of iframes. You can still open this stumble externally.
-            </p>
+            <h2>{heading}</h2>
+            <p>{fallbackBody(reason)}</p>
             <button type="button" className="su-primary" onClick={onOpenExternal}>
               Open externally
             </button>
