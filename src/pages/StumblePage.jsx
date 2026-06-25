@@ -621,7 +621,7 @@ export default function StumblePage() {
   }
 
   return (
-    <div className="su-root">
+    <div className="su-root su-root--feed">
       <StumbleToolbar
         onStumble={stumble}
         busy={status === 'loading' || ratingBusy}
