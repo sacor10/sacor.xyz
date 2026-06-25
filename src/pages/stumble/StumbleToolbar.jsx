@@ -247,6 +247,15 @@ export default function StumbleToolbar({
         )}
 
         <span className="su-current-actions" aria-label="Current stumble actions">
+          {card?.submitterUsername && (
+            <a
+              className="su-submitter-tag"
+              href={`/stumble/u/${card.submitterUsername}`}
+              title={`Submitted by @${card.submitterUsername}`}
+            >
+              via @{card.submitterUsername}
+            </a>
+          )}
           <button
             type="button"
             className="su-subbar-btn"

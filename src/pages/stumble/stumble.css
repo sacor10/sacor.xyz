@@ -1404,6 +1404,31 @@ body.su-active {
   font-size: 12px;
 }
 
+/* Submitter credit on a stumble card — links to the submitter's profile. */
+.su-card-submitter {
+  align-self: flex-start;
+  margin: 2px 0 6px;
+  color: var(--su-muted);
+  font-size: 12px;
+  text-decoration: none;
+}
+.su-card-submitter:hover {
+  color: var(--su-orange);
+  text-decoration: underline;
+}
+
+/* Compact submitter credit in the sub-bar, beside the current-stumble actions. */
+.su-submitter-tag {
+  color: var(--su-muted);
+  font-size: 12px;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.su-submitter-tag:hover {
+  color: var(--su-orange);
+  text-decoration: underline;
+}
+
 .su-userlist {
   list-style: none;
   max-width: 520px;
