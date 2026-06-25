@@ -2,6 +2,7 @@ import { getStore } from '@netlify/blobs'
 import { createHash } from 'node:crypto'
 import { stumbleSeedPages } from '../../../src/data/stumblePages.js'
 import { isKnownInterest } from '../../../src/data/stumbleInterests.js'
+import { siteSlug } from '../../../src/lib/stumbleSlug.js'
 
 // Shared helpers for the /stumble Netlify Functions. Mirrors the Blobs + index
 // conventions used by travel-plans.mjs.
@@ -20,7 +21,7 @@ export const getUsersStore = () => getStore({ name: USERS_STORE, consistency: 's
 export const APPROVED_INDEX_KEY = 'index/approved'
 export const PENDING_INDEX_KEY = 'index/pending'
 export const REJECTED_INDEX_KEY = 'index/rejected'
-export const SEED_VERSION = 3
+export const SEED_VERSION = 4
 export const SEED_VERSION_KEY = 'index/seed-version'
 export const pageKey = (id) => `pages/${id}`
 export const submitterRateKey = (hash, day) => `rate/submissions/${day}/${hash}`
@@ -238,6 +239,10 @@ export const summaryOf = (page) => {
   const normalized = normalizePageRecord(page)
   return {
     id: normalized.id,
+    // The /stumble/<slug> path segment, stored so a refresh / direct link can
+    // resolve back to this specific page (stumble-page.mjs) without scanning
+    // every page record for its title.
+    slug: siteSlug(normalized),
     canonicalUrl: normalized.canonicalUrl,
     domain: normalized.domain,
     interests: normalized.interests,
@@ -276,6 +281,17 @@ export const clientPage = (page) => ({
   downVotes: page.downVotes || 0,
   framePolicy: normalizeFramePolicy(page.framePolicy),
 })
+
+// Find an approved-index summary by its /stumble/<slug> segment. Matched
+// case-insensitively so a hand-typed or lower-cased URL still resolves. Returns
+// null when no page slugs to that value.
+export function findSummaryBySlug(index, slug) {
+  const want = String(slug || '').toLowerCase()
+  if (!want) return null
+  return (Array.isArray(index) ? index : []).find(
+    (s) => String(s?.slug || '').toLowerCase() === want,
+  ) || null
+}
 
 // Resolve a stored pageId to its browser-facing card, or null if the page is
 // gone or no longer approved (so a liked page that got pulled won't resurface).
@@ -347,6 +363,7 @@ export function removeSummary(index, id) {
 function summaryNeedsMigration(summary) {
   return (
     !summary ||
+    !summary.slug ||
     !summary.canonicalUrl ||
     !summary.domain ||
     !summary.contentType ||
