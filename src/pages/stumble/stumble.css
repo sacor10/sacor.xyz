@@ -478,11 +478,9 @@ body.su-active {
   inset: 0;
   z-index: 3;
   overflow: auto;
-  display: grid;
-  grid-template-columns: minmax(260px, 420px) minmax(300px, 640px);
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 24px;
   padding: 28px 18px 48px;
   background: var(--su-canvas);
 }
@@ -493,26 +491,89 @@ body.su-active {
 .su-frame-fallback-overlay {
   background: rgba(240, 241, 242, 0.96);
 }
-.su-frame-fallback-copy {
-  max-width: 420px;
-  color: var(--su-muted);
+
+/* Single, focused "this site can't be embedded" state: badge → headline →
+   short explanation → context card → one primary CTA. */
+.su-blocked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 480px;
+  margin: auto;
 }
-.su-frame-domain {
+.su-blocked-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #fdeee9;
+  border: 1px solid #f6d2c6;
   color: var(--su-orange);
-  font-size: 13px;
-  font-weight: bold;
-  text-transform: lowercase;
-  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
-.su-frame-fallback-copy h2 {
+.su-blocked-icon {
+  flex: none;
+}
+.su-blocked-heading {
   color: #1c2024;
-  font-size: 24px;
-  line-height: 1.2;
-  margin-bottom: 10px;
+  font-size: 22px;
+  line-height: 1.25;
+  margin: 2px 0 0;
 }
-.su-frame-fallback-copy p {
+.su-blocked-body {
+  color: var(--su-muted);
   font-size: 15px;
-  margin-bottom: 18px;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 42ch;
+}
+/* The card here is supporting context, not the action — keep it quiet and
+   compact so the badge, headline, and CTA carry the hierarchy. */
+.su-blocked .su-card {
+  margin-top: 8px;
+  text-align: left;
+  box-shadow: 0 2px 10px rgba(20, 30, 40, 0.07);
+}
+.su-blocked .su-thumb {
+  aspect-ratio: auto;
+  height: 140px;
+}
+.su-blocked .su-thumb-placeholder {
+  font-size: 52px;
+}
+.su-visit-cta {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--su-orange);
+  border-radius: 10px;
+  padding: 14px 28px;
+  width: 100%;
+  max-width: 320px;
+  box-shadow: 0 6px 16px rgba(235, 78, 37, 0.28);
+  transition: background 0.15s ease, transform 0.05s ease;
+}
+.su-visit-cta:hover {
+  background: var(--su-orange-hover);
+}
+.su-visit-cta:active {
+  transform: translateY(1px);
+}
+.su-visit-cta:focus-visible {
+  outline: 3px solid rgba(235, 78, 37, 0.4);
+  outline-offset: 2px;
 }
 
 .su-card {
@@ -1005,11 +1066,7 @@ body.su-active {
     order: 2;
   }
   .su-frame-fallback {
-    grid-template-columns: minmax(0, 680px);
     align-items: start;
-  }
-  .su-frame-fallback-copy {
-    max-width: 680px;
   }
 }
 

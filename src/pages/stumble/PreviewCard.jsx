@@ -25,6 +25,7 @@ export default function PreviewCard({
   busy,
   canRate,
   showRatingActions = true,
+  hideVisit = false,
   visitLabel = 'Visit site →',
 }) {
   const domain = domainOf(card.url)
@@ -68,40 +69,44 @@ export default function PreviewCard({
           </div>
         )}
 
-        <div className="su-card-actions">
-          {showRatingActions && (
-            <>
-              <button
-                type="button"
-                className="su-iconbtn"
-                onClick={onLike}
-                disabled={busy}
-                title={canRate ? 'I like this (↑)' : 'Sign in to rate'}
-                aria-label="Thumbs up"
+        {(showRatingActions || !hideVisit) && (
+          <div className="su-card-actions">
+            {showRatingActions && (
+              <>
+                <button
+                  type="button"
+                  className="su-iconbtn"
+                  onClick={onLike}
+                  disabled={busy}
+                  title={canRate ? 'I like this (↑)' : 'Sign in to rate'}
+                  aria-label="Thumbs up"
+                >
+                  👍
+                </button>
+                <button
+                  type="button"
+                  className="su-iconbtn"
+                  onClick={onDislike}
+                  disabled={busy}
+                  title={canRate ? 'Not for me (↓)' : 'Sign in to rate'}
+                  aria-label="Thumbs down"
+                >
+                  👎
+                </button>
+              </>
+            )}
+            {!hideVisit && (
+              <a
+                className="su-visit"
+                href={card.url}
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                👍
-              </button>
-              <button
-                type="button"
-                className="su-iconbtn"
-                onClick={onDislike}
-                disabled={busy}
-                title={canRate ? 'Not for me (↓)' : 'Sign in to rate'}
-                aria-label="Thumbs down"
-              >
-                👎
-              </button>
-            </>
-          )}
-          <a
-            className="su-visit"
-            href={card.url}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {visitLabel}
-          </a>
-        </div>
+                {visitLabel}
+              </a>
+            )}
+          </div>
+        )}
 
         {(card.upVotes > 0 || card.downVotes > 0) && (
           <div className="su-votes">
