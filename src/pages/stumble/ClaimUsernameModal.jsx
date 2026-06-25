@@ -2,8 +2,16 @@ import { useEffect, useState } from 'react'
 
 // Claim a public @username — required before following or being followed.
 // Mirrors SignInModal/SubmitSiteModal so the GeoCities theme never bleeds in.
-export default function ClaimUsernameModal({ onClose, onClaim, reason }) {
-  const [username, setUsername] = useState('')
+// Doubles as the rename modal via the title/submitLabel/initialValue props.
+export default function ClaimUsernameModal({
+  onClose,
+  onClaim,
+  reason,
+  title = 'Choose your username',
+  submitLabel = 'Claim',
+  initialValue = '',
+}) {
+  const [username, setUsername] = useState(initialValue)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -44,7 +52,7 @@ export default function ClaimUsernameModal({ onClose, onClaim, reason }) {
         <button type="button" className="su-modal-close" aria-label="Close" onClick={onClose}>
           ✕
         </button>
-        <h2>Choose your username</h2>
+        <h2>{title}</h2>
         <p>{reason || 'Pick a public @handle so others can follow you and browse your likes.'}</p>
         <form onSubmit={handleSubmit}>
           <div className="su-claim-input">
@@ -66,7 +74,7 @@ export default function ClaimUsernameModal({ onClose, onClaim, reason }) {
           <div className="su-dialog-footer">
             <span className="su-dialog-hint">Letters, numbers, underscores. Can’t be changed later.</span>
             <button type="submit" className="su-primary" disabled={busy}>
-              {busy ? 'Saving…' : 'Claim'}
+              {busy ? 'Saving…' : submitLabel}
             </button>
           </div>
         </form>

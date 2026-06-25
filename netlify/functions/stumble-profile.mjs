@@ -138,5 +138,74 @@ export default async (req) => {
     return json({ ok: true, username })
   }
 
+  // PATCH /profile { username } — rename: free the old handle pointer and write
+  // the new one. Unlike PUT (claim-once), this is the deliberate change flow.
+  if (req.method === 'PATCH') {
+    if (!session) return json({ error: 'Sign in to change your username' }, { status: 401 })
+    let body
+    try {
+      body = await req.json()
+    } catch {
+      return json({ error: 'Invalid JSON' }, { status: 400 })
+    }
+    const username = normalizeUsername(body?.username || '')
+    const invalidReason = usernameError(username)
+    if (invalidReason) {
+      return json({ error: invalidReason }, { status: 400 })
+    }
+
+    const hash = userHash(session.email)
+    const existing = await loadJson(usersStore, userProfileKey(hash), null)
+    if (!existing?.username) {
+      // Nothing to rename yet — the caller should claim via PUT first.
+      return json({ error: 'Claim a username first.', needsUsername: true }, { status: 409 })
+    }
+
+    const oldLower = existing.usernameLower || normalizeUsername(existing.username)
+    // No change (same handle, case-insensitively): succeed without touching blobs.
+    if (oldLower === username) {
+      return json({ ok: true, username: existing.username })
+    }
+
+    // The target handle must be free (or already ours from a half-finished rename).
+    const taken = await loadJson(usersStore, usernameKey(username), null)
+    if (taken?.hash && taken.hash !== hash) {
+      return json({ error: 'That username is taken.' }, { status: 409 })
+    }
+
+    // The handle is denormalized into every follow record that references us, so
+    // relabel those entries or other users' lists/feeds would show the old name
+    // and link to the freed pointer. O(followers + following) blob writes —
+    // acceptable at this site's scale.
+    const [following, followers] = await Promise.all([
+      loadJson(usersStore, userFollowingKey(hash), []),
+      loadJson(usersStore, userFollowersKey(hash), []),
+    ])
+    const relabel = (list) =>
+      (Array.isArray(list) ? list : []).map((u) => (u.hash === hash ? { ...u, username } : u))
+
+    await Promise.all([
+      // Each account I follow lists me in THEIR followers.
+      ...(Array.isArray(following) ? following : []).map(async (t) => {
+        const theirFollowers = await loadJson(usersStore, userFollowersKey(t.hash), [])
+        await saveJson(usersStore, userFollowersKey(t.hash), relabel(theirFollowers))
+      }),
+      // Each account that follows me lists me in THEIR following.
+      ...(Array.isArray(followers) ? followers : []).map(async (f) => {
+        const theirFollowing = await loadJson(usersStore, userFollowingKey(f.hash), [])
+        await saveJson(usersStore, userFollowingKey(f.hash), relabel(theirFollowing))
+      }),
+    ])
+
+    // Write the new pointer + profile BEFORE freeing the old one, so a crash
+    // mid-rename leaves the old handle still resolving rather than orphaning us.
+    const profile = { ...existing, username, usernameLower: username, updatedAt: new Date().toISOString() }
+    await saveJson(usersStore, usernameKey(username), { hash })
+    await saveJson(usersStore, userProfileKey(hash), profile)
+    await usersStore.delete(usernameKey(oldLower))
+
+    return json({ ok: true, username })
+  }
+
   return new Response('Method Not Allowed', { status: 405 })
 }
