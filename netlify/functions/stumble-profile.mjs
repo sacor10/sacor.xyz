@@ -7,7 +7,7 @@ import {
   loadPageCard,
   normalizeLikes,
   normalizeUsername,
-  isValidUsername,
+  usernameError,
   userProfileKey,
   userLikesKey,
   userFollowingKey,
@@ -108,11 +108,9 @@ export default async (req) => {
       return json({ error: 'Invalid JSON' }, { status: 400 })
     }
     const username = normalizeUsername(body?.username || '')
-    if (!isValidUsername(username)) {
-      return json(
-        { error: '3–20 characters: lowercase letters, numbers, or underscores.' },
-        { status: 400 },
-      )
+    const invalidReason = usernameError(username)
+    if (invalidReason) {
+      return json({ error: invalidReason }, { status: 400 })
     }
 
     const hash = userHash(session.email)

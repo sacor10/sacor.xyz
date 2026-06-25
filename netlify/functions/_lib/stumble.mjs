@@ -73,6 +73,21 @@ export function isValidUsername(input) {
   return USERNAME_RE.test(u) && !RESERVED_USERNAMES.has(u)
 }
 
+// Returns a human-facing reason a handle can't be claimed, or null if it's
+// fine. Kept separate from isValidUsername so callers can tell a malformed
+// handle (wrong characters/length) apart from a reserved one and message
+// accordingly — they fail for very different reasons.
+export function usernameError(input) {
+  const u = normalizeUsername(input)
+  if (!USERNAME_RE.test(u)) {
+    return '3–20 characters: lowercase letters, numbers, or underscores.'
+  }
+  if (RESERVED_USERNAMES.has(u)) {
+    return 'That username is reserved. Please choose another.'
+  }
+  return null
+}
+
 // Likes evolved from bare pageId strings to { id, at } objects so the feed can
 // sort by recency. Reads stay backward-compatible: a legacy string entry maps
 // to { id, at: 0 }. De-duped by id, newest-write-wins on `at`.
