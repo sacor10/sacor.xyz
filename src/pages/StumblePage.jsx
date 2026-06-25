@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 import { isKnownInterest } from '../data/stumbleInterests'
+import { siteSlug } from '../lib/stumbleSlug'
 import StumbleToolbar from './stumble/StumbleToolbar'
 import StumbleFrame from './stumble/StumbleFrame'
 import InterestPicker from './stumble/InterestPicker'
@@ -77,29 +78,9 @@ function clearGuestInterests() {
   }
 }
 
-function domainOf(url) {
-  try {
-    return new URL(url).hostname.replace(/^www\./, '')
-  } catch {
-    return url
-  }
-}
-
-function siteNameForUrl(page) {
-  const source = String(page?.title || domainOf(page?.url || '') || 'site').trim()
-  const slug = source
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/&/g, ' and ')
-    .replace(/[^a-z0-9]+/gi, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80)
-  return slug || 'site'
-}
-
 function replaceStumbleUrl(page, navigate) {
   if (typeof window === 'undefined') return
-  const nextPath = page ? `/stumble/${siteNameForUrl(page)}` : '/stumble'
+  const nextPath = page ? `/stumble/${siteSlug(page)}` : '/stumble'
   if (window.location.pathname === nextPath) return
   navigate(nextPath, { replace: true })
 }
@@ -108,7 +89,15 @@ function replaceStumbleUrl(page, navigate) {
 // inherits none of the site's GeoCities theme.
 export default function StumblePage() {
   const navigate = useNavigate()
+  const { siteName } = useParams()
   const { user, isSignedIn, loading: authLoading, signOut } = useAuth()
+
+  // The slug present in the URL when the page first mounted. Each stumble
+  // rewrites the path (replaceStumbleUrl), so we capture this once: a non-empty
+  // value means the user refreshed or opened /stumble/<slug> directly and should
+  // land on THAT page rather than a random one. Cleared after the first load so
+  // it can't pin later stumbles.
+  const initialSlugRef = useRef(siteName || '')
 
   const [card, setCard] = useState(null)
   const [status, setStatus] = useState('loading') // loading | idle | error | exhausted
@@ -232,6 +221,39 @@ export default function StumblePage() {
       setError('Could not load the next page. Try again.')
     }
   }, [isSignedIn, navigate])
+
+  // Load one specific page by its URL slug — used on refresh / direct
+  // navigation to /stumble/<slug> so the address bar's page is honored instead
+  // of randomizing. An unknown slug falls back to a fresh stumble rather than
+  // stranding the user on an error.
+  const loadBySlug = useCallback(
+    async (slug) => {
+      setStatus('loading')
+      setError('')
+      try {
+        const res = await fetch(
+          `/.netlify/functions/stumble-page?slug=${encodeURIComponent(slug)}`,
+          { credentials: 'same-origin' },
+        )
+        if (!res.ok) throw new Error('request failed')
+        const data = await res.json()
+        if (!data.page) {
+          stumble()
+          return
+        }
+        setCard(data.page)
+        // Canonicalize the path to the resolved page (e.g. if the slug was
+        // lower-cased or the title shifted) without pushing a history entry.
+        replaceStumbleUrl(data.page, navigate)
+        setStatus('idle')
+        if (!isSignedIn) pushSeen(data.page.id)
+      } catch {
+        setStatus('error')
+        setError('Could not load that page. Try again.')
+      }
+    },
+    [isSignedIn, navigate, stumble],
+  )
 
   const rate = useCallback(
     async (value) => {
@@ -463,6 +485,16 @@ export default function StumblePage() {
     if (authLoading || !catalogReady) return
     startedRef.current = true
     prevSignedInRef.current = isSignedIn
+    // A slug in the URL on first mount means the user refreshed or opened
+    // /stumble/<slug> directly — land on that exact page and skip both
+    // onboarding and the random pick. Clicking Stumble afterward randomizes as
+    // usual. (Consume the captured slug so it can't pin a later start.)
+    const slug = initialSlugRef.current
+    initialSlugRef.current = ''
+    if (slug) {
+      loadBySlug(slug)
+      return
+    }
     // Onboard signed-in users without enough interests, and first-visit guests
     // (returning guests — including those who skipped — carry the sentinel and
     // skip straight to stumbling). The ref that narrows a guest's feed is seeded
@@ -472,7 +504,7 @@ export default function StumblePage() {
       : !readGuestInterests().onboarded
     if (needsOnboarding) setShowOnboarding(true)
     else stumble()
-  }, [authLoading, catalogReady, isSignedIn, minInterests, stumble])
+  }, [authLoading, catalogReady, isSignedIn, minInterests, stumble, loadBySlug])
 
   // React to a guest signing in mid-session (e.g. from the rate prompt).
   useEffect(() => {
