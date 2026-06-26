@@ -63,6 +63,14 @@ export default function StumbleFrame({
       .then((data) => {
         if (cancelled) return
         if (data && data.ok === false) {
+          // Loud in the console because the probe's Network row stays 200 (the
+          // function fails open) — otherwise the reason a site was blocked only
+          // lives in the response body. Tied to the exact card's domain.
+          console.warn(
+            `[stumble] frame blocked: ${domainOf(card.url)} — ${data.reason}` +
+              (data.status ? ` (HTTP ${data.status})` : '') +
+              (data.message ? ` — ${data.message}` : ''),
+          )
           setProbe({ cardKey, status: 'failed', reason: data.reason, message: data.message })
         } else {
           setProbe({ cardKey, status: 'ok' })

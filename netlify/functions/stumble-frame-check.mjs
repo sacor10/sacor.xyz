@@ -40,6 +40,19 @@ function cspDirective(csp, name) {
 // Decide whether a `frame-ancestors` source list lets `ourOrigin` embed the
 // page. Conservative: only report a block when the list clearly excludes us, so
 // we don't hide a site that would actually frame.
+// Build the response headers for a verdict. Beyond the edge cache, these expose
+// the probe's decision (and the upstream status that drove it) directly on the
+// response so it's visible in devtools' Network → Headers tab — the function
+// itself always returns 200 (fail-open), so without these the real reason a site
+// was blocked is only discoverable by opening the JSON response body.
+function diagHeaders(verdict = {}) {
+  const h = { 'Cache-Control': 'public, max-age=86400' }
+  h['X-Frame-Check'] = verdict.ok ? 'ok' : 'blocked'
+  if (verdict.reason) h['X-Frame-Check-Reason'] = verdict.reason
+  if (verdict.status) h['X-Frame-Check-Upstream-Status'] = String(verdict.status)
+  return h
+}
+
 function frameAncestorsBlocks(sources, ourOrigin) {
   const list = sources.split(/\s+/).filter(Boolean)
   if (list.length === 0) return false
@@ -66,9 +79,6 @@ export default async (req) => {
 
   const domain = domainOf(target) || target
   const ourOrigin = reqUrl.origin
-  // Cache the verdict at the edge — it's identical for every visitor and frame
-  // policy rarely changes. Keeps the per-stumble probe effectively free.
-  const headers = { 'Cache-Control': 'public, max-age=86400' }
 
   let res
   try {
@@ -87,19 +97,17 @@ export default async (req) => {
       reason === 'timeout'
         ? `${domain} took too long to respond.`
         : `${domain} couldn’t be reached.`
-    return json({ ok: false, reason, message }, { headers })
+    return json({ ok: false, reason, message }, { headers: diagHeaders({ reason }) })
   }
 
   if (res.status >= 400) {
-    return json(
-      {
-        ok: false,
-        reason: 'http-error',
-        status: res.status,
-        message: `${domain} returned HTTP ${res.status}.`,
-      },
-      { headers },
-    )
+    const verdict = {
+      ok: false,
+      reason: 'http-error',
+      status: res.status,
+      message: `${domain} returned HTTP ${res.status}.`,
+    }
+    return json(verdict, { headers: diagHeaders(verdict) })
   }
 
   const xfo = (res.headers.get('x-frame-options') || '').trim().toLowerCase()
@@ -110,7 +118,7 @@ export default async (req) => {
         reason: 'x-frame-options',
         message: `${domain} blocks embedded browsing (X-Frame-Options).`,
       },
-      { headers },
+      { headers: diagHeaders({ reason: 'x-frame-options' }) },
     )
   }
 
@@ -122,9 +130,9 @@ export default async (req) => {
         reason: 'csp',
         message: `${domain} blocks embedded browsing (Content-Security-Policy).`,
       },
-      { headers },
+      { headers: diagHeaders({ reason: 'csp' }) },
     )
   }
 
-  return json({ ok: true }, { headers })
+  return json({ ok: true }, { headers: diagHeaders({ ok: true }) })
 }
