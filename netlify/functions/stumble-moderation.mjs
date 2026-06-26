@@ -49,6 +49,14 @@ async function removeFromPending(store, id) {
   await saveJson(store, PENDING_INDEX_KEY, next)
 }
 
+// Drop a page's summary from one of the moderation indexes (approved/rejected).
+async function removeFromIndex(store, key, id) {
+  const index = await loadJson(store, key, [])
+  const next = Array.isArray(index) ? [...index] : []
+  removeSummary(next, id)
+  await saveJson(store, key, next)
+}
+
 export default async (req) => {
   const owner = await requireModerator(req)
   if (owner.error) return owner.error
@@ -58,7 +66,12 @@ export default async (req) => {
   if (req.method === 'GET') {
     const url = new URL(req.url)
     const status = url.searchParams.get('status') || 'pending'
-    const key = status === 'rejected' ? REJECTED_INDEX_KEY : PENDING_INDEX_KEY
+    const key =
+      status === 'approved'
+        ? APPROVED_INDEX_KEY
+        : status === 'rejected'
+          ? REJECTED_INDEX_KEY
+          : PENDING_INDEX_KEY
     const pages = await loadIndexedPages(store, key)
     return json({ pages, status })
   }
@@ -75,8 +88,19 @@ export default async (req) => {
   const id = typeof body?.id === 'string' ? body.id : ''
   const action = body?.action
   if (!id) return json({ error: 'id is required' }, { status: 400 })
-  if (action !== 'approve' && action !== 'reject') {
-    return json({ error: 'action must be approve or reject' }, { status: 400 })
+  if (action !== 'approve' && action !== 'reject' && action !== 'delete') {
+    return json({ error: 'action must be approve, reject, or delete' }, { status: 400 })
+  }
+
+  // Permanently remove a page (used to undo an accidental approval). Deletes the
+  // record and clears it from every moderation index so it can't resurface; the
+  // public feed drops it automatically because loadPageCard ignores missing records.
+  if (action === 'delete') {
+    await store.delete(pageKey(id))
+    await removeFromIndex(store, APPROVED_INDEX_KEY, id)
+    await removeFromIndex(store, REJECTED_INDEX_KEY, id)
+    await removeFromPending(store, id)
+    return json({ ok: true })
   }
 
   const raw = await store.get(pageKey(id))

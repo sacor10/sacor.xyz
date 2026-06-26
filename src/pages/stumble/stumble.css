@@ -1493,6 +1493,10 @@ body.su-active {
 .su-mod-root {
   min-height: 100vh;
   align-items: stretch;
+  /* The shared .su-root shell is locked to height:100vh; overflow:hidden for the
+     fixed feed layout. The moderation queue can be taller than the viewport, so
+     re-enable scrolling on this route. */
+  overflow-y: auto;
 }
 .su-mod-shell {
   width: 100%;
@@ -1568,6 +1572,9 @@ body.su-active {
 }
 .su-mod-card--rejected {
   opacity: 0.92;
+}
+.su-mod-card--approved {
+  border-left: 3px solid var(--su-orange);
 }
 .su-mod-card-head {
   display: flex;
