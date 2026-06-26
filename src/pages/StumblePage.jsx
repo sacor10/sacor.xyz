@@ -288,11 +288,6 @@ export default function StumblePage() {
     stumble()
   }, [stumble])
 
-  const openExternal = useCallback(() => {
-    if (!card?.url) return
-    window.open(card.url, '_blank', 'noopener,noreferrer')
-  }, [card])
-
   // Lazily fetch the user's liked pages when they open the Likes dropdown.
   const loadLikes = useCallback(async () => {
     if (!isSignedIn) return
@@ -607,7 +602,6 @@ export default function StumblePage() {
         card={card}
         onLike={() => rate(1)}
         onDislike={() => rate(-1)}
-        onOpenExternal={openExternal}
         busy={ratingBusy || status === 'loading'}
         canRate={isSignedIn}
       />
@@ -645,7 +639,6 @@ export default function StumblePage() {
         card={card}
         onLike={() => rate(1)}
         onDislike={() => rate(-1)}
-        onOpenExternal={openExternal}
         canRate={isSignedIn}
         canModerate={canModerate}
         onOpenModeration={() => navigate('/stumble/moderation')}

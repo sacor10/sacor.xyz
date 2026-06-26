@@ -32,7 +32,6 @@ export default function StumbleFrame({
   card,
   onLike,
   onDislike,
-  onOpenExternal,
   busy,
   canRate,
 }) {
@@ -150,9 +149,9 @@ export default function StumbleFrame({
             <p className="su-frame-domain">{domain}</p>
             <h2>{heading}</h2>
             <p>{fallbackBody(reason)}</p>
-            <button type="button" className="su-primary" onClick={onOpenExternal}>
+            <a className="su-primary" href={card.url} target="_blank" rel="noopener noreferrer">
               Open externally
-            </button>
+            </a>
           </div>
 
           <PreviewCard
