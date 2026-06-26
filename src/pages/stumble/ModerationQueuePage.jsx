@@ -348,6 +348,19 @@ export default function ModerationQueuePage() {
     setPages((prev) => prev.filter((p) => p.id !== id))
   }
 
+  // Permanently delete an approved page — used to undo an accidental approval.
+  const remove = async (id) => {
+    if (!window.confirm('Delete this page permanently? This cannot be undone.')) return
+    const res = await fetch('/.netlify/functions/stumble-moderation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ id, action: 'delete' }),
+    })
+    if (!res.ok) return
+    setPages((prev) => prev.filter((p) => p.id !== id))
+  }
+
   if (loading) return null
 
   if (!canModerate) {
@@ -380,6 +393,13 @@ export default function ModerationQueuePage() {
           </button>
           <button
             type="button"
+            className={`su-mod-tab${tab === 'approved' ? ' is-active' : ''}`}
+            onClick={() => selectTab('approved')}
+          >
+            Approved
+          </button>
+          <button
+            type="button"
             className={`su-mod-tab${tab === 'rejected' ? ' is-active' : ''}`}
             onClick={() => selectTab('rejected')}
           >
@@ -404,7 +424,11 @@ export default function ModerationQueuePage() {
             {status === 'error' && <p className="su-form-error">Could not load submissions.</p>}
             {status === 'ready' && pages.length === 0 && (
               <p className="su-mod-empty">
-                {tab === 'pending' ? 'Nothing waiting for review.' : 'No rejected submissions.'}
+                {tab === 'pending'
+                  ? 'Nothing waiting for review.'
+                  : tab === 'approved'
+                    ? 'No approved submissions.'
+                    : 'No rejected submissions.'}
               </p>
             )}
 
@@ -412,6 +436,28 @@ export default function ModerationQueuePage() {
               status === 'ready' &&
               pages.map((page) => (
                 <PendingCard key={page.id} page={page} onApprove={approve} onReject={reject} />
+              ))}
+
+            {tab === 'approved' &&
+              status === 'ready' &&
+              pages.map((page) => (
+                <div key={page.id} className="su-mod-card su-mod-card--approved">
+                  <div className="su-mod-card-head">
+                    <a href={page.url} target="_blank" rel="noopener noreferrer" className="su-mod-url">
+                      {page.title || page.url}
+                    </a>
+                    <span className="su-mod-meta">{page.domain}</span>
+                  </div>
+                  <span className="su-mod-meta">
+                    Approved {formatDate(page.approvedAt)}
+                    {page.approvedBy ? ` by ${page.approvedBy}` : ''}
+                  </span>
+                  <div className="su-mod-actions">
+                    <button type="button" className="su-mod-reject" onClick={() => remove(page.id)}>
+                      Delete
+                    </button>
+                  </div>
+                </div>
               ))}
 
             {tab === 'rejected' &&
