@@ -52,7 +52,6 @@ export default function StumbleToolbar({
   card,
   onLike,
   onDislike,
-  onOpenExternal,
   canRate,
   canModerate,
   onOpenModeration,
@@ -276,15 +275,26 @@ export default function StumbleToolbar({
           >
             Pass
           </button>
-          <button
-            type="button"
-            className="su-subbar-btn su-subbar-btn-primary"
-            onClick={onOpenExternal}
-            disabled={!card}
-            title={card ? `Open ${card.title || card.url} externally` : 'No page loaded'}
-          >
-            Open
-          </button>
+          {card ? (
+            <a
+              className="su-subbar-btn su-subbar-btn-primary"
+              href={card.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`Open ${card.title || card.url} externally`}
+            >
+              Open
+            </a>
+          ) : (
+            <button
+              type="button"
+              className="su-subbar-btn su-subbar-btn-primary"
+              disabled
+              title="No page loaded"
+            >
+              Open
+            </button>
+          )}
         </span>
 
         <span className="su-bar-spacer" />
@@ -403,16 +413,28 @@ export default function StumbleToolbar({
         >
           Stumble!
         </button>
-        <button
-          type="button"
-          className="su-mobilebar-btn"
-          onClick={onOpenExternal}
-          disabled={!card}
-          title={card ? 'Open externally' : 'No page loaded'}
-          aria-label="Open externally"
-        >
-          ↗
-        </button>
+        {card ? (
+          <a
+            className="su-mobilebar-btn"
+            href={card.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open externally"
+            aria-label="Open externally"
+          >
+            ↗
+          </a>
+        ) : (
+          <button
+            type="button"
+            className="su-mobilebar-btn"
+            disabled
+            title="No page loaded"
+            aria-label="Open externally"
+          >
+            ↗
+          </button>
+        )}
         <span className="su-mobilebar-likes" ref={mobileLikesRef}>
           <button
             type="button"
