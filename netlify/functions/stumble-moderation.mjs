@@ -111,10 +111,20 @@ export default async (req) => {
       if (approvedBy == null) {
         return json({ groups: approvedGroups(index), status })
       }
-      const ids = (Array.isArray(index) ? index : [])
+      // Build the section's cards straight from the index summaries — no
+      // per-page Blob reads. The summary carries every field the Approved card
+      // renders (title, domain, approver, dates); canonicalUrl serves as the
+      // link, which for approved pages is the resolvable URL.
+      const pages = (Array.isArray(index) ? index : [])
         .filter((summary) => approvedBucketKey(summary) === approvedBy)
-        .map((summary) => summary.id)
-      const pages = await loadPagesByIds(store, ids)
+        .map((summary) => ({
+          id: summary.id,
+          url: summary.canonicalUrl,
+          title: summary.title,
+          domain: summary.domain,
+          approvedAt: summary.approvedAt,
+          approvedBy: summary.approvedBy,
+        }))
       return json({ pages, status, approvedBy })
     }
 
