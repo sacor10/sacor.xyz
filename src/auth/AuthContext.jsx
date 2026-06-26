@@ -55,6 +55,7 @@ export function AuthProvider({ children }) {
         canAccessTravelPlans,
         canCreateTravelPlans,
         isOwner: !!data.isOwner,
+        isModerator: !!(data.isModerator || data.isOwner),
       })
     } catch {
       setUser(null)
@@ -119,6 +120,8 @@ export function AuthProvider({ children }) {
     loading,
     isSignedIn: !!user,
     isOwner: !!user?.isOwner,
+    isModerator: !!(user?.isModerator || user?.isOwner),
+    canModerate: !!(user?.isModerator || user?.isOwner),
     canAccessTravelPlans: !!(user?.canAccessTravelPlans || user?.isOwner),
     canCreateTravelPlans: !!user?.canCreateTravelPlans,
     gisReady,

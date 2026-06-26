@@ -90,7 +90,7 @@ function replaceStumbleUrl(page, navigate) {
 export default function StumblePage() {
   const navigate = useNavigate()
   const { siteName } = useParams()
-  const { user, isSignedIn, loading: authLoading, signOut } = useAuth()
+  const { user, isSignedIn, loading: authLoading, signOut, canModerate } = useAuth()
 
   // The slug present in the URL when the page first mounted. Each stumble
   // rewrites the path (replaceStumbleUrl), so we capture this once: a non-empty
@@ -647,6 +647,8 @@ export default function StumblePage() {
         onDislike={() => rate(-1)}
         onOpenExternal={openExternal}
         canRate={isSignedIn}
+        canModerate={canModerate}
+        onOpenModeration={() => navigate('/stumble/moderation')}
       />
 
       {fromUser && isSignedIn && (
