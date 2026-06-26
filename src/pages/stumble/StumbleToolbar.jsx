@@ -54,6 +54,8 @@ export default function StumbleToolbar({
   onDislike,
   onOpenExternal,
   canRate,
+  canModerate,
+  onOpenModeration,
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
@@ -349,6 +351,19 @@ export default function StumbleToolbar({
                   }}
                 >
                   Start over
+                </button>
+              )}
+              {canModerate && (
+                <button
+                  type="button"
+                  className="su-menu-item su-menu-item-mod"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    onOpenModeration?.()
+                  }}
+                >
+                  Moderation queue
                 </button>
               )}
             </div>

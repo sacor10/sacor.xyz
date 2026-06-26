@@ -6,6 +6,8 @@ import {
   signSession,
   setSessionCookieHeader,
 } from './_lib/session.mjs'
+import { isModeratorEmail } from './_lib/moderators.mjs'
+import { getUsersStore } from './_lib/stumble.mjs'
 
 const json = (data, init = {}) =>
   new Response(JSON.stringify(data), {
@@ -73,6 +75,7 @@ export default async (req) => {
       canAccessTravelPlans: canAccessTravelPlans(email),
       canCreateTravelPlans: canCreateTravelPlans(email),
       isOwner: isOwnerEmail(email),
+      isModerator: await isModeratorEmail(getUsersStore(), email),
     },
     {
       headers: {

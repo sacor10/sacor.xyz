@@ -1476,3 +1476,214 @@ body.su-active {
     display: none;
   }
 }
+
+/* --- Moderation: ☰ menu entry + queue page ------------------------------- */
+
+/* The moderator-only jump to the queue, deliberately blue so it stands apart
+   from the neutral menu items above it. */
+.su-menu-item-mod {
+  color: #fff;
+  background: #1a73e8;
+  font-weight: bold;
+}
+.su-menu-item-mod:hover {
+  background: #1666cf;
+}
+
+.su-mod-root {
+  min-height: 100vh;
+  align-items: stretch;
+}
+.su-mod-shell {
+  width: 100%;
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 28px 16px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.su-mod-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.su-mod-header h1 {
+  margin: 0;
+  font-size: 24px;
+  color: var(--su-ink);
+}
+.su-mod-back {
+  color: #1a73e8;
+  font-size: 14px;
+  text-decoration: none;
+}
+.su-mod-back:hover {
+  text-decoration: underline;
+}
+
+.su-mod-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--su-line);
+}
+.su-mod-tab {
+  appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--su-muted);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 8px 10px;
+}
+.su-mod-tab.is-active {
+  color: var(--su-ink);
+  border-bottom-color: #1a73e8;
+}
+
+.su-mod-empty {
+  color: var(--su-muted);
+  font-size: 14px;
+}
+.su-mod-label {
+  display: block;
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--su-ink);
+  margin-bottom: 6px;
+}
+
+.su-mod-card {
+  background: #fff;
+  border: 1px solid var(--su-line);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.su-mod-card--rejected {
+  opacity: 0.92;
+}
+.su-mod-card-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.su-mod-url {
+  font-weight: bold;
+  color: #1a73e8;
+  word-break: break-all;
+  text-decoration: none;
+}
+.su-mod-url:hover {
+  text-decoration: underline;
+}
+.su-mod-meta {
+  color: var(--su-muted);
+  font-size: 12px;
+}
+.su-mod-note {
+  margin: 0;
+  font-style: italic;
+  color: var(--su-ink);
+  font-size: 14px;
+}
+
+.su-mod-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.su-mod-row .su-field {
+  flex: 1 1 160px;
+  margin-bottom: 0;
+}
+
+.su-mod-interests .su-interest-group {
+  margin-top: 8px;
+}
+
+.su-mod-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.su-mod-reject {
+  appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: bold;
+  color: #b3261e;
+  background: #fff;
+  border: 1px solid #b3261e;
+  border-radius: 6px;
+  padding: 10px 20px;
+}
+.su-mod-reject:hover:not(:disabled) {
+  background: #fdeceb;
+}
+.su-mod-reject:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Moderators panel */
+.su-mod-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.su-mod-hint {
+  color: var(--su-muted);
+  font-size: 13px;
+  margin: 0;
+}
+.su-mod-add {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.su-mod-add .su-input {
+  flex: 1 1 220px;
+}
+.su-mod-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.su-mod-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid var(--su-line);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--su-ink);
+}
+.su-mod-remove {
+  appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: bold;
+  color: #b3261e;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+.su-mod-remove:hover {
+  background: #fdeceb;
+}

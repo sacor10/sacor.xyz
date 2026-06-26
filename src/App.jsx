@@ -20,6 +20,7 @@ import TravelPlanPage from './pages/TravelPlanPage'
 import EastonPage from './pages/EastonPage'
 import StumblePage from './pages/StumblePage'
 import StumbleProfilePage from './pages/stumble/StumbleProfilePage'
+import ModerationQueuePage from './pages/stumble/ModerationQueuePage'
 import { AuthProvider } from './auth/AuthContext.jsx'
 
 export default function App() {
@@ -47,6 +48,7 @@ export default function App() {
           <Route path="/travel-plans" element={<TravelPlansPage />} />
           <Route path="/travel-plans/:id" element={<TravelPlanPage />} />
           <Route path="/easton" element={<EastonPage />} />
+          <Route path="/stumble/moderation" element={<ModerationQueuePage />} />
           <Route path="/stumble/u/:username" element={<StumbleProfilePage />} />
           <Route path="/stumble/:siteName?" element={<StumblePage />} />
         </Routes>

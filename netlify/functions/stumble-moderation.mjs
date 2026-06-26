@@ -1,4 +1,4 @@
-import { requireOwner } from './_lib/session.mjs'
+import { requireModerator } from './_lib/moderators.mjs'
 import {
   APPROVED_INDEX_KEY,
   PENDING_INDEX_KEY,
@@ -50,7 +50,7 @@ async function removeFromPending(store, id) {
 }
 
 export default async (req) => {
-  const owner = requireOwner(req)
+  const owner = await requireModerator(req)
   if (owner.error) return owner.error
 
   const store = getPagesStore()
