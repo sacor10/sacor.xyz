@@ -289,12 +289,23 @@ export default function ModerationQueuePage() {
   const [tab, setTab] = useState('pending')
   const [pages, setPages] = useState([])
   const [status, setStatus] = useState('loading')
+  // Approved tab is chunked by approver: `groups` holds the section metadata,
+  // `groupData` caches each expanded section's pages, `expanded` tracks which
+  // sections are open. Sections load lazily on first expand.
+  const [groups, setGroups] = useState([])
+  const [groupData, setGroupData] = useState({})
+  const [expanded, setExpanded] = useState(() => new Set())
 
   // Switching tabs is a user event (not an effect), so setting the loading
   // state here keeps the effect free of synchronous setState.
   const selectTab = (next) => {
     setTab(next)
     if (next !== 'moderators') setStatus('loading')
+    if (next === 'approved') {
+      setGroups([])
+      setGroupData({})
+      setExpanded(new Set())
+    }
   }
 
   useEffect(() => {
@@ -308,12 +319,17 @@ export default function ModerationQueuePage() {
         if (cancelled) return
         if (!res.ok) {
           setPages([])
+          setGroups([])
           setStatus('error')
           return
         }
         const data = await res.json()
         if (cancelled) return
-        setPages(Array.isArray(data.pages) ? data.pages : [])
+        if (tab === 'approved') {
+          setGroups(Array.isArray(data.groups) ? data.groups : [])
+        } else {
+          setPages(Array.isArray(data.pages) ? data.pages : [])
+        }
         setStatus('ready')
       } catch {
         if (!cancelled) setStatus('error')
@@ -323,6 +339,34 @@ export default function ModerationQueuePage() {
       cancelled = true
     }
   }, [canModerate, tab])
+
+  // Expand/collapse an approver section, fetching its pages on first open.
+  const toggleGroup = async (key) => {
+    const isOpen = expanded.has(key)
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (isOpen) next.delete(key)
+      else next.add(key)
+      return next
+    })
+    if (isOpen || groupData[key]) return
+    setGroupData((prev) => ({ ...prev, [key]: { status: 'loading', pages: [] } }))
+    try {
+      const res = await fetch(
+        `/.netlify/functions/stumble-moderation?status=approved&approvedBy=${encodeURIComponent(key)}`,
+        { credentials: 'same-origin' },
+      )
+      const data = await res.json().catch(() => ({}))
+      setGroupData((prev) => ({
+        ...prev,
+        [key]: res.ok
+          ? { status: 'ready', pages: Array.isArray(data.pages) ? data.pages : [] }
+          : { status: 'error', pages: [] },
+      }))
+    } catch {
+      setGroupData((prev) => ({ ...prev, [key]: { status: 'error', pages: [] } }))
+    }
+  }
 
   const approve = async (id, payload) => {
     const res = await fetch('/.netlify/functions/stumble-moderation', {
@@ -349,7 +393,9 @@ export default function ModerationQueuePage() {
   }
 
   // Permanently delete an approved page — used to undo an accidental approval.
-  const remove = async (id) => {
+  // Drops it from its section's cached pages and decrements the section count,
+  // removing the section entirely when it empties.
+  const remove = async (id, groupKey) => {
     if (!window.confirm('Delete this page permanently? This cannot be undone.')) return
     const res = await fetch('/.netlify/functions/stumble-moderation', {
       method: 'POST',
@@ -358,7 +404,16 @@ export default function ModerationQueuePage() {
       body: JSON.stringify({ id, action: 'delete' }),
     })
     if (!res.ok) return
-    setPages((prev) => prev.filter((p) => p.id !== id))
+    setGroupData((prev) => {
+      const group = prev[groupKey]
+      if (!group) return prev
+      return { ...prev, [groupKey]: { ...group, pages: group.pages.filter((p) => p.id !== id) } }
+    })
+    setGroups((prev) =>
+      prev
+        .map((g) => (g.key === groupKey ? { ...g, count: g.count - 1 } : g))
+        .filter((g) => g.count > 0),
+    )
   }
 
   if (loading) return null
@@ -422,15 +477,16 @@ export default function ModerationQueuePage() {
           <>
             {status === 'loading' && <p className="su-mod-empty">Loading…</p>}
             {status === 'error' && <p className="su-form-error">Could not load submissions.</p>}
-            {status === 'ready' && pages.length === 0 && (
-              <p className="su-mod-empty">
-                {tab === 'pending'
-                  ? 'Nothing waiting for review.'
-                  : tab === 'approved'
-                    ? 'No approved submissions.'
-                    : 'No rejected submissions.'}
-              </p>
-            )}
+            {status === 'ready' &&
+              (tab === 'approved' ? groups.length === 0 : pages.length === 0) && (
+                <p className="su-mod-empty">
+                  {tab === 'pending'
+                    ? 'Nothing waiting for review.'
+                    : tab === 'approved'
+                      ? 'No approved submissions.'
+                      : 'No rejected submissions.'}
+                </p>
+              )}
 
             {tab === 'pending' &&
               status === 'ready' &&
@@ -440,25 +496,66 @@ export default function ModerationQueuePage() {
 
             {tab === 'approved' &&
               status === 'ready' &&
-              pages.map((page) => (
-                <div key={page.id} className="su-mod-card su-mod-card--approved">
-                  <div className="su-mod-card-head">
-                    <a href={page.url} target="_blank" rel="noopener noreferrer" className="su-mod-url">
-                      {page.title || page.url}
-                    </a>
-                    <span className="su-mod-meta">{page.domain}</span>
-                  </div>
-                  <span className="su-mod-meta">
-                    Approved {formatDate(page.approvedAt)}
-                    {page.approvedBy ? ` by ${page.approvedBy}` : ''}
-                  </span>
-                  <div className="su-mod-actions">
-                    <button type="button" className="su-mod-reject" onClick={() => remove(page.id)}>
-                      Delete
+              groups.map((group) => {
+                const open = expanded.has(group.key)
+                const data = groupData[group.key]
+                return (
+                  <div key={group.key} className="su-mod-group">
+                    <button
+                      type="button"
+                      className="su-mod-group-head"
+                      aria-expanded={open}
+                      onClick={() => toggleGroup(group.key)}
+                    >
+                      <span className="su-mod-group-toggle" aria-hidden="true">
+                        {open ? '▾' : '▸'}
+                      </span>
+                      <span className="su-mod-group-label">{group.label}</span>
+                      <span className="su-mod-group-count">{group.count}</span>
                     </button>
+
+                    {open && (
+                      <div className="su-mod-group-body">
+                        {(!data || data.status === 'loading') && (
+                          <p className="su-mod-empty">Loading…</p>
+                        )}
+                        {data?.status === 'error' && (
+                          <p className="su-form-error">Could not load pages.</p>
+                        )}
+                        {data?.status === 'ready' &&
+                          data.pages.map((page) => (
+                            <div key={page.id} className="su-mod-card su-mod-card--approved">
+                              <div className="su-mod-card-head">
+                                <a
+                                  href={page.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="su-mod-url"
+                                >
+                                  {page.title || page.url}
+                                </a>
+                                <span className="su-mod-meta">{page.domain}</span>
+                              </div>
+                              <span className="su-mod-meta">
+                                Approved {formatDate(page.approvedAt)}
+                                {page.approvedBy ? ` by ${page.approvedBy}` : ''}
+                              </span>
+                              <div className="su-mod-actions">
+                                <button
+                                  type="button"
+                                  className="su-mod-reject"
+                                  onClick={() => remove(page.id, group.key)}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
 
             {tab === 'rejected' &&
               status === 'ready' &&
