@@ -78,6 +78,90 @@ export function StackedBar({ data, segmentColors, ariaLabel }) {
   )
 }
 
+// ---- Subsidy-inversion quadrant ---------------------------------------------
+// points: [{ id, label, x, y, category, caption }]  x,y in 0..100
+// axes: { x, y } label strings
+export function QuadrantChart({ points, axes, ariaLabel }) {
+  const W = 560
+  const H = 420
+  const m = { top: 18, right: 24, bottom: 56, left: 48 }
+  const pw = W - m.left - m.right
+  const ph = H - m.top - m.bottom
+  const sx = (x) => m.left + (x / 100) * pw
+  const sy = (y) => m.top + (1 - y / 100) * ph
+  const midX = sx(50)
+  const midY = sy(50)
+
+  return (
+    <div className="psilo-quadrant">
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={ariaLabel} width="100%">
+        {/* quadrant tints: top-left = inequity, bottom-right = favored */}
+        <rect x={m.left} y={m.top} width={pw / 2} height={ph / 2} fill="#fdecec" />
+        <rect x={midX} y={midY} width={pw / 2} height={ph / 2} fill="#eaf6ee" />
+        {/* plot border + midlines */}
+        <rect
+          x={m.left}
+          y={m.top}
+          width={pw}
+          height={ph}
+          fill="none"
+          stroke="#d7dce3"
+        />
+        <line x1={midX} y1={m.top} x2={midX} y2={m.top + ph} stroke="#d7dce3" strokeDasharray="4 4" />
+        <line x1={m.left} y1={midY} x2={m.left + pw} y2={midY} stroke="#d7dce3" strokeDasharray="4 4" />
+
+        {/* points */}
+        {points.map((p) => {
+          const cx = sx(p.x)
+          const cy = sy(p.y)
+          const isPsilo = p.category === 'psilocybin'
+          const color = isPsilo ? 'var(--psilo-accent)' : 'var(--psilo-neutral)'
+          // keep labels inside the plot
+          const anchor = p.x > 50 ? 'end' : 'start'
+          const dx = p.x > 50 ? -14 : 14
+          return (
+            <g key={p.id}>
+              <circle cx={cx} cy={cy} r="9" fill={color} />
+              <text
+                x={cx + dx}
+                y={cy - 6}
+                textAnchor={anchor}
+                className="psilo-q-label"
+                fill="var(--psilo-ink)"
+              >
+                {p.label}
+              </text>
+              <text
+                x={cx + dx}
+                y={cy + 11}
+                textAnchor={anchor}
+                className="psilo-q-cap"
+                fill="var(--psilo-muted)"
+              >
+                {p.caption}
+              </text>
+            </g>
+          )
+        })}
+
+        {/* axis labels */}
+        <text x={m.left + pw / 2} y={H - 16} textAnchor="middle" className="psilo-q-axis">
+          {axes.x}
+        </text>
+        <text
+          x={-(m.top + ph / 2)}
+          y={16}
+          textAnchor="middle"
+          transform="rotate(-90)"
+          className="psilo-q-axis"
+        >
+          {axes.y}
+        </text>
+      </svg>
+    </div>
+  )
+}
+
 // ---- Ratio chart -------------------------------------------------------------
 // data: [{ id, label, ratio, highlight }]
 export function RatioChart({ data, ariaLabel }) {

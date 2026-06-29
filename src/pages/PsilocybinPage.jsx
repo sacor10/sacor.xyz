@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import './psilocybin/psilocybin.css'
-import { BarChart, StackedBar, RatioChart, SortableTable } from './psilocybin/charts'
+import { BarChart, StackedBar, RatioChart, SortableTable, QuadrantChart } from './psilocybin/charts'
 import {
   metadata,
   licenses,
@@ -9,9 +9,29 @@ import {
   traditionalAvgAnnual,
   currency,
 } from '../data/psilocybinFees'
+import {
+  outcomes,
+  costEffectiveness,
+  subsidy,
+  lifetimeAssumptions,
+  computeLifetime,
+  inversionPoints,
+  inversionAxes,
+} from '../data/psilocybinOutcomes'
 
 const periodLabel = (l) => (l.periodYears === 1 ? '/ yr' : `/ ${l.periodYears} yr`)
 const ratioOf = (l) => annualCost(l) / traditionalAvgAnnual
+
+// ---- Phase-2 view-model: 10-year cost split by payer ------------------------
+const lifetime = computeLifetime()
+const lifetimeBars = [lifetime.traditional, lifetime.psilocybin].map((p) => ({
+  id: p.id,
+  label: p.label,
+  segments: [
+    { label: 'Paid by the state / insurer', value: p.statePaid },
+    { label: 'Paid by the patient', value: p.patientPaid },
+  ],
+}))
 
 // ---- Derived view-model -----------------------------------------------------
 const mainBars = licensesByAnnualAsc.map((l) => ({
@@ -120,6 +140,26 @@ export default function PsilocybinPage() {
           </p>
         </header>
 
+        {/* ---- Centerpiece: the inversion ---- */}
+        <section className="psilo-section">
+          <h2>The inversion</h2>
+          <p className="psilo-sub">
+            Two questions decide how Oregon treats a form of mental-health care: does the state help
+            pay for it, and how much does it charge providers to be licensed? Traditional care and
+            psilocybin land in opposite corners.
+          </p>
+          <QuadrantChart
+            points={inversionPoints}
+            axes={inversionAxes}
+            ariaLabel="State subsidy versus licensing fee for traditional care and psilocybin"
+          />
+          <p className="psilo-takeaway">
+            The state <strong>subsidizes the care it makes cheap to provide</strong>, and{' '}
+            <strong>refuses to subsidize the care it makes the most expensive to provide.</strong>{' '}
+            That diagonal is the whole story.
+          </p>
+        </section>
+
         {/* ---- Headline stats ---- */}
         <div className="psilo-stats">
           <div className="psilo-stat">
@@ -140,9 +180,63 @@ export default function PsilocybinPage() {
           </div>
         </div>
 
-        {/* ---- Main chart ---- */}
+        {/* ---- 10-year cost to treat one patient ---- */}
         <section className="psilo-section">
-          <h2>Annual cost to hold the license</h2>
+          <h2>10-year cost to treat one patient — and who pays it</h2>
+          <p className="psilo-sub">
+            Traditional depression care is <strong>chronic and recurring</strong> — a bill that
+            repeats every year, mostly paid by the state/insurer. Psilocybin in trials is{' '}
+            <strong>episodic</strong> — a few durable sessions, paid entirely out of pocket. Darker
+            segment = paid by the state/insurer; lighter = paid by the patient.
+          </p>
+          <StackedBar
+            data={lifetimeBars}
+            segmentColors={['var(--psilo-recurring)', 'var(--psilo-one-time)']}
+            ariaLabel="Ten-year cost to treat one patient, split by who pays"
+          />
+          <div className="psilo-legend">
+            <span>
+              <i className="psilo-swatch" style={{ background: 'var(--psilo-recurring)' }} />
+              Paid by the state / insurer
+            </span>
+            <span>
+              <i className="psilo-swatch" style={{ background: 'var(--psilo-one-time)' }} />
+              Paid by the patient
+            </span>
+          </div>
+          <details className="psilo-assumptions">
+            <summary>Assumptions &amp; sources (these are illustrative estimates)</summary>
+            <ul>
+              <li>Time horizon: {lifetimeAssumptions.years} years.</li>
+              <li>
+                Psilocybin: {currency.format(lifetimeAssumptions.psilocybinSessionCost)}/session ×{' '}
+                {lifetimeAssumptions.psilocybinSessionsPer10yr} sessions, 100% patient-paid (no
+                insurance/Medicaid coverage). {lifetimeAssumptions.notes.psilocybinSessionCost}
+              </li>
+              <li>
+                Traditional: {currency.format(lifetimeAssumptions.traditionalAnnualCost)}/yr ×{' '}
+                {lifetimeAssumptions.years} years, {Math.round(lifetimeAssumptions.traditionalStatePaidShare * 100)}%
+                state/insurer-paid. {lifetimeAssumptions.notes.traditionalAnnualCost}
+              </li>
+              <li>
+                Treatment-resistant cases run far higher on the traditional side (e.g. TMS
+                ~$67k/yr), which would widen the gap. Source:{' '}
+                <a
+                  href={lifetimeAssumptions.source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {lifetimeAssumptions.source.label}
+                </a>
+                .
+              </li>
+            </ul>
+          </details>
+        </section>
+
+        {/* ---- Main chart (regulatory-burden axis) ---- */}
+        <section className="psilo-section">
+          <h2>The regulatory-burden axis: annual cost to hold the license</h2>
           <p className="psilo-sub">
             Recurring license fee per year, sorted cheapest → most expensive. Purple = psilocybin.
             One-time application fees excluded (see table below).
@@ -159,6 +253,42 @@ export default function PsilocybinPage() {
             rows={licenses}
             rowClass={(r) => (r.category === 'psilocybin' ? 'is-psilo' : undefined)}
           />
+        </section>
+
+        {/* ---- Outcomes ---- */}
+        <section className="psilo-section">
+          <h2>What the outcomes evidence shows</h2>
+          <p className="psilo-sub">
+            In clinical trials, psilocybin-assisted therapy is comparable-to-better and markedly
+            more durable per dose than standard care — not a flat &ldquo;more effective&rdquo;
+            claim, but a real one. (Oregon&rsquo;s program is non-medical supported adult use, which
+            differs from the screened, therapy-supported trial model.)
+          </p>
+          <div className="psilo-cards">
+            {outcomes.map((o) => (
+              <div key={o.id} className="psilo-card">
+                <div className="psilo-card-metric">{o.metric}</div>
+                <div className="psilo-card-label">{o.label}</div>
+                <p className="psilo-card-detail">{o.detail}</p>
+                <a href={o.source.url} target="_blank" rel="noopener noreferrer">
+                  {o.source.label} ↗
+                </a>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ---- Cost-effectiveness ---- */}
+        <section className="psilo-section psilo-prose">
+          <h2>Cost-effectiveness</h2>
+          {costEffectiveness.map((c) => (
+            <p key={c.id}>
+              {c.text}{' '}
+              <a href={c.source.url} target="_blank" rel="noopener noreferrer">
+                ({c.source.label})
+              </a>
+            </p>
+          ))}
         </section>
 
         {/* ---- First-year vs ongoing ---- */}
@@ -197,6 +327,32 @@ export default function PsilocybinPage() {
           <RatioChart data={ratioBars} ariaLabel="Psilocybin cost as a multiple of the average" />
         </section>
 
+        {/* ---- Who pays ---- */}
+        <section className="psilo-section">
+          <h2>Who the state pays for</h2>
+          <p className="psilo-sub">
+            The same government that charges psilocybin the most to operate also declines to pay a
+            cent toward it — while underwriting most of the cost of traditional care.
+          </p>
+          <div className="psilo-cards">
+            {subsidy.map((s) => (
+              <div
+                key={s.id}
+                className={
+                  'psilo-card' + (s.id === 'psilo-paid' ? ' is-psilo-card' : '')
+                }
+              >
+                <div className="psilo-card-metric">{s.who}</div>
+                <div className="psilo-card-label">{s.label}</div>
+                <p className="psilo-card-detail">{s.detail}</p>
+                <a href={s.source.url} target="_blank" rel="noopener noreferrer">
+                  {s.source.label} ↗
+                </a>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* ---- Written summary ---- */}
         <section className="psilo-section psilo-prose">
           <h2>What this shows</h2>
@@ -219,11 +375,28 @@ export default function PsilocybinPage() {
             regulatory program lands on a small number of licensees.
           </p>
           <p>
-            That is the &ldquo;unfair start&rdquo;: a nascent field is asked to carry fixed program
-            costs alone, at fee levels one to two orders of magnitude above comparable, far more
-            powerful licenses — which pushes service centers to close, shrinks the licensee base,
-            and raises the pressure to increase fees even further.
+            That is the &ldquo;unfair start,&rdquo; and it has two halves. First, a{' '}
+            <strong>cost-structure</strong> mismatch: traditional depression care is chronic and
+            recurring — remission rates fall at each medication step and nearly half of those who
+            recover relapse within a year — so the state pays for it again and again. Psilocybin in
+            trials is episodic: a few durable sessions. Second, a <strong>subsidy inversion</strong>:
+            the state underwrites most of the recurring treatment and licenses it cheaply, while it
+            pays nothing toward psilocybin and licenses it at the highest rate in the field. A
+            nascent, promising option is asked to carry every fixed program cost alone — which pushes
+            service centers to close, shrinks the licensee base, and raises pressure to hike fees
+            further.
           </p>
+
+          <div className="psilo-callout">
+            <strong>How to read this fairly.</strong> The efficacy figures come from{' '}
+            <em>clinical trials</em>; Oregon&rsquo;s program is non-medical supported adult use, a
+            different delivery model. Psilocybin is comparable-to-better and more durable per dose —
+            not a settled &ldquo;more effective than everything&rdquo; verdict. It is not
+            FDA-approved and remains federally Schedule I, which is <em>why</em> insurance and
+            Medicaid won&rsquo;t cover it — a policy choice layered on top of Oregon&rsquo;s fee
+            decisions. The 10-year cost figures are an illustrative model with the assumptions shown,
+            not an official Oregon number.
+          </div>
 
           <div className="psilo-callout">
             <strong>On the &ldquo;proposed increases.&rdquo;</strong> {metadata.proposedNote}
@@ -233,12 +406,26 @@ export default function PsilocybinPage() {
         {/* ---- Sources ---- */}
         <section className="psilo-section">
           <h2>Sources</h2>
+          <p className="psilo-sub">Licensing fees (official Oregon boards):</p>
           <ul className="psilo-sources">
             {licenses.map((l) => (
               <li key={l.id}>
                 {l.name} — {l.board}:{' '}
                 <a href={l.boardUrl} target="_blank" rel="noopener noreferrer">
                   {l.boardUrl}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <p className="psilo-sub" style={{ marginTop: 16 }}>
+            Outcomes, cost-effectiveness &amp; subsidy:
+          </p>
+          <ul className="psilo-sources">
+            {[...outcomes, ...costEffectiveness, ...subsidy, lifetimeAssumptions].map((item) => (
+              <li key={item.id ?? item.source.url}>
+                {item.source.label}:{' '}
+                <a href={item.source.url} target="_blank" rel="noopener noreferrer">
+                  {item.source.url}
                 </a>
               </li>
             ))}

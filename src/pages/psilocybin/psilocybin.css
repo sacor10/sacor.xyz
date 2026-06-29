@@ -273,6 +273,95 @@
   color: var(--psilo-accent);
 }
 
+/* ---- Quadrant ---- */
+.psilo-quadrant {
+  max-width: 620px;
+  margin: 0 auto;
+}
+.psilo-q-label {
+  font-size: 14px;
+  font-weight: 700;
+}
+.psilo-q-cap {
+  font-size: 11px;
+}
+.psilo-q-axis {
+  font-size: 12px;
+  fill: var(--psilo-muted);
+  font-weight: 600;
+}
+.psilo-takeaway {
+  margin: 18px auto 0;
+  max-width: 60ch;
+  text-align: center;
+  font-size: 1.02rem;
+  color: var(--psilo-ink);
+}
+
+/* ---- Assumptions disclosure ---- */
+.psilo-assumptions {
+  margin-top: 16px;
+  font-size: 0.82rem;
+  color: var(--psilo-muted);
+}
+.psilo-assumptions summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--psilo-ink);
+}
+.psilo-assumptions ul {
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+.psilo-assumptions li {
+  margin-bottom: 6px;
+}
+.psilo-assumptions a {
+  color: var(--psilo-accent);
+}
+
+/* ---- Evidence cards ---- */
+.psilo-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+.psilo-card {
+  border: 1px solid var(--psilo-border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  background: #fbfcfe;
+}
+.psilo-card.is-psilo-card {
+  border-color: var(--psilo-accent);
+  background: var(--psilo-accent-soft);
+}
+.psilo-card-metric {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+.psilo-card-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--psilo-ink);
+  margin-bottom: 8px;
+}
+.psilo-card-detail {
+  font-size: 0.85rem;
+  color: var(--psilo-muted);
+  margin: 0 0 10px;
+}
+.psilo-card a {
+  font-size: 0.8rem;
+  color: var(--psilo-accent);
+  text-decoration: none;
+}
+.psilo-card a:hover {
+  text-decoration: underline;
+}
+
 /* ---- Responsive ---- */
 @media (max-width: 640px) {
   .psilo-container {
