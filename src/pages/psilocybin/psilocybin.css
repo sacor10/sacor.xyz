@@ -458,20 +458,12 @@
   position: relative;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
-.psilo-cycle-num {
-  position: absolute;
-  top: -9px;
-  left: -9px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--psilo-accent);
-  color: #fff;
+.psilo-cycle-badge {
+  fill: #fff;
   font-size: 11px;
   font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  text-anchor: middle;
+  dominant-baseline: central;
 }
 .psilo-cycle-center {
   font-size: 20px;
