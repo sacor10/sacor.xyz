@@ -78,6 +78,108 @@ export function StackedBar({ data, segmentColors, ariaLabel }) {
   )
 }
 
+// ---- Grouped bar chart (current vs proposed) --------------------------------
+// data: [{ id, label, current, proposed }]
+export function GroupedBar({ data, ariaLabel, refValue, refLabel }) {
+  const max = Math.max(...data.flatMap((d) => [d.current, d.proposed]), refValue ?? 0)
+  const pct = (v) => (max > 0 ? Math.max((v / max) * 100, 0.6) : 0)
+  return (
+    <div className="psilo-grouped" role="img" aria-label={ariaLabel}>
+      {data.map((d) => (
+        <div className="psilo-group-row" key={d.id}>
+          <div className="psilo-bar-label" title={d.label}>
+            {d.label}
+          </div>
+          <div className="psilo-group-bars">
+            <div className="psilo-bar-track">
+              <div className="psilo-bar-fill is-highlight" style={{ width: `${pct(d.current)}%` }} />
+              <span className="psilo-bar-value">{fmt.format(d.current)} now</span>
+            </div>
+            <div className="psilo-bar-track">
+              <div className="psilo-bar-fill is-proposed" style={{ width: `${pct(d.proposed)}%` }} />
+              <span className="psilo-bar-value">{fmt.format(d.proposed)} proposed</span>
+            </div>
+          </div>
+        </div>
+      ))}
+      {refValue != null && (
+        <div className="psilo-group-ref">
+          {refLabel}: <strong>{fmt.format(refValue)}</strong>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---- Cycle / death-spiral diagram -------------------------------------------
+// steps: ordered array of short strings; arrows flow clockwise and loop back.
+export function CycleDiagram({ steps, centerLabel, ariaLabel }) {
+  const W = 800
+  const H = 660
+  const cx = W / 2
+  const cy = H / 2
+  const R = 240
+  const n = steps.length
+  const nodeW = 176
+  const nodeH = 76
+  const toRad = (deg) => (deg * Math.PI) / 180
+  const angleAt = (i) => -90 + i * (360 / n)
+
+  return (
+    <div className="psilo-cycle">
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={ariaLabel} width="100%">
+        {/* ring */}
+        <circle cx={cx} cy={cy} r={R} fill="none" stroke="#e6c9c9" strokeWidth="2" strokeDasharray="2 6" />
+
+        {/* clockwise arrowheads in the gaps between nodes */}
+        {steps.map((_, i) => {
+          const mid = toRad(angleAt(i) + 360 / n / 2)
+          const px = cx + R * Math.cos(mid)
+          const py = cy + R * Math.sin(mid)
+          const tangent = (mid * 180) / Math.PI + 90 // clockwise direction
+          return (
+            <path
+              key={`arr-${i}`}
+              d="M -7 -6 L 7 0 L -7 6 Z"
+              fill="var(--psilo-accent)"
+              transform={`translate(${px} ${py}) rotate(${tangent})`}
+            />
+          )
+        })}
+
+        {/* center label */}
+        <text x={cx} y={cy - 8} textAnchor="middle" className="psilo-cycle-center">
+          {centerLabel}
+        </text>
+        <text x={cx} y={cy + 16} textAnchor="middle" className="psilo-cycle-center-sub">
+          fees up → closures → fewer payers → fees up
+        </text>
+
+        {/* nodes */}
+        {steps.map((step, i) => {
+          const a = toRad(angleAt(i))
+          const nx = cx + R * Math.cos(a)
+          const ny = cy + R * Math.sin(a)
+          return (
+            <foreignObject
+              key={`node-${i}`}
+              x={nx - nodeW / 2}
+              y={ny - nodeH / 2}
+              width={nodeW}
+              height={nodeH}
+            >
+              <div className="psilo-cycle-node">
+                <span className="psilo-cycle-num">{i + 1}</span>
+                {step}
+              </div>
+            </foreignObject>
+          )
+        })}
+      </svg>
+    </div>
+  )
+}
+
 // ---- Subsidy-inversion quadrant ---------------------------------------------
 // points: [{ id, label, x, y, category, caption }]  x,y in 0..100
 // axes: { x, y } label strings

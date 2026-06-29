@@ -20,11 +20,13 @@ export const metadata = {
     'What it costs to be licensed to help people in Oregon — psilocybin vs. every other mental-health profession.',
   methodology:
     'Annual cost = recurring license fee ÷ renewal period. One-time application and exam fees are listed separately and are not included in the annual figure. All amounts are from official Oregon licensing board fee schedules.',
-  // Per the user's decision, only confirmed fees are charted. As of this date no
-  // official dollar figures for the anticipated psilocybin fee increase have
-  // been published, so no "proposed" bars are drawn — only this dated note.
+  // The proposed increase is now confirmed: in late June 2026 OHA proposed
+  // DOUBLING the operating-license fees. Facilitator and service-center figures
+  // are confirmed; manufacturer/lab/worker are expected to follow but not yet
+  // charted (see `proposedPending`).
+  proposedAnnounced: 'June 2026',
   proposedNote:
-    'As of June 2026, Oregon Psilocybin Services (OPS) has publicly acknowledged a budget shortfall — the program is required by law to fund itself entirely from licensing fees — and has said raising fees is "the next step." A Rules Advisory Committee met July 6–9, 2026 to discuss draft rules. No official proposed dollar figures have been published yet, so the increases are not charted here. Given that service centers already pay $10,000/year and the revenue base is shrinking as licensees close, any increase would widen the gap shown below.',
+    'In late June 2026, the Oregon Health Authority formally proposed DOUBLING psilocybin licensing fees: facilitators from $2,000 to $4,000/year and service centers from $10,000 to $20,000/year. The program is required by law to fund itself entirely from licensing fees, and the general-fund support that propped it up in 2023–25 (~$3.1M) is not coming for 2025–27 amid Oregon’s ~$1B budget shortfall. With a shrinking licensee base, OPS says higher fees are the only way to cover a reported ~$3.5M gap — even though doubling fees risks pushing more service centers to close.',
 }
 
 // category: 'psilocybin' | 'traditional'
@@ -43,6 +45,7 @@ export const licenses = [
     category: 'psilocybin',
     upfront: 500,
     recurring: 10000,
+    proposedRecurring: 20000,
     periodYears: 1,
     notes: 'The only place clients may legally consume psilocybin.',
   },
@@ -56,6 +59,7 @@ export const licenses = [
     category: 'psilocybin',
     upfront: 500,
     recurring: 10000,
+    proposedPending: true,
     periodYears: 1,
     notes: 'Cultivation / processing of psilocybin products.',
   },
@@ -69,6 +73,7 @@ export const licenses = [
     category: 'psilocybin',
     upfront: 500,
     recurring: 10000,
+    proposedPending: true,
     periodYears: 1,
     notes: 'Potency, identity and solvent testing.',
   },
@@ -82,6 +87,7 @@ export const licenses = [
     category: 'psilocybin',
     upfront: 150,
     recurring: 2000,
+    proposedRecurring: 4000,
     periodYears: 1,
     notes:
       'The person who sits with clients. Renewed annually. Reduced fee of $1,000/yr for veterans, SSI, SNAP, or OHP enrollees. Excludes ~$2,000+ in required third-party training.',
@@ -96,6 +102,7 @@ export const licenses = [
     category: 'psilocybin',
     upfront: 0,
     recurring: 25,
+    proposedPending: true,
     periodYears: 1,
     notes: 'Required for staff at licensed premises. Valid one year (as of 1/1/2025).',
   },
@@ -160,6 +167,17 @@ export function annualCost(license) {
 export function firstYearCost(license) {
   return license.upfront + annualCost(license)
 }
+
+// Annualized proposed cost, or null if no confirmed proposed figure exists.
+export function proposedAnnual(license) {
+  if (license.proposedRecurring == null) return null
+  return license.proposedRecurring / license.periodYears
+}
+
+// Licenses with a confirmed proposed increase (for the current-vs-proposed chart).
+export const licensesWithProposed = licenses.filter(
+  (l) => l.proposedRecurring != null,
+)
 
 // Average annual cost across the traditional (non-psilocybin) licenses — the
 // baseline the ratio chart compares psilocybin against.
