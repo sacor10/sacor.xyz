@@ -140,6 +140,17 @@ export function QuadrantChart({ points, axes, ariaLabel }) {
               >
                 {p.caption}
               </text>
+              {p.money && (
+                <text
+                  x={cx + dx}
+                  y={cy + 27}
+                  textAnchor={anchor}
+                  className="psilo-q-money"
+                  fill={color}
+                >
+                  {p.money}
+                </text>
+              )}
             </g>
           )
         })}

@@ -285,6 +285,11 @@
 .psilo-q-cap {
   font-size: 11px;
 }
+.psilo-q-money {
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
 .psilo-q-axis {
   font-size: 12px;
   fill: var(--psilo-muted);
