@@ -168,11 +168,24 @@ export function CycleDiagram({ steps, centerLabel, ariaLabel }) {
               width={nodeW}
               height={nodeH}
             >
-              <div className="psilo-cycle-node">
-                <span className="psilo-cycle-num">{i + 1}</span>
-                {step}
-              </div>
+              <div className="psilo-cycle-node">{step}</div>
             </foreignObject>
+          )
+        })}
+
+        {/* numbered badges — rendered as pure SVG (after nodes) so the
+            foreignObject can't clip them */}
+        {steps.map((_, i) => {
+          const a = toRad(angleAt(i))
+          const bx = cx + R * Math.cos(a) - nodeW / 2
+          const by = cy + R * Math.sin(a) - nodeH / 2
+          return (
+            <g key={`badge-${i}`}>
+              <circle cx={bx} cy={by} r="11" fill="var(--psilo-accent)" />
+              <text x={bx} y={by} className="psilo-cycle-badge">
+                {i + 1}
+              </text>
+            </g>
           )
         })}
       </svg>
