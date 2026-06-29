@@ -1,0 +1,304 @@
+/* Scoped, clean/professional styling for the /psilocybin data explorer.
+   Everything is nested under .psilo-page so it never leaks into the retro
+   GeoCities theme used by the rest of the site. */
+
+.psilo-page {
+  --psilo-bg: #f7f8fa;
+  --psilo-surface: #ffffff;
+  --psilo-ink: #1c2430;
+  --psilo-muted: #5b6675;
+  --psilo-border: #e2e6ec;
+  --psilo-accent: #6b3fa0; /* psilocybin highlight (purple) */
+  --psilo-accent-soft: #efe8f8;
+  --psilo-neutral: #9aa7b8; /* traditional bars */
+  --psilo-one-time: #c9d2de; /* stacked: one-time */
+  --psilo-recurring: #6b3fa0; /* stacked: recurring */
+
+  min-height: 100vh;
+  margin: 0;
+  background: var(--psilo-bg);
+  color: var(--psilo-ink);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  line-height: 1.55;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.psilo-container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+/* ---- Header ---- */
+.psilo-header {
+  border-bottom: 1px solid var(--psilo-border);
+  padding-bottom: 24px;
+  margin-bottom: 32px;
+}
+.psilo-header h1 {
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+  line-height: 1.15;
+  margin: 0 0 10px;
+  letter-spacing: -0.02em;
+}
+.psilo-lede {
+  font-size: 1.1rem;
+  color: var(--psilo-muted);
+  margin: 0 0 16px;
+  max-width: 70ch;
+}
+.psilo-meta {
+  font-size: 0.85rem;
+  color: var(--psilo-muted);
+}
+.psilo-meta strong {
+  color: var(--psilo-ink);
+}
+
+/* ---- Sections ---- */
+.psilo-section {
+  background: var(--psilo-surface);
+  border: 1px solid var(--psilo-border);
+  border-radius: 12px;
+  padding: 24px 24px 26px;
+  margin-bottom: 24px;
+}
+.psilo-section h2 {
+  font-size: 1.25rem;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+.psilo-section .psilo-sub {
+  color: var(--psilo-muted);
+  font-size: 0.92rem;
+  margin: 0 0 20px;
+}
+
+/* ---- Bar charts ---- */
+.psilo-bars,
+.psilo-stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.psilo-bar-row {
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  align-items: center;
+  gap: 14px;
+}
+.psilo-bar-label {
+  font-size: 0.86rem;
+  color: var(--psilo-ink);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.psilo-bar-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 26px;
+}
+.psilo-bar-fill {
+  height: 22px;
+  border-radius: 4px;
+  background: var(--psilo-neutral);
+  min-width: 2px;
+  transition: width 0.3s ease;
+}
+.psilo-bar-fill.is-highlight {
+  background: var(--psilo-accent);
+}
+.psilo-bar-value {
+  margin-left: 8px;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--psilo-muted);
+  white-space: nowrap;
+}
+
+/* ---- Stacked bars ---- */
+.psilo-stack-wrap {
+  display: flex;
+  height: 22px;
+  border-radius: 4px;
+  overflow: hidden;
+  min-width: 2px;
+}
+.psilo-stack-seg {
+  height: 100%;
+}
+
+.psilo-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 18px;
+  font-size: 0.82rem;
+  color: var(--psilo-muted);
+}
+.psilo-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.psilo-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+/* ---- Table ---- */
+.psilo-table-wrap {
+  overflow-x: auto;
+}
+.psilo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+.psilo-table th,
+.psilo-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--psilo-border);
+  text-align: left;
+  vertical-align: top;
+}
+.psilo-table th {
+  background: #f1f3f7;
+  position: sticky;
+  top: 0;
+}
+.psilo-table .is-right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.psilo-th-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--psilo-ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+.psilo-sort-caret {
+  color: var(--psilo-muted);
+  font-size: 0.75rem;
+}
+.psilo-table tr.is-psilo td {
+  background: var(--psilo-accent-soft);
+}
+.psilo-table td a {
+  color: var(--psilo-accent);
+  text-decoration: none;
+}
+.psilo-table td a:hover {
+  text-decoration: underline;
+}
+.psilo-note-cell {
+  color: var(--psilo-muted);
+  font-size: 0.82rem;
+}
+
+/* ---- Callout / stats ---- */
+.psilo-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.psilo-stat {
+  background: var(--psilo-surface);
+  border: 1px solid var(--psilo-border);
+  border-left: 4px solid var(--psilo-accent);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.psilo-stat .num {
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.psilo-stat .cap {
+  font-size: 0.82rem;
+  color: var(--psilo-muted);
+  margin-top: 2px;
+}
+
+/* ---- Prose / summary ---- */
+.psilo-prose p {
+  margin: 0 0 14px;
+  max-width: 72ch;
+}
+.psilo-prose a {
+  color: var(--psilo-accent);
+}
+.psilo-callout {
+  background: #fff8ec;
+  border: 1px solid #f0dcb4;
+  border-radius: 10px;
+  padding: 16px 18px;
+  font-size: 0.92rem;
+  color: #6b5320;
+  margin: 0 0 24px;
+}
+.psilo-sources {
+  font-size: 0.82rem;
+  color: var(--psilo-muted);
+}
+.psilo-sources li {
+  margin-bottom: 4px;
+}
+.psilo-sources a {
+  color: var(--psilo-accent);
+}
+
+.psilo-footer {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--psilo-border);
+  font-size: 0.8rem;
+  color: var(--psilo-muted);
+}
+.psilo-footer a {
+  color: var(--psilo-accent);
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 640px) {
+  .psilo-container {
+    padding: 28px 14px 60px;
+  }
+  .psilo-bar-row {
+    grid-template-columns: 110px 1fr;
+    gap: 8px;
+  }
+  .psilo-bar-label {
+    font-size: 0.78rem;
+    white-space: normal;
+  }
+  .psilo-section {
+    padding: 18px 14px 20px;
+  }
+}
+
+/* ---- Print ---- */
+@media print {
+  .psilo-page {
+    background: #fff;
+  }
+  .psilo-section,
+  .psilo-stat {
+    break-inside: avoid;
+    border-color: #ccc;
+  }
+}
