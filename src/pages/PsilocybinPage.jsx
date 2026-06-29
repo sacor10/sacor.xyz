@@ -1,11 +1,21 @@
 import { useEffect } from 'react'
 import './psilocybin/psilocybin.css'
-import { BarChart, StackedBar, RatioChart, SortableTable, QuadrantChart } from './psilocybin/charts'
+import {
+  BarChart,
+  StackedBar,
+  RatioChart,
+  SortableTable,
+  QuadrantChart,
+  GroupedBar,
+  CycleDiagram,
+} from './psilocybin/charts'
 import {
   metadata,
   licenses,
   licensesByAnnualAsc,
   annualCost,
+  proposedAnnual,
+  licensesWithProposed,
   traditionalAvgAnnual,
   currency,
 } from '../data/psilocybinFees'
@@ -18,9 +28,35 @@ import {
   inversionPoints,
   inversionAxes,
 } from '../data/psilocybinOutcomes'
+import {
+  programFinance,
+  deathSpiralSteps,
+  costRecovery,
+  context as policyContext,
+  takeAction,
+} from '../data/psilocybinPolicy'
 
 const periodLabel = (l) => (l.periodYears === 1 ? '/ yr' : `/ ${l.periodYears} yr`)
 const ratioOf = (l) => annualCost(l) / traditionalAvgAnnual
+
+// ---- Phase-3 view-model: proposed doubling + cost-recovery ------------------
+const proposedBars = licensesWithProposed.map((l) => ({
+  id: l.id,
+  label: l.short,
+  current: annualCost(l),
+  proposed: proposedAnnual(l),
+}))
+
+const costRecoveryBars = costRecovery.scenarios.map((s) => {
+  const feeEach = Math.round(costRecovery.fixedCost / s.base)
+  return {
+    id: `cr-${s.base}`,
+    label: s.label,
+    value: feeEach,
+    highlight: s.base <= 12,
+    valueLabel: `${currency.format(feeEach)} each`,
+  }
+})
 
 // ---- Phase-2 view-model: 10-year cost split by payer ------------------------
 const lifetime = computeLifetime()
@@ -139,6 +175,86 @@ export default function PsilocybinPage() {
             Data as of <strong>{metadata.asOf}</strong>. {metadata.methodology}
           </p>
         </header>
+
+        {/* ---- What just changed (news banner) ---- */}
+        <div className="psilo-news">
+          <span className="psilo-news-tag">Proposed · {metadata.proposedAnnounced}</span>
+          <h2>Oregon just proposed doubling psilocybin fees</h2>
+          <p>
+            The Oregon Health Authority proposed raising <strong>facilitator</strong> licenses from{' '}
+            {currency.format(2000)} to <strong>{currency.format(4000)}/yr</strong> and{' '}
+            <strong>service center</strong> licenses from {currency.format(10000)} to{' '}
+            <strong>{currency.format(20000)}/yr</strong> — on a program that is already the most
+            expensive health-care license in the state.
+          </p>
+          <p className="psilo-news-pending">
+            Manufacturer, testing-lab and worker-permit fees are expected to rise as well; those
+            figures aren&rsquo;t confirmed yet, so they&rsquo;re not charted here.
+          </p>
+        </div>
+
+        {/* ---- Current vs proposed ---- */}
+        <section className="psilo-section">
+          <h2>Current vs. proposed</h2>
+          <p className="psilo-sub">
+            The confirmed increases, side by side. Purple = today; red = proposed.
+          </p>
+          <GroupedBar
+            data={proposedBars}
+            refValue={traditionalAvgAnnual}
+            refLabel="For scale, the average of every other mental-health license"
+            ariaLabel="Current versus proposed psilocybin license fees"
+          />
+        </section>
+
+        {/* ---- Why Oregon says it has to ---- */}
+        <section className="psilo-section">
+          <h2>Why Oregon says it &ldquo;has to&rdquo;</h2>
+          <p className="psilo-sub">
+            It isn&rsquo;t malice — it&rsquo;s a structural trap. The program was designed to fund
+            itself from fees, the taxpayer backfill has run out, and the licensee base is shrinking.
+            That combination forces fees up, which shrinks the base further. A death spiral:
+          </p>
+          <CycleDiagram
+            steps={deathSpiralSteps}
+            centerLabel="Death spiral"
+            ariaLabel="The psilocybin fee death spiral"
+          />
+          <div className="psilo-prose" style={{ marginTop: 20 }}>
+            <p>
+              By law the program must pay for itself out of license fees (Measure 109 sold it as
+              fee-funded, not taxpayer-funded). The general fund quietly covered{' '}
+              {currency.format(programFinance.generalFundPrior)} in 2023&ndash;25, but{' '}
+              <strong>none is secured for 2025&ndash;27</strong> amid Oregon&rsquo;s ~$1B budget
+              shortfall. Meanwhile the base is collapsing: about{' '}
+              {programFinance.serviceCentersLicensed} service centers were licensed and roughly{' '}
+              {programFinance.serviceCentersOpen} remain. With a fixed ~
+              {currency.format(programFinance.annualCost)}/yr to cover and a reported{' '}
+              {currency.format(programFinance.shortfall)} gap, the only lever left is the fee.{' '}
+              <a href={programFinance.source.url} target="_blank" rel="noopener noreferrer">
+                ({programFinance.source.label})
+              </a>
+            </p>
+          </div>
+
+          <h3 className="psilo-subhead">The cost-recovery math</h3>
+          <p className="psilo-sub">{costRecovery.note}</p>
+          <BarChart
+            data={costRecoveryBars}
+            ariaLabel="Per-licensee fee rises as the base shrinks"
+          />
+
+          <div className="psilo-prose" style={{ marginTop: 18 }}>
+            {policyContext.map((c) => (
+              <p key={c.id}>
+                {c.text}{' '}
+                <a href={c.source.url} target="_blank" rel="noopener noreferrer">
+                  ({c.source.label})
+                </a>
+              </p>
+            ))}
+          </div>
+        </section>
 
         {/* ---- Centerpiece: the inversion ---- */}
         <section className="psilo-section">
@@ -403,6 +519,19 @@ export default function PsilocybinPage() {
           </div>
         </section>
 
+        {/* ---- Take action ---- */}
+        <div className="psilo-cta">
+          <h2>{takeAction.heading}</h2>
+          <p>{takeAction.body}</p>
+          <div className="psilo-cta-links">
+            {takeAction.links.map((l) => (
+              <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer">
+                {l.label} ↗
+              </a>
+            ))}
+          </div>
+        </div>
+
         {/* ---- Sources ---- */}
         <section className="psilo-section">
           <h2>Sources</h2>
@@ -426,6 +555,24 @@ export default function PsilocybinPage() {
                 {item.source.label}:{' '}
                 <a href={item.source.url} target="_blank" rel="noopener noreferrer">
                   {item.source.url}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <p className="psilo-sub" style={{ marginTop: 16 }}>
+            Proposed increase, program finances &amp; context:
+          </p>
+          <ul className="psilo-sources">
+            {[
+              programFinance.source,
+              programFinance.shortfallSource,
+              ...policyContext.map((c) => c.source),
+              ...takeAction.links,
+            ].map((s) => (
+              <li key={s.url}>
+                {s.label}:{' '}
+                <a href={s.url} target="_blank" rel="noopener noreferrer">
+                  {s.url}
                 </a>
               </li>
             ))}

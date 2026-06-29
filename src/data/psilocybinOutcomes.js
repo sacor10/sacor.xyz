@@ -163,7 +163,7 @@ export const inversionPoints = [
     y: 92, // most expensive licenses ($2,000–$10,000/yr)
     category: 'psilocybin',
     caption: 'State pays nothing · most expensive to be licensed',
-    money: 'License $2,000–$10,000/yr · State pays $0',
+    money: 'License $2,000–$10,000/yr (proposed: $4k–$20k) · State pays $0',
   },
 ]
 
