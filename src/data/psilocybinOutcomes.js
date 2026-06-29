@@ -154,6 +154,7 @@ export const inversionPoints = [
     y: 12, // cheapest licenses ($60–$390/yr)
     category: 'traditional',
     caption: 'State helps pay · cheap to be licensed',
+    money: 'License $60–$390/yr · State pays ~80% of care',
   },
   {
     id: 'psilocybin',
@@ -162,6 +163,7 @@ export const inversionPoints = [
     y: 92, // most expensive licenses ($2,000–$10,000/yr)
     category: 'psilocybin',
     caption: 'State pays nothing · most expensive to be licensed',
+    money: 'License $2,000–$10,000/yr · State pays $0',
   },
 ]
 
