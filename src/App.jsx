@@ -18,6 +18,7 @@ import StocksPage from './pages/StocksPage'
 import TravelPlansPage from './pages/TravelPlansPage'
 import TravelPlanPage from './pages/TravelPlanPage'
 import EastonPage from './pages/EastonPage'
+import PsilocybinPage from './pages/PsilocybinPage'
 import StumblePage from './pages/StumblePage'
 import StumbleProfilePage from './pages/stumble/StumbleProfilePage'
 import ModerationQueuePage from './pages/stumble/ModerationQueuePage'
@@ -48,6 +49,8 @@ export default function App() {
           <Route path="/travel-plans" element={<TravelPlansPage />} />
           <Route path="/travel-plans/:id" element={<TravelPlanPage />} />
           <Route path="/easton" element={<EastonPage />} />
+          {/* Unlisted, temporary data explorer — intentionally not in the nav. */}
+          <Route path="/psilocybin" element={<PsilocybinPage />} />
           <Route path="/stumble/moderation" element={<ModerationQueuePage />} />
           <Route path="/stumble/u/:username" element={<StumbleProfilePage />} />
           <Route path="/stumble/:siteName?" element={<StumblePage />} />
