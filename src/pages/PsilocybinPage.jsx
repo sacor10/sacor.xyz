@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import './psilocybin/psilocybin.css'
 import {
   BarChart,
@@ -155,7 +155,88 @@ const columns = [
   },
 ]
 
+// ---- In-page navigation: single source of truth for ids + TOC labels --------
+const SECTIONS = [
+  { id: 'proposed', label: 'Proposed change' },
+  { id: 'current-vs-proposed', label: 'Current vs. proposed' },
+  { id: 'why-oregon', label: 'Why Oregon “has to”' },
+  { id: 'inversion', label: 'The inversion' },
+  { id: 'at-a-glance', label: 'At a glance' },
+  { id: 'ten-year', label: '10-year cost to treat' },
+  { id: 'regulatory-burden', label: 'Regulatory-burden axis' },
+  { id: 'fee-comparison', label: 'Full fee comparison' },
+  { id: 'outcomes', label: 'Outcomes evidence' },
+  { id: 'cost-effectiveness', label: 'Cost-effectiveness' },
+  { id: 'first-year', label: 'First-year cost' },
+  { id: 'multiples', label: 'How many times more' },
+  { id: 'who-pays', label: 'Who the state pays for' },
+  { id: 'summary', label: 'What this shows' },
+  { id: 'take-action', label: 'Take action' },
+  { id: 'sources', label: 'Sources' },
+]
+
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+// Sticky in-page table of contents. Renders as a fixed left rail on wide
+// screens and a collapsible "Contents" toggle on narrow ones (CSS-driven).
+function PageNav({ sections, activeId }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <nav className="psilo-nav" aria-label="Sections on this page">
+      <button
+        type="button"
+        className="psilo-nav-toggle"
+        aria-expanded={open}
+        aria-controls="psilo-nav-list"
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span>Contents</span>
+        <span className="psilo-nav-chevron" aria-hidden="true">
+          {open ? '▲' : '▼'}
+        </span>
+      </button>
+      <ol
+        id="psilo-nav-list"
+        className={'psilo-nav-list' + (open ? ' is-open' : '')}
+      >
+        {sections.map((s) => (
+          <li key={s.id}>
+            <a
+              href={`#${s.id}`}
+              className={'psilo-nav-link' + (s.id === activeId ? ' is-active' : '')}
+              aria-current={s.id === activeId ? 'true' : undefined}
+              onClick={(e) => {
+                setOpen(false)
+                const el = document.getElementById(s.id)
+                if (!el) return
+                e.preventDefault()
+                el.scrollIntoView({
+                  behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+                  block: 'start',
+                })
+                if (window.history && window.history.replaceState) {
+                  window.history.replaceState(null, '', `#${s.id}`)
+                } else {
+                  window.location.hash = s.id
+                }
+              }}
+            >
+              {s.label}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  )
+}
+
 export default function PsilocybinPage() {
+  const [activeId, setActiveId] = useState(SECTIONS[0].id)
+  const pageRef = useRef(null)
+
   useEffect(() => {
     const prev = document.title
     document.title = 'Oregon Psilocybin Licensing Costs'
@@ -164,11 +245,82 @@ export default function PsilocybinPage() {
     }
   }, [])
 
+  // Scroll-spy: highlight the section nearest the top of the viewport.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
+      return undefined
+    }
+    const els = SECTIONS.map((s) => document.getElementById(s.id)).filter(Boolean)
+    if (!els.length) return undefined
+
+    const tops = new Map()
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            tops.set(entry.target.id, entry.boundingClientRect.top)
+          } else {
+            tops.delete(entry.target.id)
+          }
+        }
+        if (tops.size) {
+          let best = null
+          let bestTop = Infinity
+          for (const [id, top] of tops) {
+            if (top < bestTop) {
+              bestTop = top
+              best = id
+            }
+          }
+          if (best) setActiveId(best)
+        }
+      },
+      { rootMargin: '-12% 0px -73% 0px', threshold: 0 },
+    )
+    els.forEach((el) => observer.observe(el))
+    return () => observer.disconnect()
+  }, [])
+
+  // Reveal-on-scroll: gate the hidden/animated state behind a JS class so the
+  // page is fully visible with JS off or reduced motion. One-shot per section.
+  // useLayoutEffect adds the class before paint so revealed content never
+  // flashes visible-then-hidden.
+  useLayoutEffect(() => {
+    const root = pageRef.current
+    if (!root) return undefined
+    if (
+      typeof window === 'undefined' ||
+      !('IntersectionObserver' in window) ||
+      prefersReducedMotion()
+    ) {
+      return undefined
+    }
+    root.classList.add('js-reveal')
+    const targets = Array.from(root.querySelectorAll('[data-reveal]'))
+    const observer = new IntersectionObserver(
+      (entries, obs) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible')
+            obs.unobserve(entry.target)
+          }
+        }
+      },
+      { rootMargin: '0px 0px -10% 0px', threshold: 0.08 },
+    )
+    targets.forEach((el) => observer.observe(el))
+    return () => {
+      observer.disconnect()
+      root.classList.remove('js-reveal')
+    }
+  }, [])
+
   return (
-    <div className="psilo-page">
+    <div className="psilo-page" ref={pageRef}>
+      <PageNav sections={SECTIONS} activeId={activeId} />
       <div className="psilo-container">
         {/* ---- Header ---- */}
-        <header className="psilo-header">
+        <header className="psilo-header" data-reveal>
           <h1>{metadata.title}</h1>
           <p className="psilo-lede">{metadata.subtitle}</p>
           <p className="psilo-meta">
@@ -177,9 +329,9 @@ export default function PsilocybinPage() {
         </header>
 
         {/* ---- What just changed (news banner) ---- */}
-        <div className="psilo-news">
+        <section id="proposed" className="psilo-news" data-reveal aria-labelledby="proposed-h">
           <span className="psilo-news-tag">Proposed · {metadata.proposedAnnounced}</span>
-          <h2>Oregon just proposed doubling psilocybin fees</h2>
+          <h2 id="proposed-h">Oregon just proposed doubling psilocybin fees</h2>
           <p>
             The Oregon Health Authority proposed raising <strong>facilitator</strong> licenses from{' '}
             {currency.format(2000)} to <strong>{currency.format(4000)}/yr</strong> and{' '}
@@ -191,10 +343,10 @@ export default function PsilocybinPage() {
             Manufacturer, testing-lab and worker-permit fees are expected to rise as well; those
             figures aren&rsquo;t confirmed yet, so they&rsquo;re not charted here.
           </p>
-        </div>
+        </section>
 
         {/* ---- Current vs proposed ---- */}
-        <section className="psilo-section">
+        <section id="current-vs-proposed" className="psilo-section" data-reveal>
           <h2>Current vs. proposed</h2>
           <p className="psilo-sub">
             The confirmed increases, side by side. Purple = today; red = proposed.
@@ -208,7 +360,7 @@ export default function PsilocybinPage() {
         </section>
 
         {/* ---- Why Oregon says it has to ---- */}
-        <section className="psilo-section">
+        <section id="why-oregon" className="psilo-section" data-reveal>
           <h2>Why Oregon says it &ldquo;has to&rdquo;</h2>
           <p className="psilo-sub">
             It isn&rsquo;t malice — it&rsquo;s a structural trap. The program was designed to fund
@@ -257,7 +409,7 @@ export default function PsilocybinPage() {
         </section>
 
         {/* ---- Centerpiece: the inversion ---- */}
-        <section className="psilo-section">
+        <section id="inversion" className="psilo-section" data-reveal>
           <h2>The inversion</h2>
           <p className="psilo-sub">
             Two questions decide how Oregon treats a form of mental-health care: does the state help
@@ -277,7 +429,10 @@ export default function PsilocybinPage() {
         </section>
 
         {/* ---- Headline stats ---- */}
-        <div className="psilo-stats">
+        <section id="at-a-glance" className="psilo-stats" data-reveal aria-labelledby="at-a-glance-h">
+          <h2 id="at-a-glance-h" className="psilo-visually-hidden">
+            At a glance
+          </h2>
           <div className="psilo-stat">
             <div className="num">{currency.format(annualCost(facilitator))}/yr</div>
             <div className="cap">Psilocybin facilitator — the person who sits with clients</div>
@@ -294,10 +449,10 @@ export default function PsilocybinPage() {
             <div className="num">{Math.round(ratioOf(serviceCenter))}×</div>
             <div className="cap">What a service center pays vs. that average</div>
           </div>
-        </div>
+        </section>
 
         {/* ---- 10-year cost to treat one patient ---- */}
-        <section className="psilo-section">
+        <section id="ten-year" className="psilo-section" data-reveal>
           <h2>10-year cost to treat one patient — and who pays it</h2>
           <p className="psilo-sub">
             Traditional depression care is <strong>chronic and recurring</strong> — a bill that
@@ -351,7 +506,7 @@ export default function PsilocybinPage() {
         </section>
 
         {/* ---- Main chart (regulatory-burden axis) ---- */}
-        <section className="psilo-section">
+        <section id="regulatory-burden" className="psilo-section" data-reveal>
           <h2>The regulatory-burden axis: annual cost to hold the license</h2>
           <p className="psilo-sub">
             Recurring license fee per year, sorted cheapest → most expensive. Purple = psilocybin.
@@ -361,7 +516,7 @@ export default function PsilocybinPage() {
         </section>
 
         {/* ---- Comparison table ---- */}
-        <section className="psilo-section">
+        <section id="fee-comparison" className="psilo-section" data-reveal>
           <h2>Full fee comparison</h2>
           <p className="psilo-sub">Click any column header to sort. Psilocybin rows are shaded.</p>
           <SortableTable
@@ -372,7 +527,7 @@ export default function PsilocybinPage() {
         </section>
 
         {/* ---- Outcomes ---- */}
-        <section className="psilo-section">
+        <section id="outcomes" className="psilo-section" data-reveal>
           <h2>What the outcomes evidence shows</h2>
           <p className="psilo-sub">
             In clinical trials, psilocybin-assisted therapy is comparable-to-better and markedly
@@ -395,7 +550,7 @@ export default function PsilocybinPage() {
         </section>
 
         {/* ---- Cost-effectiveness ---- */}
-        <section className="psilo-section psilo-prose">
+        <section id="cost-effectiveness" className="psilo-section psilo-prose" data-reveal>
           <h2>Cost-effectiveness</h2>
           {costEffectiveness.map((c) => (
             <p key={c.id}>
@@ -408,7 +563,7 @@ export default function PsilocybinPage() {
         </section>
 
         {/* ---- First-year vs ongoing ---- */}
-        <section className="psilo-section">
+        <section id="first-year" className="psilo-section" data-reveal>
           <h2>First-year cost: one-time vs. recurring</h2>
           <p className="psilo-sub">
             How a license-holder&rsquo;s first-year bill breaks down. For psilocybin, the recurring
@@ -433,7 +588,7 @@ export default function PsilocybinPage() {
         </section>
 
         {/* ---- Ratio chart ---- */}
-        <section className="psilo-section">
+        <section id="multiples" className="psilo-section" data-reveal>
           <h2>How many times more expensive</h2>
           <p className="psilo-sub">
             Each psilocybin license&rsquo;s annual fee as a multiple of the{' '}
@@ -444,7 +599,7 @@ export default function PsilocybinPage() {
         </section>
 
         {/* ---- Who pays ---- */}
-        <section className="psilo-section">
+        <section id="who-pays" className="psilo-section" data-reveal>
           <h2>Who the state pays for</h2>
           <p className="psilo-sub">
             The same government that charges psilocybin the most to operate also declines to pay a
@@ -470,7 +625,7 @@ export default function PsilocybinPage() {
         </section>
 
         {/* ---- Written summary ---- */}
-        <section className="psilo-section psilo-prose">
+        <section id="summary" className="psilo-section psilo-prose" data-reveal>
           <h2>What this shows</h2>
           <p>
             Oregon licenses every other mental-health profession for a few hundred dollars a year. A
@@ -520,8 +675,8 @@ export default function PsilocybinPage() {
         </section>
 
         {/* ---- Take action ---- */}
-        <div className="psilo-cta">
-          <h2>{takeAction.heading}</h2>
+        <section id="take-action" className="psilo-cta" data-reveal aria-labelledby="take-action-h">
+          <h2 id="take-action-h">{takeAction.heading}</h2>
           <p>{takeAction.body}</p>
           <div className="psilo-cta-links">
             {takeAction.links.map((l) => (
@@ -530,10 +685,10 @@ export default function PsilocybinPage() {
               </a>
             ))}
           </div>
-        </div>
+        </section>
 
         {/* ---- Sources ---- */}
-        <section className="psilo-section">
+        <section id="sources" className="psilo-section" data-reveal>
           <h2>Sources</h2>
           <p className="psilo-sub">Licensing fees (official Oregon boards):</p>
           <ul className="psilo-sources">
