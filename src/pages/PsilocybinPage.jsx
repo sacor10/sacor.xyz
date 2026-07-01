@@ -8,6 +8,7 @@ import {
   QuadrantChart,
   GroupedBar,
   CycleDiagram,
+  DonutChart,
 } from './psilocybin/charts'
 import {
   metadata,
@@ -35,6 +36,17 @@ import {
   context as policyContext,
   takeAction,
 } from '../data/psilocybinPolicy'
+import {
+  fundingHistory,
+  fundShift,
+  feeShortfall,
+  transitionPlan,
+  expenditure2325,
+  staffAverages,
+  budgetSources,
+  budgetCurrency,
+  millions,
+} from '../data/psilocybinBudget'
 
 const periodLabel = (l) => (l.periodYears === 1 ? '/ yr' : `/ ${l.periodYears} yr`)
 const ratioOf = (l) => annualCost(l) / traditionalAvgAnnual
@@ -57,6 +69,18 @@ const costRecoveryBars = costRecovery.scenarios.map((s) => {
     valueLabel: `${currency.format(feeEach)} each`,
   }
 })
+
+// ---- Budget view-model: who pays for the program, by biennium ---------------
+// Stacked bars — General Fund (taxpayer) vs. license fees — one bar per
+// biennium. The General Fund segment collapses to zero across the three bars.
+const fundingBars = fundingHistory.map((b) => ({
+  id: b.id,
+  label: `${b.biennium} · ${b.phase}`,
+  segments: [
+    { label: 'Taxpayer (General Fund)', value: b.generalFund },
+    { label: 'License fees', value: b.fees },
+  ],
+}))
 
 // ---- Phase-2 view-model: 10-year cost split by payer ------------------------
 const lifetime = computeLifetime()
@@ -159,6 +183,8 @@ const columns = [
 const SECTIONS = [
   { id: 'proposed', label: 'Proposed change' },
   { id: 'current-vs-proposed', label: 'Current vs. proposed' },
+  { id: 'who-funds', label: 'Who pays for it' },
+  { id: 'where-money-goes', label: 'Where the money goes' },
   { id: 'why-oregon', label: 'Why Oregon “has to”' },
   { id: 'inversion', label: 'The inversion' },
   { id: 'at-a-glance', label: 'At a glance' },
@@ -357,6 +383,184 @@ export default function PsilocybinPage() {
             refLabel="For scale, the average of every other mental-health license"
             ariaLabel="Current versus proposed psilocybin license fees"
           />
+        </section>
+
+        {/* ---- Who pays for the program (funding-source flip) ---- */}
+        <section id="who-funds" className="psilo-section" data-reveal>
+          <h2>Who pays for the program — and why that just changed</h2>
+          <p className="psilo-sub">
+            The fee crisis isn&rsquo;t about how much the program costs (~$3.1M/yr). It&rsquo;s about{' '}
+            <strong>who covers that cost</strong>. Over three budget cycles, taxpayer (General Fund)
+            support goes <strong>{millions(fundingHistory[0].generalFund)} →{' '}
+            {millions(fundingHistory[1].generalFund)} → $0</strong>, while the entire load shifts
+            onto license fees. Green = taxpayer dollars; purple = fees paid by licensees.
+          </p>
+          <StackedBar
+            data={fundingBars}
+            segmentColors={['var(--psilo-genfund)', 'var(--psilo-fees)']}
+            ariaLabel="Oregon Psilocybin Services funding by source and biennium"
+          />
+          <div className="psilo-legend">
+            <span>
+              <i className="psilo-swatch" style={{ background: 'var(--psilo-genfund)' }} />
+              Taxpayer (General Fund)
+            </span>
+            <span>
+              <i className="psilo-swatch" style={{ background: 'var(--psilo-fees)' }} />
+              License fees
+            </span>
+          </div>
+
+          <div className="psilo-stats" style={{ marginTop: 22 }}>
+            <div className="psilo-stat">
+              <div className="num">
+                {millions(fundingHistory[0].generalFund)} → {millions(fundingHistory[1].generalFund)} → $0
+              </div>
+              <div className="cap">Taxpayer support across 2021–23, 2023–25, 2025–27</div>
+            </div>
+            <div className="psilo-stat">
+              <div className="num">{budgetCurrency.format(fundShift.amount)}</div>
+              <div className="cap">Moved off taxpayers and onto fees for 2025–27</div>
+            </div>
+            <div className="psilo-stat">
+              <div className="num">{millions(feeShortfall.amount)}</div>
+              <div className="cap">2023–25 fee shortfall — why the General Fund had to step in</div>
+            </div>
+            <div className="psilo-stat">
+              <div className="num">{fundingHistory[0].fte} FTE</div>
+              <div className="cap">Staff who built the nation&rsquo;s first psilocybin program</div>
+            </div>
+          </div>
+
+          <div className="psilo-prose" style={{ marginTop: 18 }}>
+            <p>
+              The taxpayer contribution was never meant to be permanent — the General Fund was
+              structured to cover only about one year of the 2023–25 biennium, with the program
+              expected to run entirely on fees by {transitionPlan.targetBiennium}.{' '}
+              <a href={transitionPlan.source.url} target="_blank" rel="noopener noreferrer">
+                ({transitionPlan.source.label})
+              </a>{' '}
+              But that plan assumed fee revenue would grow into the gap. Instead the licensee base
+              shrank. With taxpayer support now at <strong>$0</strong> and a{' '}
+              {budgetCurrency.format(fundShift.amount)} cost handed straight to licensees, the only
+              lever left is the fee — which is exactly where the death spiral begins.{' '}
+              <a href={fundShift.source.url} target="_blank" rel="noopener noreferrer">
+                ({fundShift.source.label})
+              </a>
+            </p>
+          </div>
+        </section>
+
+        {/* ---- Where the money goes (expenditure donut) ---- */}
+        <section id="where-money-goes" className="psilo-section" data-reveal>
+          <h2>Where the money goes</h2>
+          <p className="psilo-sub">
+            The actual line-item budget for the psilocybin program (Package 449, from Oregon&rsquo;s
+            official budget detail) — the {expenditure2325.positions}-person licensing and
+            compliance operation the fees have to carry. Roughly{' '}
+            <strong>
+              {Math.round((expenditure2325.personalServices / expenditure2325.total) * 100)}% is
+              people
+            </strong>{' '}
+            — salaries and benefits — and the biggest non-staff cost is the IT platform licensees
+            use to apply, renew and track products.
+          </p>
+          <div className="psilo-donut-wrap">
+            <DonutChart
+              data={expenditure2325.groups}
+              centerLabel={millions(expenditure2325.total)}
+              centerSub="Package 449 · 2023–25"
+              ariaLabel="Oregon Psilocybin Services program spending by category"
+            />
+            <div className="psilo-donut-legend">
+              {expenditure2325.groups.map((g) => (
+                <div className="psilo-donut-item" key={g.id}>
+                  <i className="psilo-swatch" style={{ background: g.color }} />
+                  <span className="psilo-donut-item-label">{g.label}</span>
+                  <span className="psilo-donut-item-value">
+                    {budgetCurrency.format(g.value)} ·{' '}
+                    {((g.value / expenditure2325.total) * 100).toFixed(1)}%
+                  </span>
+                  <p className="psilo-donut-item-detail">{g.detail}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="psilo-stats" style={{ marginTop: 22 }}>
+            <div className="psilo-stat">
+              <div className="num">{staffAverages.fte}</div>
+              <div className="cap">Positions ({staffAverages.fte.toFixed(2)} FTE) — the entire program staff</div>
+            </div>
+            <div className="psilo-stat">
+              <div className="num">{budgetCurrency.format(staffAverages.salaryPerYear)}/yr</div>
+              <div className="cap">Average budgeted salary per staffer</div>
+            </div>
+            <div className="psilo-stat">
+              <div className="num">{budgetCurrency.format(staffAverages.benefitsPerYear)}/yr</div>
+              <div className="cap">Average benefits per staffer (PERS, health, payroll)</div>
+            </div>
+            <div className="psilo-stat">
+              <div className="num">{budgetCurrency.format(staffAverages.loadedPerYear)}/yr</div>
+              <div className="cap">Fully loaded cost per staffer — salary + benefits</div>
+            </div>
+          </div>
+          <p className="psilo-sub" style={{ marginTop: 10 }}>
+            {staffAverages.note} Individual salaries by job classification aren&rsquo;t published at
+            package level, so these are team-wide averages.
+          </p>
+
+          <details className="psilo-assumptions">
+            <summary>
+              Every raw line item from the state budget system (BPR013), and how to read this
+            </summary>
+            <ul>
+              {expenditure2325.lineItems.map((li) => (
+                <li key={li.id}>
+                  <strong>{li.label}</strong> ({li.category}):{' '}
+                  {budgetCurrency.format(li.value)}
+                </li>
+              ))}
+              <li style={{ marginTop: 8 }}>
+                Totals: Personal Services{' '}
+                {budgetCurrency.format(expenditure2325.personalServices)} + Services &amp;
+                Supplies {budgetCurrency.format(expenditure2325.servicesAndSupplies)} ={' '}
+                {budgetCurrency.format(expenditure2325.total)} ({expenditure2325.positions}{' '}
+                positions, {expenditure2325.fte.toFixed(2)} FTE). Capital outlay and special
+                payments: $0.
+              </li>
+              <li>
+                These are the Governor&rsquo;s Budget line items for Package 449. The legislature
+                adopted the package at {budgetCurrency.format(expenditure2325.adoptedTotal)}{' '}
+                total ({budgetCurrency.format(3139672)} General Fund +{' '}
+                {budgetCurrency.format(4115500)} fee revenue) — the itemization above is the only
+                published object-code composition of that same package.{' '}
+                <a
+                  href={expenditure2325.source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {expenditure2325.source.label}
+                </a>
+                {' · '}
+                <a
+                  href={expenditure2325.adoptedSource.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {expenditure2325.adoptedSource.label}
+                </a>
+              </li>
+            </ul>
+          </details>
+
+          <p className="psilo-takeaway">
+            There is no hidden bureaucracy here: the program is{' '}
+            <strong>22 state employees and a licensing IT system.</strong> The problem isn&rsquo;t
+            what it spends — it&rsquo;s that a cost base which is{' '}
+            {Math.round((expenditure2325.personalServices / expenditure2325.total) * 100)}% fixed
+            staffing must now be recovered from a shrinking pool of licensees.
+          </p>
         </section>
 
         {/* ---- Why Oregon says it has to ---- */}
@@ -710,6 +914,19 @@ export default function PsilocybinPage() {
                 {item.source.label}:{' '}
                 <a href={item.source.url} target="_blank" rel="noopener noreferrer">
                   {item.source.url}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <p className="psilo-sub" style={{ marginTop: 16 }}>
+            Program budget &amp; funding sources (official Oregon legislative documents):
+          </p>
+          <ul className="psilo-sources">
+            {budgetSources.map((s) => (
+              <li key={s.url}>
+                {s.label}:{' '}
+                <a href={s.url} target="_blank" rel="noopener noreferrer">
+                  {s.url}
                 </a>
               </li>
             ))}

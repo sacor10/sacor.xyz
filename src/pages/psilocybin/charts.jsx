@@ -193,6 +193,75 @@ export function CycleDiagram({ steps, centerLabel, ariaLabel }) {
   )
 }
 
+// ---- Donut (pie) chart --------------------------------------------------------
+// data: [{ id, label, value, color }] — slices drawn clockwise from 12 o'clock.
+// Pure SVG wedge paths; legend is rendered by the caller for layout freedom.
+export function DonutChart({ data, centerLabel, centerSub, ariaLabel }) {
+  const W = 340
+  const cx = W / 2
+  const cy = W / 2
+  const r0 = 66 // inner radius
+  const r1 = 140 // outer radius
+  const total = data.reduce((s, d) => s + d.value, 0)
+  const polar = (r, a) => [cx + r * Math.cos(a), cy + r * Math.sin(a)]
+
+  // cumulative start angle per slice, beginning at 12 o'clock
+  const starts = data.reduce(
+    (acc, d) => {
+      acc.push(acc[acc.length - 1] + (total > 0 ? (d.value / total) * Math.PI * 2 : 0))
+      return acc
+    },
+    [-Math.PI / 2],
+  )
+  const slices = data.map((d, i) => {
+    const a0 = starts[i]
+    const a1 = starts[i + 1]
+    const sweep = a1 - a0
+    const large = sweep > Math.PI ? 1 : 0
+    const [x0, y0] = polar(r1, a0)
+    const [x1, y1] = polar(r1, a1)
+    const [x2, y2] = polar(r0, a1)
+    const [x3, y3] = polar(r0, a0)
+    const path = `M ${x0} ${y0} A ${r1} ${r1} 0 ${large} 1 ${x1} ${y1} L ${x2} ${y2} A ${r0} ${r0} 0 ${large} 0 ${x3} ${y3} Z`
+    // percent label sits mid-wedge; hide it on slivers that can't fit text
+    const mid = (a0 + a1) / 2
+    const [lx, ly] = polar((r0 + r1) / 2, mid)
+    const pct = total > 0 ? (d.value / total) * 100 : 0
+    return { ...d, path, lx, ly, pct }
+  })
+
+  return (
+    <svg
+      viewBox={`0 0 ${W} ${W}`}
+      role="img"
+      aria-label={ariaLabel}
+      className="psilo-donut"
+      width="100%"
+    >
+      {slices.map((s) => (
+        <path key={s.id} d={s.path} fill={s.color} stroke="#fff" strokeWidth="2">
+          <title>{`${s.label}: ${fmt.format(s.value)} (${s.pct.toFixed(1)}%)`}</title>
+        </path>
+      ))}
+      {slices
+        .filter((s) => s.pct >= 6)
+        .map((s) => (
+          <text key={`pct-${s.id}`} x={s.lx} y={s.ly} className="psilo-donut-pct">
+            {Math.round(s.pct)}%
+          </text>
+        ))}
+      <text x={cx} y={cy - 6} className="psilo-donut-center">
+        {centerLabel}
+      </text>
+      {centerSub && (
+        <text x={cx} y={cy + 16} className="psilo-donut-center-sub">
+          {centerSub}
+        </text>
+      )}
+    </svg>
+  )
+}
+
 // ---- Subsidy-inversion quadrant ---------------------------------------------
 // points: [{ id, label, x, y, category, caption }]  x,y in 0..100
 // axes: { x, y } label strings
