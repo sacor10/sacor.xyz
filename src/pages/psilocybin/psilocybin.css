@@ -14,6 +14,8 @@
   --psilo-neutral: #9aa7b8; /* traditional bars */
   --psilo-one-time: #c9d2de; /* stacked: one-time */
   --psilo-recurring: #6b3fa0; /* stacked: recurring */
+  --psilo-genfund: #2e8b57; /* funding source: taxpayer / General Fund */
+  --psilo-fees: #6b3fa0; /* funding source: license fees */
 
   min-height: 100vh;
   margin: 0;

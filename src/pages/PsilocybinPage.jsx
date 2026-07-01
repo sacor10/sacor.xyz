@@ -35,6 +35,15 @@ import {
   context as policyContext,
   takeAction,
 } from '../data/psilocybinPolicy'
+import {
+  fundingHistory,
+  fundShift,
+  feeShortfall,
+  transitionPlan,
+  budgetSources,
+  budgetCurrency,
+  millions,
+} from '../data/psilocybinBudget'
 
 const periodLabel = (l) => (l.periodYears === 1 ? '/ yr' : `/ ${l.periodYears} yr`)
 const ratioOf = (l) => annualCost(l) / traditionalAvgAnnual
@@ -57,6 +66,18 @@ const costRecoveryBars = costRecovery.scenarios.map((s) => {
     valueLabel: `${currency.format(feeEach)} each`,
   }
 })
+
+// ---- Budget view-model: who pays for the program, by biennium ---------------
+// Stacked bars — General Fund (taxpayer) vs. license fees — one bar per
+// biennium. The General Fund segment collapses to zero across the three bars.
+const fundingBars = fundingHistory.map((b) => ({
+  id: b.id,
+  label: `${b.biennium} · ${b.phase}`,
+  segments: [
+    { label: 'Taxpayer (General Fund)', value: b.generalFund },
+    { label: 'License fees', value: b.fees },
+  ],
+}))
 
 // ---- Phase-2 view-model: 10-year cost split by payer ------------------------
 const lifetime = computeLifetime()
@@ -159,6 +180,7 @@ const columns = [
 const SECTIONS = [
   { id: 'proposed', label: 'Proposed change' },
   { id: 'current-vs-proposed', label: 'Current vs. proposed' },
+  { id: 'who-funds', label: 'Who pays for it' },
   { id: 'why-oregon', label: 'Why Oregon “has to”' },
   { id: 'inversion', label: 'The inversion' },
   { id: 'at-a-glance', label: 'At a glance' },
@@ -357,6 +379,72 @@ export default function PsilocybinPage() {
             refLabel="For scale, the average of every other mental-health license"
             ariaLabel="Current versus proposed psilocybin license fees"
           />
+        </section>
+
+        {/* ---- Who pays for the program (funding-source flip) ---- */}
+        <section id="who-funds" className="psilo-section" data-reveal>
+          <h2>Who pays for the program — and why that just changed</h2>
+          <p className="psilo-sub">
+            The fee crisis isn&rsquo;t about how much the program costs (~$3.1M/yr). It&rsquo;s about{' '}
+            <strong>who covers that cost</strong>. Over three budget cycles, taxpayer (General Fund)
+            support goes <strong>{millions(fundingHistory[0].generalFund)} →{' '}
+            {millions(fundingHistory[1].generalFund)} → $0</strong>, while the entire load shifts
+            onto license fees. Green = taxpayer dollars; purple = fees paid by licensees.
+          </p>
+          <StackedBar
+            data={fundingBars}
+            segmentColors={['var(--psilo-genfund)', 'var(--psilo-fees)']}
+            ariaLabel="Oregon Psilocybin Services funding by source and biennium"
+          />
+          <div className="psilo-legend">
+            <span>
+              <i className="psilo-swatch" style={{ background: 'var(--psilo-genfund)' }} />
+              Taxpayer (General Fund)
+            </span>
+            <span>
+              <i className="psilo-swatch" style={{ background: 'var(--psilo-fees)' }} />
+              License fees
+            </span>
+          </div>
+
+          <div className="psilo-stats" style={{ marginTop: 22 }}>
+            <div className="psilo-stat">
+              <div className="num">
+                {millions(fundingHistory[0].generalFund)} → {millions(fundingHistory[1].generalFund)} → $0
+              </div>
+              <div className="cap">Taxpayer support across 2021–23, 2023–25, 2025–27</div>
+            </div>
+            <div className="psilo-stat">
+              <div className="num">{budgetCurrency.format(fundShift.amount)}</div>
+              <div className="cap">Moved off taxpayers and onto fees for 2025–27</div>
+            </div>
+            <div className="psilo-stat">
+              <div className="num">{millions(feeShortfall.amount)}</div>
+              <div className="cap">2023–25 fee shortfall — why the General Fund had to step in</div>
+            </div>
+            <div className="psilo-stat">
+              <div className="num">{fundingHistory[0].fte} FTE</div>
+              <div className="cap">Staff who built the nation&rsquo;s first psilocybin program</div>
+            </div>
+          </div>
+
+          <div className="psilo-prose" style={{ marginTop: 18 }}>
+            <p>
+              The taxpayer contribution was never meant to be permanent — the General Fund was
+              structured to cover only about one year of the 2023–25 biennium, with the program
+              expected to run entirely on fees by {transitionPlan.targetBiennium}.{' '}
+              <a href={transitionPlan.source.url} target="_blank" rel="noopener noreferrer">
+                ({transitionPlan.source.label})
+              </a>{' '}
+              But that plan assumed fee revenue would grow into the gap. Instead the licensee base
+              shrank. With taxpayer support now at <strong>$0</strong> and a{' '}
+              {budgetCurrency.format(fundShift.amount)} cost handed straight to licensees, the only
+              lever left is the fee — which is exactly where the death spiral begins.{' '}
+              <a href={fundShift.source.url} target="_blank" rel="noopener noreferrer">
+                ({fundShift.source.label})
+              </a>
+            </p>
+          </div>
         </section>
 
         {/* ---- Why Oregon says it has to ---- */}
@@ -710,6 +798,19 @@ export default function PsilocybinPage() {
                 {item.source.label}:{' '}
                 <a href={item.source.url} target="_blank" rel="noopener noreferrer">
                   {item.source.url}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <p className="psilo-sub" style={{ marginTop: 16 }}>
+            Program budget &amp; funding sources (official Oregon legislative documents):
+          </p>
+          <ul className="psilo-sources">
+            {budgetSources.map((s) => (
+              <li key={s.url}>
+                {s.label}:{' '}
+                <a href={s.url} target="_blank" rel="noopener noreferrer">
+                  {s.url}
                 </a>
               </li>
             ))}
