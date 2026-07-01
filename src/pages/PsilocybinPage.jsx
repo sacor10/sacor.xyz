@@ -42,6 +42,7 @@ import {
   feeShortfall,
   transitionPlan,
   expenditure2325,
+  staffAverages,
   budgetSources,
   budgetCurrency,
   millions,
@@ -485,6 +486,29 @@ export default function PsilocybinPage() {
               ))}
             </div>
           </div>
+
+          <div className="psilo-stats" style={{ marginTop: 22 }}>
+            <div className="psilo-stat">
+              <div className="num">{staffAverages.fte}</div>
+              <div className="cap">Positions ({staffAverages.fte.toFixed(2)} FTE) — the entire program staff</div>
+            </div>
+            <div className="psilo-stat">
+              <div className="num">{budgetCurrency.format(staffAverages.salaryPerYear)}/yr</div>
+              <div className="cap">Average budgeted salary per staffer</div>
+            </div>
+            <div className="psilo-stat">
+              <div className="num">{budgetCurrency.format(staffAverages.benefitsPerYear)}/yr</div>
+              <div className="cap">Average benefits per staffer (PERS, health, payroll)</div>
+            </div>
+            <div className="psilo-stat">
+              <div className="num">{budgetCurrency.format(staffAverages.loadedPerYear)}/yr</div>
+              <div className="cap">Fully loaded cost per staffer — salary + benefits</div>
+            </div>
+          </div>
+          <p className="psilo-sub" style={{ marginTop: 10 }}>
+            {staffAverages.note} Individual salaries by job classification aren&rsquo;t published at
+            package level, so these are team-wide averages.
+          </p>
 
           <details className="psilo-assumptions">
             <summary>

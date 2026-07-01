@@ -159,6 +159,26 @@ export const expenditure2325 = {
   ],
 }
 
+// Per-person staffing math, derived from the BPR013 line items above: the
+// package budgets 22.00 FTE over the 2-year biennium, so each figure is
+// (line item ÷ 22 FTE ÷ 2 years). Budgeted averages across the whole team —
+// individual salaries by classification are not published at package level.
+export const staffAverages = (() => {
+  const fte = expenditure2325.fte
+  const years = 2
+  const salaries = expenditure2325.lineItems.find((li) => li.id === 'sal').value
+  const benefits = expenditure2325.personalServices - salaries
+  const perYear = (v) => Math.round(v / fte / years)
+  return {
+    fte,
+    years,
+    salaryPerYear: perYear(salaries), // avg budgeted salary
+    benefitsPerYear: perYear(benefits), // avg PERS + health + payroll
+    loadedPerYear: perYear(expenditure2325.personalServices), // fully loaded
+    note: 'Budgeted averages: Package 449 personal-services line items ÷ 22.00 FTE ÷ 2 years.',
+  }
+})()
+
 // The single line item that captures the whole shift: for 2025-27 the budget
 // moves ~$3.69M of OPS spending OFF the General Fund and ONTO fees.
 export const fundShift = {
