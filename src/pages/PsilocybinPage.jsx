@@ -8,6 +8,7 @@ import {
   QuadrantChart,
   GroupedBar,
   CycleDiagram,
+  DonutChart,
 } from './psilocybin/charts'
 import {
   metadata,
@@ -40,6 +41,7 @@ import {
   fundShift,
   feeShortfall,
   transitionPlan,
+  expenditure2325,
   budgetSources,
   budgetCurrency,
   millions,
@@ -181,6 +183,7 @@ const SECTIONS = [
   { id: 'proposed', label: 'Proposed change' },
   { id: 'current-vs-proposed', label: 'Current vs. proposed' },
   { id: 'who-funds', label: 'Who pays for it' },
+  { id: 'where-money-goes', label: 'Where the money goes' },
   { id: 'why-oregon', label: 'Why Oregon “has to”' },
   { id: 'inversion', label: 'The inversion' },
   { id: 'at-a-glance', label: 'At a glance' },
@@ -445,6 +448,95 @@ export default function PsilocybinPage() {
               </a>
             </p>
           </div>
+        </section>
+
+        {/* ---- Where the money goes (expenditure donut) ---- */}
+        <section id="where-money-goes" className="psilo-section" data-reveal>
+          <h2>Where the money goes</h2>
+          <p className="psilo-sub">
+            The actual line-item budget for the psilocybin program (Package 449, from Oregon&rsquo;s
+            official budget detail) — the {expenditure2325.positions}-person licensing and
+            compliance operation the fees have to carry. Roughly{' '}
+            <strong>
+              {Math.round((expenditure2325.personalServices / expenditure2325.total) * 100)}% is
+              people
+            </strong>{' '}
+            — salaries and benefits — and the biggest non-staff cost is the IT platform licensees
+            use to apply, renew and track products.
+          </p>
+          <div className="psilo-donut-wrap">
+            <DonutChart
+              data={expenditure2325.groups}
+              centerLabel={millions(expenditure2325.total)}
+              centerSub="Package 449 · 2023–25"
+              ariaLabel="Oregon Psilocybin Services program spending by category"
+            />
+            <div className="psilo-donut-legend">
+              {expenditure2325.groups.map((g) => (
+                <div className="psilo-donut-item" key={g.id}>
+                  <i className="psilo-swatch" style={{ background: g.color }} />
+                  <span className="psilo-donut-item-label">{g.label}</span>
+                  <span className="psilo-donut-item-value">
+                    {budgetCurrency.format(g.value)} ·{' '}
+                    {((g.value / expenditure2325.total) * 100).toFixed(1)}%
+                  </span>
+                  <p className="psilo-donut-item-detail">{g.detail}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <details className="psilo-assumptions">
+            <summary>
+              Every raw line item from the state budget system (BPR013), and how to read this
+            </summary>
+            <ul>
+              {expenditure2325.lineItems.map((li) => (
+                <li key={li.id}>
+                  <strong>{li.label}</strong> ({li.category}):{' '}
+                  {budgetCurrency.format(li.value)}
+                </li>
+              ))}
+              <li style={{ marginTop: 8 }}>
+                Totals: Personal Services{' '}
+                {budgetCurrency.format(expenditure2325.personalServices)} + Services &amp;
+                Supplies {budgetCurrency.format(expenditure2325.servicesAndSupplies)} ={' '}
+                {budgetCurrency.format(expenditure2325.total)} ({expenditure2325.positions}{' '}
+                positions, {expenditure2325.fte.toFixed(2)} FTE). Capital outlay and special
+                payments: $0.
+              </li>
+              <li>
+                These are the Governor&rsquo;s Budget line items for Package 449. The legislature
+                adopted the package at {budgetCurrency.format(expenditure2325.adoptedTotal)}{' '}
+                total ({budgetCurrency.format(3139672)} General Fund +{' '}
+                {budgetCurrency.format(4115500)} fee revenue) — the itemization above is the only
+                published object-code composition of that same package.{' '}
+                <a
+                  href={expenditure2325.source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {expenditure2325.source.label}
+                </a>
+                {' · '}
+                <a
+                  href={expenditure2325.adoptedSource.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {expenditure2325.adoptedSource.label}
+                </a>
+              </li>
+            </ul>
+          </details>
+
+          <p className="psilo-takeaway">
+            There is no hidden bureaucracy here: the program is{' '}
+            <strong>22 state employees and a licensing IT system.</strong> The problem isn&rsquo;t
+            what it spends — it&rsquo;s that a cost base which is{' '}
+            {Math.round((expenditure2325.personalServices / expenditure2325.total) * 100)}% fixed
+            staffing must now be recovered from a shrinking pool of licensees.
+          </p>
         </section>
 
         {/* ---- Why Oregon says it has to ---- */}

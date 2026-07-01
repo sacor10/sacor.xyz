@@ -281,6 +281,75 @@
   color: var(--psilo-accent);
 }
 
+/* ---- Donut (pie) chart ---- */
+.psilo-donut-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 28px;
+  justify-content: center;
+}
+.psilo-donut {
+  max-width: 320px;
+  flex: 0 1 300px;
+}
+.psilo-donut-pct {
+  font-size: 15px;
+  font-weight: 700;
+  fill: #fff;
+  text-anchor: middle;
+  dominant-baseline: central;
+  paint-order: stroke;
+  stroke: rgba(28, 36, 48, 0.25);
+  stroke-width: 2px;
+}
+.psilo-donut-center {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  fill: var(--psilo-ink);
+  text-anchor: middle;
+}
+.psilo-donut-center-sub {
+  font-size: 12px;
+  fill: var(--psilo-muted);
+  text-anchor: middle;
+}
+.psilo-donut-legend {
+  flex: 1 1 280px;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.psilo-donut-item {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  gap: 10px;
+  align-items: baseline;
+}
+.psilo-donut-item .psilo-swatch {
+  position: relative;
+  top: 1px;
+}
+.psilo-donut-item-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--psilo-ink);
+}
+.psilo-donut-item-value {
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--psilo-muted);
+  white-space: nowrap;
+}
+.psilo-donut-item-detail {
+  grid-column: 2 / 4;
+  font-size: 0.8rem;
+  color: var(--psilo-muted);
+  margin: 0;
+}
+
 /* ---- Quadrant ---- */
 .psilo-quadrant {
   max-width: 620px;

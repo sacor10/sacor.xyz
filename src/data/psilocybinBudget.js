@@ -6,12 +6,13 @@
 // the entire load shifts onto license fees. That shift — not malice — is what
 // forces fees up and puts service centers at risk.
 //
-// Every figure below is drawn from official Oregon legislative budget documents
-// (copies committed under src/assets/). Object-code detail (salaries vs. IT vs.
-// inspections) is intentionally NOT modeled: the state budget tracks psilocybin
-// at the program level (fund source + positions/FTE), bundled with six other
-// sections in the Center for Health Protection, so an internal spending pie is
-// not sourceable and is not invented here.
+// Every figure below is drawn from official Oregon budget documents. The
+// object-code expenditure detail (salaries vs. IT vs. legal, etc.) comes from
+// the OHA 2023-25 Governor's Budget detail volume: the ORBITS "Essential and
+// Policy Package Fiscal Impact Summary" (report BPR013) for Package 449 —
+// "OR Psilocybin Services Regulatory Framework" (44300-030-05), pp. 1073-74,
+// and the Package 449 policy-package narrative, pp. 1584-95. Full source PDFs
+// are archived on the repo's GitHub release tagged `data`.
 
 // Canonical online copies of the committed source PDFs.
 const SRC = {
@@ -25,6 +26,8 @@ const SRC = {
     'https://olis.oregonlegislature.gov/liz/2025R1/Downloads/CommitteeMeetingDocument/288940', // 2025-27 Ways & Means — OHA Public Health Division narrative
   budgetReport5525:
     'https://olis.oregonlegislature.gov/liz/2023R1/Downloads/MeasureAnalysisDocument/80416', // SB 5525 (2023) Budget Report — Package 449 line item
+  gbDetail2325:
+    'https://www.oregon.gov/oha/Budget/2023-25-OHA-Governor-Budget.pdf', // OHA 2023-25 Governor's Budget detail volume (BPR013 for Pkg 449, pp.1073-74)
 }
 
 // Funding by biennium. generalFund + fees = total (except where `feesApprox`).
@@ -67,6 +70,95 @@ export const fundingHistory = [
   },
 ]
 
+// ---- Where the money goes: OPS expenditure by object code -------------------
+// Line-item pricing of Package 449 ("OR Psilocybin Services Regulatory
+// Framework", 22 positions / 22.00 FTE) from the ORBITS BPR013 fiscal impact
+// summary in the OHA 2023-25 Governor's Budget detail volume (pp. 1073-74).
+// The legislature adopted the package at $7,255,172 total ($3,139,672 General
+// Fund + $4,115,500 Other Funds, SB 5525); the itemization below is the
+// Governor's Budget pricing of the same package ($6,587,395) — the only
+// published object-code composition.
+export const expenditure2325 = {
+  total: 6587395,
+  adoptedTotal: 7255172,
+  positions: 22,
+  fte: 22,
+  personalServices: 4699781, // 71.3% of the package
+  servicesAndSupplies: 1887614, // 28.7%
+  source: {
+    label: "OHA 2023-25 Governor's Budget detail volume — BPR013 fiscal impact summary, Pkg 449 (pp. 1073-74)",
+    url: SRC.gbDetail2325,
+  },
+  adoptedSource: {
+    label: 'SB 5525 (2023) Budget Report — Package 449',
+    url: SRC.budgetReport5525,
+  },
+  // Chart-ready grouping (sums exactly to `total`).
+  groups: [
+    {
+      id: 'salaries',
+      label: 'Staff salaries',
+      value: 3037560,
+      color: '#6b3fa0',
+      detail: 'Class/unclassified salaries and per diem for the 22-person licensing, compliance and administration team.',
+    },
+    {
+      id: 'benefits',
+      label: 'Staff benefits & payroll',
+      value: 1662221,
+      color: '#9b7cc4',
+      detail: 'PERS retirement ($544,332), health/flexible benefits ($871,200), Social Security ($232,376), plus small payroll assessments.',
+    },
+    {
+      id: 'it',
+      label: 'IT professional services',
+      value: 857420,
+      color: '#2e7fa8',
+      detail: 'Largest non-staff cost: the TLC (Training, Licensing & Compliance) online platform and product-tracking systems.',
+    },
+    {
+      id: 'professional',
+      label: 'Professional services',
+      value: 594294,
+      color: '#2e8b57',
+      detail: 'Contracted non-IT services supporting licensing, inspections and program operations.',
+    },
+    {
+      id: 'legal',
+      label: 'Attorney General (legal)',
+      value: 150000,
+      color: '#d98e32',
+      detail: 'Department of Justice counsel for the nation-first regulatory framework.',
+    },
+    {
+      id: 'overhead',
+      label: 'Office, travel & other',
+      value: 285900,
+      color: '#9aa7b8',
+      detail: 'Office expenses ($129,738), in-state travel for site inspections ($68,187), telecom ($42,420), training ($19,053), equipment & misc ($26,502).',
+    },
+  ],
+  // Raw object-code line items, verbatim from BPR013.
+  lineItems: [
+    { id: 'sal', category: 'Personal Services', label: 'Salaries and per diem', value: 3037560 },
+    { id: 'flex', category: 'Personal Services', label: 'Flexible benefits (health)', value: 871200 },
+    { id: 'pers', category: 'Personal Services', label: 'PERS retirement contribution', value: 544332 },
+    { id: 'ss', category: 'Personal Services', label: 'Social Security taxes', value: 232376 },
+    { id: 'pfmli', category: 'Personal Services', label: 'Paid Family & Medical Leave insurance', value: 12135 },
+    { id: 'erb', category: 'Personal Services', label: 'Employment Relations Board assessments', value: 1166 },
+    { id: 'wcd', category: 'Personal Services', label: "Workers' comp assessment", value: 1012 },
+    { id: 'itps', category: 'Services & Supplies', label: 'IT professional services', value: 857420 },
+    { id: 'ps', category: 'Services & Supplies', label: 'Professional services', value: 594294 },
+    { id: 'ag', category: 'Services & Supplies', label: 'Attorney General', value: 150000 },
+    { id: 'office', category: 'Services & Supplies', label: 'Office expenses', value: 129738 },
+    { id: 'travel', category: 'Services & Supplies', label: 'In-state travel', value: 68187 },
+    { id: 'telecom', category: 'Services & Supplies', label: 'Telecommunications', value: 42420 },
+    { id: 'train', category: 'Services & Supplies', label: 'Employee training', value: 19053 },
+    { id: 'prop', category: 'Services & Supplies', label: 'Expendable property ($250–$5,000)', value: 14700 },
+    { id: 'osas', category: 'Services & Supplies', label: 'Other services and supplies', value: 11802 },
+  ],
+}
+
 // The single line item that captures the whole shift: for 2025-27 the budget
 // moves ~$3.69M of OPS spending OFF the General Fund and ONTO fees.
 export const fundShift = {
@@ -95,6 +187,7 @@ export const transitionPlan = {
 }
 
 export const budgetSources = [
+  { label: "OHA 2023-25 Governor's Budget detail volume — Package 449 object-code detail (BPR013, pp. 1073-74) & policy-package narrative (pp. 1584-95)", url: SRC.gbDetail2325 },
   { label: 'SB 5525 (2023) Budget Report — Package 449, Oregon Psilocybin Services Regulatory Framework', url: SRC.budgetReport5525 },
   { label: '2025-27 Legislatively Adopted Budget — OHA new & expanded programs (appropriation detail)', url: SRC.lab2527 },
   { label: 'LFO 2025-27 Budget Review — Oregon Health Authority', url: SRC.review2527 },
