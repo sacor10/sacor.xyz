@@ -1,16 +1,8 @@
 import { Link } from 'react-router-dom'
 import Layout from '../Layout'
+import { webringMembers } from '../data/webring'
 
-const members = [
-  {
-    rank: 1,
-    name: 'sacor.xyz',
-    url: '/',
-    desc: 'The site you are on right now! Home of Sacor, the youtube-link-to-mp4 downloader, and strong opinions.',
-    status: 'ACTIVE',
-    joined: 'Founded 1989 (retroactively)',
-  },
-]
+const members = webringMembers
 
 const rightSidebar = (
   <>
@@ -26,11 +18,11 @@ const rightSidebar = (
         <tr>
           <td align="center">
             <font face="Courier New" size="2" color="#FFFFFF">
-              <b className="yellow">Members:</b> 1
+              <b className="yellow">Members:</b> {members.length}
               <br />
-              <b className="yellow">Applications:</b> 0
+              <b className="yellow">Applications:</b> 1
               <br />
-              <b className="yellow">Approved:</b> 0
+              <b className="yellow">Approved:</b> 1
               <br />
               <b className="yellow">Rejected:</b> 0
               <br />
@@ -43,7 +35,7 @@ const rightSidebar = (
               <br />
               <br />
               <font size="1" color="#00FFFF">
-                (100% uptime is easy when there is exactly one site in the ring and it is the one you are reading.)
+                (Uptime measured with great rigor and no instruments. The ring has grown to two whole sites &mdash; [Prev] and [Next] finally go somewhere.)
               </font>
             </font>
           </td>
@@ -134,9 +126,10 @@ const mainContent = (
       <font color="#FFFF00">
         <b>Full disclosure:</b>
       </font>{' '}
-      there is currently <b className="lime">one (1)</b> member site, and you are looking at it.
-      So [Prev], [Next], and [Random] all go to the same place. That place is <i>here</i>. You&rsquo;ve
-      arrived. Welcome.
+      the ring has grown to <b className="lime">two (2)</b> member sites. That means{' '}
+      <b className="cyan">[Prev]</b>, <b className="cyan">[Next]</b>, and{' '}
+      <b className="cyan">[Random]</b> down in the footer <i>actually go somewhere</i> now. Wild
+      times. Surf responsibly.
     </font>
 
     <br />
@@ -190,7 +183,11 @@ const mainContent = (
               </font>
               <br />
               <br />
-              <Link to={m.url}>Visit Site &rarr;</Link>
+              {m.external ? (
+                <a href={m.url} target="_blank" rel="noopener noreferrer">Visit Site &rarr;</a>
+              ) : (
+                <Link to={m.url}>Visit Site &rarr;</Link>
+              )}
             </td>
           </tr>
         </tbody>
