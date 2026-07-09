@@ -271,6 +271,30 @@ export default function PsilocybinPage() {
     }
   }, [])
 
+  // Lock zoom-out on this page. Unlike the retro pages, this route renders its
+  // own light surface directly on the body — whose background is a deep purple
+  // (src/index.css). With no minimum-scale in the global viewport meta, pinching
+  // to zoom out below the default reveals that purple as a right-hand "tray".
+  // Clamp minimum-scale to 1 so the page can zoom in but never out past the
+  // default view, and neutralize the body background as a safety net. Both are
+  // restored on unmount so the retro pages are unaffected.
+  useEffect(() => {
+    const meta = document.querySelector('meta[name="viewport"]')
+    const prevViewport = meta ? meta.getAttribute('content') : null
+    if (meta) {
+      meta.setAttribute(
+        'content',
+        'width=device-width, initial-scale=1.0, minimum-scale=1.0',
+      )
+    }
+    const prevBodyBg = document.body.style.backgroundColor
+    document.body.style.backgroundColor = '#f7f8fa'
+    return () => {
+      if (meta && prevViewport != null) meta.setAttribute('content', prevViewport)
+      document.body.style.backgroundColor = prevBodyBg
+    }
+  }, [])
+
   // Scroll-spy: highlight the section nearest the top of the viewport.
   useEffect(() => {
     if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
