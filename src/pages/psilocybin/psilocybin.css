@@ -268,6 +268,10 @@
 }
 .psilo-sources a {
   color: var(--psilo-accent);
+  /* Sources print full URLs as link text; without this a long unbroken URL
+     forces the whole page wider than the viewport (horizontal scroll). */
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .psilo-footer {
