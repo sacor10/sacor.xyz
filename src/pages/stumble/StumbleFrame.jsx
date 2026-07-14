@@ -28,6 +28,41 @@ function fallbackBody(reason) {
   return 'Some sites use X-Frame-Options or Content-Security-Policy rules to stay out of iframes. You can still open this stumble externally.'
 }
 
+// Short, high-visibility label for the status badge. Framing blocks (the common
+// case) say so plainly; reachability problems get neutral wording so we don't
+// claim a site blocks embedding when it was simply down.
+function badgeLabel(reason, knownBlocked) {
+  if (reason === 'http-error' || reason === 'unreachable' || reason === 'timeout') {
+    return "Can't preview this site"
+  }
+  if (knownBlocked || reason === 'x-frame-options' || reason === 'csp') {
+    return 'Embedded view blocked'
+  }
+  return 'Embedded view unavailable'
+}
+
+function LockIcon() {
+  return (
+    <svg
+      className="su-blocked-icon"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <rect x="4" y="10" width="16" height="11" rx="2" fill="currentColor" />
+      <path
+        d="M8 10V7a4 4 0 0 1 8 0v3"
+        stroke="currentColor"
+        strokeWidth="2"
+        fill="none"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
 export default function StumbleFrame({
   card,
   onLike,
@@ -153,24 +188,34 @@ export default function StumbleFrame({
 
       {showFallback && (
         <div className={overlay ? 'su-frame-fallback su-frame-fallback-overlay' : 'su-frame-fallback'}>
-          <div className="su-frame-fallback-copy">
-            <p className="su-frame-domain">{domain}</p>
-            <h2>{heading}</h2>
-            <p>{fallbackBody(reason)}</p>
-            <a className="su-primary" href={card.url} target="_blank" rel="noopener noreferrer">
-              Open externally
+          <div className="su-blocked">
+            <p className="su-blocked-badge">
+              <LockIcon />
+              {badgeLabel(reason, knownBlocked)}
+            </p>
+            <h2 className="su-blocked-heading">{heading}</h2>
+            <p className="su-blocked-body">{fallbackBody(reason)}</p>
+
+            <PreviewCard
+              card={card}
+              onLike={onLike}
+              onDislike={onDislike}
+              busy={busy}
+              canRate={canRate}
+              showRatingActions={false}
+              hideVisit
+            />
+
+            <a
+              className="su-visit-cta"
+              href={card.url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Visit site
+              <span aria-hidden="true"> ↗</span>
             </a>
           </div>
-
-          <PreviewCard
-            card={card}
-            onLike={onLike}
-            onDislike={onDislike}
-            busy={busy}
-            canRate={canRate}
-            showRatingActions={false}
-            visitLabel="Open externally"
-          />
         </div>
       )}
     </section>
