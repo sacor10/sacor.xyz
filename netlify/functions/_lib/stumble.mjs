@@ -21,7 +21,7 @@ export const getUsersStore = () => getStore({ name: USERS_STORE, consistency: 's
 export const APPROVED_INDEX_KEY = 'index/approved'
 export const PENDING_INDEX_KEY = 'index/pending'
 export const REJECTED_INDEX_KEY = 'index/rejected'
-export const SEED_VERSION = 4
+export const SEED_VERSION = 6
 export const SEED_VERSION_KEY = 'index/seed-version'
 export const pageKey = (id) => `pages/${id}`
 export const submitterRateKey = (hash, day) => `rate/submissions/${day}/${hash}`
@@ -245,6 +245,10 @@ export const summaryOf = (page) => {
     // every page record for its title.
     slug: siteSlug(normalized),
     canonicalUrl: normalized.canonicalUrl,
+    // Stored so the moderation "Approved" view can render section cards from the
+    // index alone (no per-page Blob read). Never sent to the public feed, which
+    // returns clientPage(...).
+    title: normalized.title,
     domain: normalized.domain,
     interests: normalized.interests,
     contentType: normalized.contentType,
@@ -254,6 +258,11 @@ export const summaryOf = (page) => {
     downVotes: normalized.downVotes,
     createdAt: normalized.createdAt,
     approvedAt: normalized.approvedAt,
+    // Grouping keys for the moderation "Approved" view, kept in the summary so
+    // the section list + counts can be built from the index alone (no per-page
+    // Blob read). Never sent to the public feed, which returns clientPage(...).
+    submittedBy: normalized.submittedBy,
+    approvedBy: normalized.approvedBy ?? null,
   }
 }
 
@@ -373,7 +382,11 @@ function summaryNeedsMigration(summary) {
     !summary.contentType ||
     typeof summary.qualityScore !== 'number' ||
     !summary.framePolicy ||
-    !summary.approvedAt
+    !summary.approvedAt ||
+    // Backfill the grouping keys added for the moderation "Approved" view.
+    summary.submittedBy === undefined ||
+    // Backfill the title used to render Approved section cards from the index.
+    !summary.title
   )
 }
 

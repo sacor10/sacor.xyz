@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import './App.css'
 import GoogleSignInButton from './auth/GoogleSignInButton'
 import { useAuth } from './auth/useAuth'
+import { ringNeighbors, randomMember } from './data/webring'
 
 const NAV_GROUPS = [
   {
@@ -47,6 +48,13 @@ const NAV_GROUPS = [
       { label: 'EASTON', to: '/easton', icon: '☺' },
     ],
   },
+  {
+    title: 'WEBRING',
+    links: [
+      { label: "George's Vista", to: 'https://georgesvista.netlify.app/', external: true, icon: '🌄' },
+      { label: 'LIST SITES',     to: '/webring', icon: '💍' },
+    ],
+  },
 ]
 
 function useMediaQuery(query) {
@@ -68,8 +76,22 @@ const LOCKED_ZONE_SELECTOR = '.itinerary-map-zone, .leaflet-container, .stock-ch
 export default function Layout({ mainContent, rightSidebar, pageWideContent = null }) {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const location = useLocation()
+  const navigate = useNavigate()
   const [pane, setPane] = useState(1)
   const { canAccessTravelPlans } = useAuth()
+
+  // Footer webring nav. The footer always renders on sacor pages, so the
+  // current ring position is '/'.
+  const { prev: ringPrev, next: ringNext } = ringNeighbors('/')
+  const goRandom = (e) => {
+    e.preventDefault()
+    const m = randomMember('/')
+    if (m.external) {
+      window.open(m.url, '_blank', 'noopener,noreferrer')
+    } else {
+      navigate(m.url)
+    }
+  }
   const visibleGroups = NAV_GROUPS
     .map((group) => ({
       ...group,
@@ -318,7 +340,11 @@ export default function Layout({ mainContent, rightSidebar, pageWideContent = nu
                           {group.links.map((nav) => (
                             <tr key={nav.label}>
                               <td className="navbtn">
-                                <Link to={nav.to}>{nav.icon || '★'} {nav.label} {nav.icon || '★'}</Link>
+                                {nav.external ? (
+                                  <a href={nav.to} target="_blank" rel="noopener noreferrer">{nav.icon || '★'} {nav.label} {nav.icon || '★'}</a>
+                                ) : (
+                                  <Link to={nav.to}>{nav.icon || '★'} {nav.label} {nav.icon || '★'}</Link>
+                                )}
                               </td>
                             </tr>
                           ))}
@@ -400,9 +426,17 @@ export default function Layout({ mainContent, rightSidebar, pageWideContent = nu
                 <br />
                 <font face="Comic Sans MS" size="1" color="#FFFFFF">
                   This page is a member of the <b className="hotpink">Green Hill Zone Webring</b> &#9733;{' '}
-                  <Link to="/webring" className="cyan-link">[Prev]</Link>{' '}
-                  <Link to="/webring" className="cyan-link">[Next]</Link>{' '}
-                  <Link to="/webring" className="cyan-link">[Random]</Link>{' '}
+                  {ringPrev.external ? (
+                    <a href={ringPrev.url} target="_blank" rel="noopener noreferrer" className="cyan-link">[Prev]</a>
+                  ) : (
+                    <Link to={ringPrev.url} className="cyan-link">[Prev]</Link>
+                  )}{' '}
+                  {ringNext.external ? (
+                    <a href={ringNext.url} target="_blank" rel="noopener noreferrer" className="cyan-link">[Next]</a>
+                  ) : (
+                    <Link to={ringNext.url} className="cyan-link">[Next]</Link>
+                  )}{' '}
+                  <a href="/webring" onClick={goRandom} className="cyan-link">[Random]</a>{' '}
                   <Link to="/webring" className="cyan-link">[List Sites]</Link>
                 </font>
               </td>

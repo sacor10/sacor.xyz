@@ -1,0 +1,830 @@
+/* Scoped, clean/professional styling for the /psilocybin data explorer.
+   Everything is nested under .psilo-page so it never leaks into the retro
+   GeoCities theme used by the rest of the site. */
+
+.psilo-page {
+  --psilo-bg: #f7f8fa;
+  --psilo-surface: #ffffff;
+  --psilo-ink: #1c2430;
+  --psilo-muted: #5b6675;
+  --psilo-border: #e2e6ec;
+  --psilo-accent: #6b3fa0; /* psilocybin highlight (purple) */
+  --psilo-accent-soft: #efe8f8;
+  --psilo-proposed: #c0392b; /* proposed fee increase (alarm red) */
+  --psilo-neutral: #9aa7b8; /* traditional bars */
+  --psilo-one-time: #c9d2de; /* stacked: one-time */
+  --psilo-recurring: #6b3fa0; /* stacked: recurring */
+  --psilo-genfund: #2e8b57; /* funding source: taxpayer / General Fund */
+  --psilo-fees: #6b3fa0; /* funding source: license fees */
+
+  min-height: 100vh;
+  margin: 0;
+  background: var(--psilo-bg);
+  color: var(--psilo-ink);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  line-height: 1.55;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.psilo-container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+/* ---- Header ---- */
+.psilo-header {
+  border-bottom: 1px solid var(--psilo-border);
+  padding-bottom: 24px;
+  margin-bottom: 32px;
+}
+.psilo-header h1 {
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+  line-height: 1.15;
+  margin: 0 0 10px;
+  letter-spacing: -0.02em;
+}
+.psilo-lede {
+  font-size: 1.1rem;
+  color: var(--psilo-muted);
+  margin: 0 0 16px;
+  max-width: 70ch;
+}
+.psilo-meta {
+  font-size: 0.85rem;
+  color: var(--psilo-muted);
+}
+.psilo-meta strong {
+  color: var(--psilo-ink);
+}
+
+/* ---- Sections ---- */
+.psilo-section {
+  background: var(--psilo-surface);
+  border: 1px solid var(--psilo-border);
+  border-radius: 12px;
+  padding: 24px 24px 26px;
+  margin-bottom: 24px;
+}
+.psilo-section h2 {
+  font-size: 1.25rem;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+.psilo-section .psilo-sub {
+  color: var(--psilo-muted);
+  font-size: 0.92rem;
+  margin: 0 0 20px;
+}
+.psilo-subhead {
+  font-size: 1.05rem;
+  margin: 28px 0 4px;
+  letter-spacing: -0.01em;
+}
+
+/* ---- Bar charts ---- */
+.psilo-bars,
+.psilo-stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.psilo-bar-row {
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  align-items: center;
+  gap: 14px;
+}
+.psilo-bar-label {
+  font-size: 0.86rem;
+  color: var(--psilo-ink);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.psilo-bar-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 26px;
+}
+.psilo-bar-fill {
+  height: 22px;
+  border-radius: 4px;
+  background: var(--psilo-neutral);
+  min-width: 2px;
+  transition: width 0.3s ease;
+}
+.psilo-bar-fill.is-highlight {
+  background: var(--psilo-accent);
+}
+.psilo-bar-value {
+  margin-left: 8px;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--psilo-muted);
+  white-space: nowrap;
+}
+
+/* ---- Stacked bars ---- */
+.psilo-stack-wrap {
+  display: flex;
+  height: 22px;
+  border-radius: 4px;
+  overflow: hidden;
+  min-width: 2px;
+}
+.psilo-stack-seg {
+  height: 100%;
+}
+
+.psilo-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 18px;
+  font-size: 0.82rem;
+  color: var(--psilo-muted);
+}
+.psilo-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.psilo-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+/* ---- Table ---- */
+.psilo-table-wrap {
+  overflow-x: auto;
+}
+.psilo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+.psilo-table th,
+.psilo-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--psilo-border);
+  text-align: left;
+  vertical-align: top;
+}
+.psilo-table th {
+  background: #f1f3f7;
+  position: sticky;
+  top: 0;
+}
+.psilo-table .is-right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.psilo-th-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--psilo-ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+.psilo-sort-caret {
+  color: var(--psilo-muted);
+  font-size: 0.75rem;
+}
+.psilo-table tr.is-psilo td {
+  background: var(--psilo-accent-soft);
+}
+.psilo-table td a {
+  color: var(--psilo-accent);
+  text-decoration: none;
+}
+.psilo-table td a:hover {
+  text-decoration: underline;
+}
+.psilo-note-cell {
+  color: var(--psilo-muted);
+  font-size: 0.82rem;
+}
+
+/* ---- Callout / stats ---- */
+.psilo-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.psilo-stat {
+  background: var(--psilo-surface);
+  border: 1px solid var(--psilo-border);
+  border-left: 4px solid var(--psilo-accent);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.psilo-stat .num {
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.psilo-stat .cap {
+  font-size: 0.82rem;
+  color: var(--psilo-muted);
+  margin-top: 2px;
+}
+
+/* ---- Prose / summary ---- */
+.psilo-prose p {
+  margin: 0 0 14px;
+  max-width: 72ch;
+}
+.psilo-prose a {
+  color: var(--psilo-accent);
+}
+.psilo-callout {
+  background: #fff8ec;
+  border: 1px solid #f0dcb4;
+  border-radius: 10px;
+  padding: 16px 18px;
+  font-size: 0.92rem;
+  color: #6b5320;
+  margin: 0 0 24px;
+}
+.psilo-sources {
+  font-size: 0.82rem;
+  color: var(--psilo-muted);
+}
+.psilo-sources li {
+  margin-bottom: 4px;
+}
+.psilo-sources a {
+  color: var(--psilo-accent);
+  /* Sources print full URLs as link text; without this a long unbroken URL
+     forces the whole page wider than the viewport (horizontal scroll). */
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.psilo-footer {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--psilo-border);
+  font-size: 0.8rem;
+  color: var(--psilo-muted);
+}
+.psilo-footer a {
+  color: var(--psilo-accent);
+}
+
+/* ---- Donut (pie) chart ---- */
+.psilo-donut-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 28px;
+  justify-content: center;
+}
+.psilo-donut {
+  max-width: 320px;
+  flex: 0 1 300px;
+}
+.psilo-donut-pct {
+  font-size: 15px;
+  font-weight: 700;
+  fill: #fff;
+  text-anchor: middle;
+  dominant-baseline: central;
+  paint-order: stroke;
+  stroke: rgba(28, 36, 48, 0.25);
+  stroke-width: 2px;
+}
+.psilo-donut-center {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  fill: var(--psilo-ink);
+  text-anchor: middle;
+}
+.psilo-donut-center-sub {
+  font-size: 12px;
+  fill: var(--psilo-muted);
+  text-anchor: middle;
+}
+.psilo-donut-legend {
+  flex: 1 1 280px;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.psilo-donut-item {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  gap: 10px;
+  align-items: baseline;
+}
+.psilo-donut-item .psilo-swatch {
+  position: relative;
+  top: 1px;
+}
+.psilo-donut-item-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--psilo-ink);
+}
+.psilo-donut-item-value {
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--psilo-muted);
+  white-space: nowrap;
+}
+.psilo-donut-item-detail {
+  grid-column: 2 / 4;
+  font-size: 0.8rem;
+  color: var(--psilo-muted);
+  margin: 0;
+}
+
+/* ---- Quadrant ---- */
+.psilo-quadrant {
+  max-width: 620px;
+  margin: 0 auto;
+}
+.psilo-q-label {
+  font-size: 14px;
+  font-weight: 700;
+}
+.psilo-q-cap {
+  font-size: 11px;
+}
+.psilo-q-money {
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.psilo-q-axis {
+  font-size: 12px;
+  fill: var(--psilo-muted);
+  font-weight: 600;
+}
+.psilo-takeaway {
+  margin: 18px auto 0;
+  max-width: 60ch;
+  text-align: center;
+  font-size: 1.02rem;
+  color: var(--psilo-ink);
+}
+
+/* ---- Assumptions disclosure ---- */
+.psilo-assumptions {
+  margin-top: 16px;
+  font-size: 0.82rem;
+  color: var(--psilo-muted);
+}
+.psilo-assumptions summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--psilo-ink);
+}
+.psilo-assumptions ul {
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+.psilo-assumptions li {
+  margin-bottom: 6px;
+}
+.psilo-assumptions a {
+  color: var(--psilo-accent);
+}
+
+/* ---- Evidence cards ---- */
+.psilo-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+.psilo-card {
+  border: 1px solid var(--psilo-border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  background: #fbfcfe;
+}
+.psilo-card.is-psilo-card {
+  border-color: var(--psilo-accent);
+  background: var(--psilo-accent-soft);
+}
+.psilo-card-metric {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+.psilo-card-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--psilo-ink);
+  margin-bottom: 8px;
+}
+.psilo-card-detail {
+  font-size: 0.85rem;
+  color: var(--psilo-muted);
+  margin: 0 0 10px;
+}
+.psilo-card a {
+  font-size: 0.8rem;
+  color: var(--psilo-accent);
+  text-decoration: none;
+}
+.psilo-card a:hover {
+  text-decoration: underline;
+}
+
+/* ---- News banner ---- */
+.psilo-news {
+  background: #fff4f3;
+  border: 1px solid #f1c9c4;
+  border-left: 5px solid var(--psilo-proposed);
+  border-radius: 12px;
+  padding: 18px 22px;
+  margin-bottom: 24px;
+}
+.psilo-news .psilo-news-tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--psilo-proposed);
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+.psilo-news h2 {
+  font-size: 1.2rem;
+  margin: 0 0 6px;
+}
+.psilo-news p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+.psilo-news .psilo-news-pending {
+  margin-top: 8px;
+  font-size: 0.82rem;
+  color: var(--psilo-muted);
+}
+
+/* ---- Grouped (current vs proposed) bars ---- */
+.psilo-grouped {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.psilo-group-row {
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  align-items: center;
+  gap: 14px;
+}
+.psilo-group-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.psilo-bar-fill.is-proposed {
+  background: var(--psilo-proposed);
+}
+.psilo-group-ref {
+  font-size: 0.82rem;
+  color: var(--psilo-muted);
+  border-top: 1px dashed var(--psilo-border);
+  padding-top: 10px;
+}
+
+/* ---- Cycle / death-spiral diagram ---- */
+.psilo-cycle {
+  max-width: 720px;
+  margin: 0 auto;
+}
+.psilo-cycle-node {
+  box-sizing: border-box;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 11.5px;
+  line-height: 1.25;
+  font-weight: 600;
+  color: var(--psilo-ink);
+  background: #fff;
+  border: 1px solid var(--psilo-accent);
+  border-radius: 10px;
+  padding: 6px 8px;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+.psilo-cycle-badge {
+  fill: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.psilo-cycle-center {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  fill: var(--psilo-proposed);
+  text-transform: uppercase;
+}
+.psilo-cycle-center-sub {
+  font-size: 11px;
+  fill: var(--psilo-muted);
+}
+
+/* ---- Take-action CTA ---- */
+.psilo-cta {
+  background: #f1f7f3;
+  border: 1px solid #cfe6d7;
+  border-left: 5px solid #2e8b57;
+  border-radius: 12px;
+  padding: 20px 22px;
+  margin-bottom: 24px;
+}
+.psilo-cta h2 {
+  margin: 0 0 6px;
+  font-size: 1.2rem;
+}
+.psilo-cta p {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+}
+.psilo-cta-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.psilo-cta-links a {
+  display: inline-block;
+  background: #2e8b57;
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.86rem;
+  font-weight: 600;
+  padding: 9px 14px;
+  border-radius: 8px;
+}
+.psilo-cta-links a:hover {
+  background: #246b43;
+}
+
+/* ---- Visually hidden (screen-reader-only) ---- */
+.psilo-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- In-page navigation (TOC) ---- */
+/* Default presentation: a compact sticky bar with a collapsible list, used on
+   narrow screens. On wide screens it becomes a fixed left rail (see media
+   query below). Anchor targets clear the sticky bar via scroll-margin-top. */
+.psilo-section,
+.psilo-news,
+.psilo-stats,
+.psilo-cta {
+  scroll-margin-top: 68px;
+}
+
+.psilo-nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(247, 248, 250, 0.92);
+  backdrop-filter: saturate(1.1) blur(6px);
+  border-bottom: 1px solid var(--psilo-border);
+  padding: 0 24px;
+}
+.psilo-nav-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 12px 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--psilo-ink);
+  cursor: pointer;
+}
+.psilo-nav-chevron {
+  font-size: 0.7rem;
+  color: var(--psilo-muted);
+}
+.psilo-nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.28s ease;
+}
+.psilo-nav-list.is-open {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-bottom: 10px;
+}
+.psilo-nav-link {
+  display: block;
+  padding: 7px 10px;
+  font-size: 0.86rem;
+  color: var(--psilo-muted);
+  text-decoration: none;
+  border-radius: 6px;
+  border-left: 2px solid transparent;
+}
+.psilo-nav-link:hover,
+.psilo-nav-link:focus-visible {
+  color: var(--psilo-ink);
+  background: var(--psilo-accent-soft);
+}
+.psilo-nav-link.is-active {
+  color: var(--psilo-accent);
+  font-weight: 600;
+  border-left-color: var(--psilo-accent);
+  background: var(--psilo-accent-soft);
+}
+
+/* Wide screens: fixed left rail anchored to the left of the centered column.
+   The 1400px breakpoint guarantees the rail clears the 980px column. */
+@media (min-width: 1400px) {
+  .psilo-nav {
+    position: fixed;
+    top: 88px;
+    left: calc(50vw - 490px - 192px);
+    width: 176px;
+    margin: 0;
+    padding: 0;
+    background: none;
+    backdrop-filter: none;
+    border-bottom: 0;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+  }
+  .psilo-nav-toggle {
+    display: none;
+  }
+  .psilo-nav-list {
+    max-height: none;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+  .psilo-nav::before {
+    content: 'On this page';
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--psilo-muted);
+    padding: 0 10px 8px;
+  }
+}
+
+/* ---- Reveal-on-scroll (only active when JS adds .js-reveal) ---- */
+.js-reveal [data-reveal] {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  will-change: opacity, transform;
+}
+.js-reveal [data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+}
+/* Bar-grow: bars start collapsed and grow when their section reveals. */
+.js-reveal [data-reveal] .psilo-bar-fill,
+.js-reveal [data-reveal] .psilo-stack-wrap {
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.55s ease, width 0.3s ease;
+}
+.js-reveal [data-reveal].is-visible .psilo-bar-fill,
+.js-reveal [data-reveal].is-visible .psilo-stack-wrap {
+  transform: scaleX(1);
+}
+
+/* ---- Micro-interactions (restrained) ---- */
+.psilo-stat,
+.psilo-card {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.psilo-stat:hover,
+.psilo-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(28, 36, 48, 0.08);
+}
+.psilo-th-btn {
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.psilo-th-btn:hover {
+  color: var(--psilo-accent);
+}
+.psilo-cta-links a {
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+.psilo-cta-links a:hover {
+  transform: translateY(-1px);
+}
+/* Consistent, visible focus affordance for keyboard users. */
+.psilo-nav-link:focus-visible,
+.psilo-th-btn:focus-visible,
+.psilo-nav-toggle:focus-visible,
+.psilo-card a:focus-visible,
+.psilo-cta-links a:focus-visible,
+.psilo-table td a:focus-visible {
+  outline: 2px solid var(--psilo-accent);
+  outline-offset: 2px;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 640px) {
+  .psilo-container {
+    padding: 28px 14px 60px;
+  }
+  .psilo-nav {
+    padding: 0 14px;
+  }
+  .psilo-bar-row {
+    grid-template-columns: 110px 1fr;
+    gap: 8px;
+  }
+  .psilo-bar-label {
+    font-size: 0.78rem;
+    white-space: normal;
+  }
+  .psilo-section {
+    padding: 18px 14px 20px;
+  }
+}
+
+/* ---- Reduced motion: disable reveal/animation, show everything ---- */
+@media (prefers-reduced-motion: reduce) {
+  .js-reveal [data-reveal],
+  .js-reveal [data-reveal].is-visible {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .js-reveal [data-reveal] .psilo-bar-fill,
+  .js-reveal [data-reveal] .psilo-stack-wrap,
+  .js-reveal [data-reveal].is-visible .psilo-bar-fill,
+  .js-reveal [data-reveal].is-visible .psilo-stack-wrap {
+    transform: none;
+    transition: none;
+  }
+  .psilo-stat,
+  .psilo-card,
+  .psilo-cta-links a,
+  .psilo-nav-list {
+    transition: none;
+  }
+  .psilo-stat:hover,
+  .psilo-card:hover,
+  .psilo-cta-links a:hover {
+    transform: none;
+  }
+}
+
+/* ---- Print ---- */
+@media print {
+  .psilo-page {
+    background: #fff;
+  }
+  .psilo-section,
+  .psilo-stat {
+    break-inside: avoid;
+    border-color: #ccc;
+  }
+}

@@ -90,7 +90,7 @@ function replaceStumbleUrl(page, navigate) {
 export default function StumblePage() {
   const navigate = useNavigate()
   const { siteName } = useParams()
-  const { user, isSignedIn, loading: authLoading, signOut } = useAuth()
+  const { user, isSignedIn, loading: authLoading, signOut, canModerate } = useAuth()
 
   // The slug present in the URL when the page first mounted. Each stumble
   // rewrites the path (replaceStumbleUrl), so we capture this once: a non-empty
@@ -287,11 +287,6 @@ export default function StumblePage() {
     clearSeen()
     stumble()
   }, [stumble])
-
-  const openExternal = useCallback(() => {
-    if (!card?.url) return
-    window.open(card.url, '_blank', 'noopener,noreferrer')
-  }, [card])
 
   // Lazily fetch the user's liked pages when they open the Likes dropdown.
   const loadLikes = useCallback(async () => {
@@ -607,7 +602,6 @@ export default function StumblePage() {
         card={card}
         onLike={() => rate(1)}
         onDislike={() => rate(-1)}
-        onOpenExternal={openExternal}
         busy={ratingBusy || status === 'loading'}
         canRate={isSignedIn}
       />
@@ -645,8 +639,9 @@ export default function StumblePage() {
         card={card}
         onLike={() => rate(1)}
         onDislike={() => rate(-1)}
-        onOpenExternal={openExternal}
         canRate={isSignedIn}
+        canModerate={canModerate}
+        onOpenModeration={() => navigate('/stumble/moderation')}
       />
 
       {fromUser && isSignedIn && (
