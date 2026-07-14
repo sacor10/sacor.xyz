@@ -7,6 +7,7 @@ export function LivestreamPlayer({
   onToggleExpanded,
   expandLabel = 'STRETCH PLAYER',
   collapseLabel = 'SHRINK PLAYER',
+  autoUnmute = false,
 }) {
   const frameWrapRef = useRef(null)
   const iframeRef = useRef(null)
@@ -45,7 +46,7 @@ export function LivestreamPlayer({
   }
 
   useEffect(() => {
-    const withSound = isExpanded
+    const withSound = isExpanded || autoUnmute
     const attempts = [150, 500, 1000, 1800].map((delay) => (
       window.setTimeout(() => requestPlayback(withSound), delay)
     ))
@@ -53,7 +54,7 @@ export function LivestreamPlayer({
     return () => {
       attempts.forEach((attempt) => window.clearTimeout(attempt))
     }
-  }, [isExpanded, playerSrc, requestPlayback])
+  }, [isExpanded, autoUnmute, playerSrc, requestPlayback])
 
   useEffect(() => {
     if (!isExpanded) return
@@ -106,7 +107,7 @@ export function LivestreamPlayer({
                 referrerPolicy="strict-origin-when-cross-origin"
                 allowFullScreen
                 frameBorder="0"
-                onLoad={() => requestPlayback(isExpanded)}
+                onLoad={() => requestPlayback(isExpanded || autoUnmute)}
               />
             </div>
           </td>

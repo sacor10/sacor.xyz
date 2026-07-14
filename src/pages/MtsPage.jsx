@@ -206,6 +206,7 @@ function Player({ isStreamExpanded, onToggleStream }) {
           title="MTS Live"
           isExpanded={false}
           onToggleExpanded={onToggleStream}
+          autoUnmute
         />
       )}
 
@@ -281,6 +282,7 @@ export default function MtsPage() {
             title="MTS Live"
             isExpanded
             onToggleExpanded={toggleStream}
+            autoUnmute
           />
         ) : null
       }
