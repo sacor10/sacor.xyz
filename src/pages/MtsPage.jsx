@@ -1,6 +1,10 @@
+import { useState } from 'react'
 import Layout from '../Layout'
+import { LivestreamPlayer, LivestreamWideNotice } from '../components/LivestreamPlayer'
 
 const MTS_LIVE_URL = 'https://www.youtube.com/@mtsituation/live'
+const MTS_CHANNEL_ID = 'UClWkDGXEzsh77GAhs90wpXw'
+const MTS_STREAM_SRC = `https://www.youtube.com/embed/live_stream?channel=${MTS_CHANNEL_ID}&autoplay=1&mute=1&enablejsapi=1&modestbranding=1&rel=0&playsinline=1`
 
 function Sidebar() {
   return (
@@ -105,7 +109,7 @@ function Sidebar() {
   )
 }
 
-function Player() {
+function Player({ isStreamExpanded, onToggleStream }) {
   return (
     <>
       <center>
@@ -181,21 +185,12 @@ function Player() {
                 MTS goes live <b className="hotpink">09:00 PT weekdays</b>!!!
                 <br />
                 <br />
-                Smash the button below to ride the{' '}
+                Smash <b className="yellow">STRETCH PLAYER</b> to blow the{' '}
                 <b className="yellow">current YouTube livestream</b>
                 <br />
-                straight from <b className="cyan">@mtsituation</b> &mdash; no stale VODs!!!
+                across the page &mdash; streaming straight from{' '}
+                <b className="cyan">@mtsituation</b>, no stale VODs!!!
               </font>
-              <br />
-              <br />
-              <a
-                href={MTS_LIVE_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="navbtn-link"
-              >
-                &#9733; WATCH LIVE ON YOUTUBE &#9733;
-              </a>
             </td>
           </tr>
         </tbody>
@@ -203,8 +198,34 @@ function Player() {
 
       <br />
 
+      {isStreamExpanded ? (
+        <LivestreamWideNotice title="MTS Live" onCollapse={onToggleStream} />
+      ) : (
+        <LivestreamPlayer
+          src={MTS_STREAM_SRC}
+          title="MTS Live"
+          isExpanded={false}
+          onToggleExpanded={onToggleStream}
+        />
+      )}
+
+      <br />
+
       <center>
         <font face="Comic Sans MS" size="3" color="#00FFFF">
+          Player acting up??? Pop the stream straight on YouTube:
+          <br />
+          <br />
+          <a
+            href={MTS_LIVE_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="navbtn-link"
+          >
+            &#9733; WATCH LIVE ON YOUTUBE &#9733;
+          </a>
+          <br />
+          <br />
           Prefer the X-native simulcast???
           <br />
           <br />
@@ -244,10 +265,25 @@ function Player() {
 }
 
 export default function MtsPage() {
+  const [isStreamExpanded, setIsStreamExpanded] = useState(false)
+  const toggleStream = () => setIsStreamExpanded((expanded) => !expanded)
+
   return (
     <Layout
-      mainContent={<Player />}
+      mainContent={
+        <Player isStreamExpanded={isStreamExpanded} onToggleStream={toggleStream} />
+      }
       rightSidebar={<Sidebar />}
+      pageWideContent={
+        isStreamExpanded ? (
+          <LivestreamPlayer
+            src={MTS_STREAM_SRC}
+            title="MTS Live"
+            isExpanded
+            onToggleExpanded={toggleStream}
+          />
+        ) : null
+      }
     />
   )
 }
