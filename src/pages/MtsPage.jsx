@@ -1,10 +1,14 @@
 import { useState } from 'react'
 import Layout from '../Layout'
-import { LivestreamPlayer, LivestreamWideNotice } from '../components/LivestreamPlayer'
+import {
+  LivestreamPlayer,
+  LivestreamWideNotice,
+  LivestreamOfflineNotice,
+} from '../components/LivestreamPlayer'
+import { useYoutubeLive, livestreamEmbedSrc } from '../hooks/useYoutubeLive'
 
 const MTS_LIVE_URL = 'https://www.youtube.com/@mtsituation/live'
 const MTS_CHANNEL_ID = 'UClWkDGXEzsh77GAhs90wpXw'
-const MTS_STREAM_SRC = `https://www.youtube.com/embed/live_stream?channel=${MTS_CHANNEL_ID}&autoplay=1&mute=1&enablejsapi=1&modestbranding=1&rel=0&playsinline=1`
 
 function Sidebar() {
   return (
@@ -109,7 +113,7 @@ function Sidebar() {
   )
 }
 
-function Player({ isStreamExpanded, onToggleStream }) {
+function Player({ isStreamExpanded, onToggleStream, streamSrc, streamStatus }) {
   return (
     <>
       <center>
@@ -198,15 +202,24 @@ function Player({ isStreamExpanded, onToggleStream }) {
 
       <br />
 
-      {isStreamExpanded ? (
-        <LivestreamWideNotice title="MTS Live" onCollapse={onToggleStream} />
+      {streamStatus === 'live' ? (
+        isStreamExpanded ? (
+          <LivestreamWideNotice title="MTS Live" onCollapse={onToggleStream} />
+        ) : (
+          <LivestreamPlayer
+            src={streamSrc}
+            title="MTS Live"
+            isExpanded={false}
+            onToggleExpanded={onToggleStream}
+            autoUnmute
+          />
+        )
       ) : (
-        <LivestreamPlayer
-          src={MTS_STREAM_SRC}
+        <LivestreamOfflineNotice
           title="MTS Live"
-          isExpanded={false}
-          onToggleExpanded={onToggleStream}
-          autoUnmute
+          status={streamStatus}
+          watchUrl={MTS_LIVE_URL}
+          note="MTS goes live 09:00 PT weekdays — smash the button above when the show's on!!!"
         />
       )}
 
@@ -269,16 +282,25 @@ export default function MtsPage() {
   const [isStreamExpanded, setIsStreamExpanded] = useState(false)
   const toggleStream = () => setIsStreamExpanded((expanded) => !expanded)
 
+  const { status, videoId } = useYoutubeLive(MTS_CHANNEL_ID)
+  const isLive = status === 'live'
+  const streamSrc = isLive ? livestreamEmbedSrc(videoId) : null
+
   return (
     <Layout
       mainContent={
-        <Player isStreamExpanded={isStreamExpanded} onToggleStream={toggleStream} />
+        <Player
+          isStreamExpanded={isStreamExpanded}
+          onToggleStream={toggleStream}
+          streamSrc={streamSrc}
+          streamStatus={status}
+        />
       }
       rightSidebar={<Sidebar />}
       pageWideContent={
-        isStreamExpanded ? (
+        isLive && isStreamExpanded ? (
           <LivestreamPlayer
-            src={MTS_STREAM_SRC}
+            src={streamSrc}
             title="MTS Live"
             isExpanded
             onToggleExpanded={toggleStream}
