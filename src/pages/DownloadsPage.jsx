@@ -105,7 +105,12 @@ const mainContent = (
         {DOWNLOAD_TOOLS.map((t) => (
           <tr key={t.to}>
             <td className="navbtn" style={{ width: '42%' }}>
-              <Link to={t.to}>&#9733; {t.label} &#9733;</Link>
+              <Link to={t.to}>
+                <svg className="dl-tool-icon" aria-hidden="true">
+                  <use href={`/icons.svg#${t.icon}`} />
+                </svg>
+                &#9733; {t.label} &#9733;
+              </Link>
             </td>
             <td bgcolor="#000000" className="feature-row">
               <font face="Comic Sans MS" size="3" color="#FFFFFF">{t.blurb}</font>
