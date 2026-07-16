@@ -12,7 +12,6 @@ const NAV_GROUPS = [
       { label: 'HOME',       to: '/' },
       { label: 'BLOG POSTS', to: '/blog' },
       { label: 'QUOTES',     to: '/quotes' },
-      { label: 'MTS LIVE',   to: '/mts' },
     ],
   },
   {

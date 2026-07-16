@@ -1,18 +1,22 @@
-import { useCallback, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../Layout'
 import HitCounter from '../components/HitCounter'
-import {
-  LivestreamPlayer,
-  LivestreamWideNotice,
-  LivestreamOfflineNotice,
-} from '../components/LivestreamPlayer'
+import { DOWNLOAD_TOOLS } from '../data/downloadTools'
 import { pinnedQuotes } from '../data/quotes'
 
-const ROOSEVELT_CHANNEL_ID = 'UCrrkptlW7UtbiUHFjdsfKPg'
-const ROOSEVELT_LIVE_URL = `https://www.youtube.com/channel/${ROOSEVELT_CHANNEL_ID}/live`
-const ROOSEVELT_STREAM_SRC = `https://www.youtube.com/embed/live_stream?channel=${ROOSEVELT_CHANNEL_ID}&autoplay=1&mute=1&enablejsapi=1&modestbranding=1&rel=0&playsinline=1`
 const quotePreview = pinnedQuotes.slice(0, 3)
+
+// Other corners of the site worth wandering into, shown as a little link grid on
+// the home page.
+const EXPLORE_LINKS = [
+  { label: 'SLOP BLOG',   to: '/blog',      blurb: 'Ramblings, nostalgia, and half-baked tech takes' },
+  { label: 'QUOTES',      to: '/quotes',    blurb: 'Wisdom & nonsense from folks smarter than me' },
+  { label: 'LIVE STOCKS', to: '/stocks',    blurb: 'Watch the numbers go up (and down) in real time' },
+  { label: 'STUMBLE!',    to: '/stumble',   blurb: 'Roll the dice and get yeeted to a random site', icon: '🎲' },
+  { label: 'WEBRING',     to: '/webring',   blurb: 'Join the Green Hill Zone webring VIRUS', icon: '💍' },
+  { label: 'GUESTBOOK',   to: '/guestbook', blurb: 'SIGN IT or be cursed for seven long years' },
+  { label: 'EASTON',      to: '/easton',    blurb: 'A humble shrine to my friend Easton', icon: '☺' },
+]
 
 const rightSidebar = (
   <>
@@ -162,9 +166,8 @@ const rightSidebar = (
   </>
 )
 
-function MainContent({ isStreamExpanded, onToggleStream, onLivenessChange, isOffline }) {
-  return (
-    <>
+const mainContent = (
+  <>
     <center>
       <font face="Impact" size="6" color="#00FFFF" className="hero-glow">
         this is Sacor.xyz
@@ -188,27 +191,22 @@ function MainContent({ isStreamExpanded, onToggleStream, onLivenessChange, isOff
     <br />
     <br />
 
-    {/* ====== ROOSEVELT MEMORIAL LIVESTREAM ====== */}
     <center>
-      <font face="Impact" size="6" color="#FF00FF" className="hero-glow">
-        <span className="blink">~*~ LIVE FROM THE BOONE & CROCKETT CLUB ~*~</span>
-      </font>
+      <marquee behavior="scroll" direction="left" scrollamount="5" bgcolor="#000000" width="100%">
+        <font face="Impact" size="4" color="#FF00FF">
+          &#9733; FREE TOOLS &#9733; NO ADS &#9733; NO SIGNUP &#9733; RUNS IN YOUR BROWSER &#9733;
+          BUILT BY A REAL HUMAN &#9733; PROBABLY &#9733;
+        </font>
+      </marquee>
     </center>
 
     <br />
 
+    {/* ====== DOWNLOAD WORKSHOP ====== */}
     <center>
-      <table width="100%" cellPadding="0" cellSpacing="0" border="0">
-        <tbody>
-          <tr>
-            <td align="center" bgcolor="#FF00FF" className="section-bar">
-              <font face="Impact" size="5" color="#FFFF00">
-                ~*~ THEODORE ROOSEVELT MEMORIAL RANCH ~*~
-              </font>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <font face="Impact" size="6" color="#FF00FF" className="hero-glow">
+        <span className="blink">~*~ SACOR&rsquo;S DOWNLOAD WORKSHOP ~*~</span>
+      </font>
     </center>
 
     <br />
@@ -218,9 +216,10 @@ function MainContent({ isStreamExpanded, onToggleStream, onLivenessChange, isOff
         <tr>
           <td>
             <font face="Comic Sans MS" size="3" color="#FFFFFF">
-              The <b className="lime">Boone and Crockett Club</b> &mdash; founded by{' '}
-              <b className="cyan">Theodore Roosevelt</b> in <b className="yellow">1887</b> &mdash; hosts a 24/7 livestream of{' '}
-              <b className="hotpink">Theodore Roosevelt Memorial Ranch</b>
+              The main event!!! A pile of <b className="lime">weird little apps</b> I built to yoink
+              public videos off the internet &mdash; plus <b className="yellow">YTMP4</b>, a real
+              Windows <b className="cyan">.EXE</b> you download and keep forever. All{' '}
+              <b className="hotpink">100% FREE</b>. Pick your poison:
             </font>
           </td>
         </tr>
@@ -235,7 +234,7 @@ function MainContent({ isStreamExpanded, onToggleStream, onLivenessChange, isOff
           <tr>
             <td align="center" bgcolor="#00FFFF" className="section-bar">
               <font face="Impact" size="4" color="#000000">
-                ~ THE LIVE FEED ~
+                ~ PICK YOUR POISON ~
               </font>
             </td>
           </tr>
@@ -245,79 +244,90 @@ function MainContent({ isStreamExpanded, onToggleStream, onLivenessChange, isOff
 
     <br />
 
-    {isOffline ? (
-      <LivestreamOfflineNotice
-        title="Theodore Roosevelt Memorial Live"
-        watchUrl={ROOSEVELT_LIVE_URL}
-        note="The memorial feed is off the air right now — check back soon!!!"
-      />
-    ) : isStreamExpanded ? (
-      <LivestreamWideNotice
-        title="Theodore Roosevelt Memorial Live"
-        onCollapse={onToggleStream}
-      />
-    ) : (
-      <LivestreamPlayer
-        src={ROOSEVELT_STREAM_SRC}
-        title="Theodore Roosevelt Memorial Live"
-        isExpanded={false}
-        onToggleExpanded={onToggleStream}
-        onLivenessChange={onLivenessChange}
-      />
-    )}
+    <table width="100%" cellPadding="6" cellSpacing="4" border="0">
+      <tbody>
+        {DOWNLOAD_TOOLS.map((t) => (
+          <tr key={t.to}>
+            <td className="navbtn" style={{ width: '42%' }}>
+              <Link to={t.to}>
+                <svg className="dl-tool-icon" aria-hidden="true">
+                  <use href={`/icons.svg#${t.icon}`} />
+                </svg>
+                &#9733; {t.label} &#9733;
+              </Link>
+            </td>
+            <td bgcolor="#000000" className="feature-row">
+              <font face="Comic Sans MS" size="3" color="#FFFFFF">{t.blurb}</font>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+
+    <br />
+
+    <center>
+      <Link to="/downloads" className="navbtn-link">&#9733; SEE THE WHOLE DOWNLOAD SHELF &#9733;</Link>
+    </center>
+
+    <br />
+    <br />
+
+    {/* ====== THE REST OF THE JUNK DRAWER ====== */}
+    <center>
+      <font face="Impact" size="6" color="#FF00FF" className="hero-glow">
+        ~*~ THE REST OF THE JUNK DRAWER ~*~
+      </font>
+    </center>
+
+    <br />
+
+    <center>
+      <table width="100%" cellPadding="0" cellSpacing="0" border="0">
+        <tbody>
+          <tr>
+            <td align="center" bgcolor="#FF00FF" className="section-bar">
+              <font face="Impact" size="4" color="#FFFF00">
+                ~ POKE AROUND ~
+              </font>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </center>
+
+    <br />
+
+    <table width="100%" cellPadding="6" cellSpacing="4" border="0">
+      <tbody>
+        {EXPLORE_LINKS.map((link) => (
+          <tr key={link.to}>
+            <td className="navbtn" style={{ width: '42%' }}>
+              <Link to={link.to}>
+                {link.icon || <>&#9733;</>} {link.label} {link.icon || <>&#9733;</>}
+              </Link>
+            </td>
+            <td bgcolor="#000000" className="feature-row">
+              <font face="Comic Sans MS" size="3" color="#FFFFFF">{link.blurb}</font>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
 
     <br />
 
     <center>
       <font face="Comic Sans MS" size="2" color="#888888">
-        Stream courtesy of the{' '}
-        <a href="https://www.boone-crockett.org/" target="_blank" rel="noreferrer">
-          Boone and Crockett Club
-        </a>
-        &nbsp;&#9733;&nbsp; <a href="mailto:vestibule@sacor.xyz">report bugs here</a>
+        Made with love, spite, and too much free time &nbsp;&#9733;&nbsp;
+        <a href="mailto:vestibule@sacor.xyz">report bugs here</a>
       </font>
     </center>
 
     <br />
   </>
-  )
-}
+)
 
 export default function HomePage() {
-  const [isStreamExpanded, setIsStreamExpanded] = useState(false)
-  const [liveness, setLiveness] = useState('checking')
-  const toggleStream = () => setIsStreamExpanded((expanded) => !expanded)
-  const isOffline = liveness === 'offline'
-
-  // Stable handler so the player isn't re-created on every render. A stream that
-  // drops offline can't be stretched, so collapse back to the column too.
-  const handleLiveness = useCallback((state) => {
-    setLiveness(state)
-    if (state === 'offline') setIsStreamExpanded(false)
-  }, [])
-
-  return (
-    <Layout
-      mainContent={
-        <MainContent
-          isStreamExpanded={isStreamExpanded}
-          onToggleStream={toggleStream}
-          onLivenessChange={handleLiveness}
-          isOffline={isOffline}
-        />
-      }
-      rightSidebar={rightSidebar}
-      pageWideContent={
-        !isOffline && isStreamExpanded ? (
-          <LivestreamPlayer
-            src={ROOSEVELT_STREAM_SRC}
-            title="Theodore Roosevelt Memorial Live"
-            isExpanded
-            onToggleExpanded={toggleStream}
-            onLivenessChange={handleLiveness}
-          />
-        ) : null
-      }
-    />
-  )
+  return <Layout mainContent={mainContent} rightSidebar={rightSidebar} />
 }
