@@ -8,7 +8,18 @@
   font-family: "Comic Sans MS", "Arial", sans-serif;
   min-height: 100vh;
   padding: 0;
-  cursor: crosshair;
+  cursor: url('/cursors/arrow.svg') 2 2, auto;
+}
+
+/* Clickable things get the neon "sparkle" cursor variant. */
+.geocities a,
+.geocities button,
+.geocities [role="button"],
+.geocities .navbtn a,
+.geocities .navbtn,
+.geocities summary,
+.geocities label {
+  cursor: url('/cursors/pointer.svg') 2 2, pointer;
 }
 
 .geocities td {
@@ -126,7 +137,7 @@
 }
 
 .geocities .livestream-toggle {
-  cursor: crosshair;
+  cursor: url('/cursors/pointer.svg') 2 2, pointer;
 }
 
 .geocities .livestream-frame-wrap {
@@ -318,7 +329,7 @@
   border-right: 5px solid #404040;
   border-bottom: 5px solid #404040;
   color: #000080;
-  cursor: crosshair;
+  cursor: url('/cursors/pointer.svg') 2 2, pointer;
   font-family: Impact, "Arial Black", sans-serif;
   font-size: 24px;
   padding: 12px 28px;
@@ -393,7 +404,7 @@
   font-size: 11px;
   color: #000080;
   padding: 2px 8px;
-  cursor: crosshair;
+  cursor: url('/cursors/pointer.svg') 2 2, pointer;
 }
 .geocities .signout-btn:hover {
   background: #FF00FF;
@@ -426,7 +437,7 @@
 }
 
 .geocities .travel-form select {
-  cursor: crosshair;
+  cursor: url('/cursors/pointer.svg') 2 2, pointer;
 }
 
 .geocities .travel-label {
@@ -549,7 +560,7 @@
   background: #000000;
   color: #FFFF00;
   border: 3px ridge #FF00FF;
-  cursor: crosshair;
+  cursor: url('/cursors/pointer.svg') 2 2, pointer;
   font-family: "Comic Sans MS", "Trebuchet MS", sans-serif;
 }
 
@@ -617,7 +628,7 @@
   border-right: 2px solid #404040;
   border-bottom: 2px solid #404040;
   color: #000080;
-  cursor: crosshair;
+  cursor: url('/cursors/pointer.svg') 2 2, pointer;
   font-family: "Arial Black", Impact, sans-serif;
   font-size: 11px;
   padding: 3px 7px;
@@ -741,6 +752,13 @@
     max-height: calc(100vh - 24px);
     overflow-y: auto;
   }
+  /* Left nav must never scroll internally: let the page stretch to fit the
+     full nav instead of capping it to the viewport and showing its own
+     scrollbar. The right sidebar keeps the capped/scroll behavior above. */
+  .geocities .left-sidebar .sticky-pane {
+    max-height: none;
+    overflow-y: visible;
+  }
 }
 
 /* === Mobile swipeable panes === */
@@ -785,7 +803,7 @@
     font-size: 18px;
     padding: 4px 12px;
     margin: 0 4px;
-    cursor: crosshair;
+    cursor: url('/cursors/pointer.svg') 2 2, pointer;
   }
   .geocities .pane-dot.active {
     color: #00FFFF;
@@ -812,7 +830,7 @@
     font-family: "Impact", "Arial Black", sans-serif;
     font-size: 16px;
     padding: 6px 16px;
-    cursor: crosshair;
+    cursor: url('/cursors/pointer.svg') 2 2, pointer;
   }
   .geocities .mobile-menu-btn:active {
     background: #4B0082;
@@ -856,5 +874,40 @@
   .geocities .dl-tab {
     font-size: 12px;
     padding: 5px 8px;
+  }
+}
+
+/* ---- Neon cursor sparkle trail (CursorTrail.jsx) ---- */
+.cursor-trail-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  pointer-events: none;
+  overflow: hidden;
+}
+.cursor-sparkle {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  font-family: "Arial", sans-serif;
+  font-size: 16px;
+  line-height: 1;
+  pointer-events: none;
+  text-shadow: 0 0 4px currentColor, 0 0 8px currentColor;
+  will-change: transform, opacity;
+  animation: cursor-sparkle-fade 650ms ease-out forwards;
+}
+@keyframes cursor-sparkle-fade {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 14px)) scale(0.3) rotate(90deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cursor-sparkle {
+    display: none;
   }
 }
