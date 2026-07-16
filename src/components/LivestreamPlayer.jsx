@@ -1,4 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { loadYoutubeIframeApi } from '../lib/youtubeIframeApi'
+
+// If the player becomes ready but never actually starts playing within this
+// window, treat the channel as offline. YouTube's live_stream embed shows its
+// "An error occurred" screen when there's no current broadcast, and that path
+// doesn't always emit a clean onError — so a "readied but never played" timeout
+// is the backstop. Generous, because a live stream on a slow connection can
+// take a few seconds to buffer, and we never want to hide a stream that's live.
+const OFFLINE_GRACE_MS = 9000
 
 export function LivestreamPlayer({
   src,
@@ -8,9 +17,12 @@ export function LivestreamPlayer({
   expandLabel = 'STRETCH PLAYER',
   collapseLabel = 'SHRINK PLAYER',
   autoUnmute = false,
+  onLivenessChange,
 }) {
   const frameWrapRef = useRef(null)
   const iframeRef = useRef(null)
+  const playerRef = useRef(null)
+  const sawPlaybackRef = useRef(false)
   const buttonLabel = isExpanded ? collapseLabel : expandLabel
   const tableClassName = 'bevelbox livestream-player' + (isExpanded ? ' livestream-player-expanded' : '')
   const playerSrc = useMemo(() => {
@@ -25,36 +37,80 @@ export function LivestreamPlayer({
     }
   }, [src])
 
-  const sendYoutubeCommand = useCallback((func, args = []) => {
-    iframeRef.current?.contentWindow?.postMessage(
-      JSON.stringify({ event: 'command', func, args }),
-      'https://www.youtube.com'
-    )
-  }, [])
+  const report = useCallback(
+    (state) => {
+      if (state === 'live') sawPlaybackRef.current = true
+      onLivenessChange?.(state)
+    },
+    [onLivenessChange],
+  )
 
   const requestPlayback = useCallback((withSound = false) => {
-    sendYoutubeCommand('playVideo')
-    if (withSound) {
-      sendYoutubeCommand('setVolume', [100])
-      sendYoutubeCommand('unMute')
+    const player = playerRef.current
+    if (!player || typeof player.playVideo !== 'function') return
+    try {
+      player.playVideo()
+      if (withSound) {
+        player.setVolume(100)
+        player.unMute()
+      }
+    } catch {
+      // Player not ready yet; the onReady handler will kick playback.
     }
-  }, [sendYoutubeCommand])
+  }, [])
 
   const handleToggleExpanded = () => {
     requestPlayback(true)
     onToggleExpanded()
   }
 
+  // Attach the IFrame Player API to the frame so we can both drive playback and
+  // observe whether the stream is actually live (playing) or offline (errored /
+  // never started). Re-runs if the source changes.
   useEffect(() => {
-    const withSound = isExpanded || autoUnmute
-    const attempts = [150, 500, 1000, 1800].map((delay) => (
-      window.setTimeout(() => requestPlayback(withSound), delay)
-    ))
+    let cancelled = false
+    let graceTimer
+
+    sawPlaybackRef.current = false
+
+    loadYoutubeIframeApi()
+      .then((YT) => {
+        if (cancelled || !iframeRef.current) return
+        playerRef.current = new YT.Player(iframeRef.current, {
+          events: {
+            onReady: () => {
+              requestPlayback(isExpanded || autoUnmute)
+              graceTimer = window.setTimeout(() => {
+                if (!sawPlaybackRef.current) report('offline')
+              }, OFFLINE_GRACE_MS)
+            },
+            onStateChange: (event) => {
+              // 1 = playing, 3 = buffering: either means there's a live feed.
+              if (event.data === 1 || event.data === 3) report('live')
+            },
+            onError: () => report('offline'),
+          },
+        })
+      })
+      .catch(() => {
+        // API failed to load — leave the raw iframe in place so a live stream
+        // still plays. We just can't detect the offline case in that scenario.
+      })
 
     return () => {
-      attempts.forEach((attempt) => window.clearTimeout(attempt))
+      cancelled = true
+      window.clearTimeout(graceTimer)
+      // Don't call player.destroy(): React removes the iframe itself on unmount
+      // (which stops playback), and letting YouTube yank the same node first
+      // triggers a removeChild crash during client-side navigation.
+      playerRef.current = null
     }
-  }, [isExpanded, autoUnmute, playerSrc, requestPlayback])
+  }, [playerSrc, autoUnmute, isExpanded, report, requestPlayback])
+
+  // Nudge playback (with sound) whenever the stream is expanded or auto-unmuted.
+  useEffect(() => {
+    requestPlayback(isExpanded || autoUnmute)
+  }, [isExpanded, autoUnmute, requestPlayback])
 
   useEffect(() => {
     if (!isExpanded) return
@@ -107,7 +163,6 @@ export function LivestreamPlayer({
                 referrerPolicy="strict-origin-when-cross-origin"
                 allowFullScreen
                 frameBorder="0"
-                onLoad={() => requestPlayback(isExpanded || autoUnmute)}
               />
             </div>
           </td>

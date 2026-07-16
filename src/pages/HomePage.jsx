@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../Layout'
 import HitCounter from '../components/HitCounter'
@@ -7,11 +7,11 @@ import {
   LivestreamWideNotice,
   LivestreamOfflineNotice,
 } from '../components/LivestreamPlayer'
-import { useYoutubeLive, livestreamEmbedSrc } from '../hooks/useYoutubeLive'
 import { pinnedQuotes } from '../data/quotes'
 
 const ROOSEVELT_CHANNEL_ID = 'UCrrkptlW7UtbiUHFjdsfKPg'
 const ROOSEVELT_LIVE_URL = `https://www.youtube.com/channel/${ROOSEVELT_CHANNEL_ID}/live`
+const ROOSEVELT_STREAM_SRC = `https://www.youtube.com/embed/live_stream?channel=${ROOSEVELT_CHANNEL_ID}&autoplay=1&mute=1&enablejsapi=1&modestbranding=1&rel=0&playsinline=1`
 const quotePreview = pinnedQuotes.slice(0, 3)
 
 const rightSidebar = (
@@ -162,7 +162,7 @@ const rightSidebar = (
   </>
 )
 
-function MainContent({ isStreamExpanded, onToggleStream, streamSrc, streamStatus }) {
+function MainContent({ isStreamExpanded, onToggleStream, onLivenessChange, isOffline }) {
   return (
     <>
     <center>
@@ -245,26 +245,24 @@ function MainContent({ isStreamExpanded, onToggleStream, streamSrc, streamStatus
 
     <br />
 
-    {streamStatus === 'live' ? (
-      isStreamExpanded ? (
-        <LivestreamWideNotice
-          title="Theodore Roosevelt Memorial Live"
-          onCollapse={onToggleStream}
-        />
-      ) : (
-        <LivestreamPlayer
-          src={streamSrc}
-          title="Theodore Roosevelt Memorial Live"
-          isExpanded={false}
-          onToggleExpanded={onToggleStream}
-        />
-      )
-    ) : (
+    {isOffline ? (
       <LivestreamOfflineNotice
         title="Theodore Roosevelt Memorial Live"
-        status={streamStatus}
         watchUrl={ROOSEVELT_LIVE_URL}
         note="The memorial feed is off the air right now — check back soon!!!"
+      />
+    ) : isStreamExpanded ? (
+      <LivestreamWideNotice
+        title="Theodore Roosevelt Memorial Live"
+        onCollapse={onToggleStream}
+      />
+    ) : (
+      <LivestreamPlayer
+        src={ROOSEVELT_STREAM_SRC}
+        title="Theodore Roosevelt Memorial Live"
+        isExpanded={false}
+        onToggleExpanded={onToggleStream}
+        onLivenessChange={onLivenessChange}
       />
     )}
 
@@ -287,11 +285,16 @@ function MainContent({ isStreamExpanded, onToggleStream, streamSrc, streamStatus
 
 export default function HomePage() {
   const [isStreamExpanded, setIsStreamExpanded] = useState(false)
+  const [liveness, setLiveness] = useState('checking')
   const toggleStream = () => setIsStreamExpanded((expanded) => !expanded)
+  const isOffline = liveness === 'offline'
 
-  const { status, videoId } = useYoutubeLive(ROOSEVELT_CHANNEL_ID)
-  const isLive = status === 'live'
-  const streamSrc = isLive ? livestreamEmbedSrc(videoId) : null
+  // Stable handler so the player isn't re-created on every render. A stream that
+  // drops offline can't be stretched, so collapse back to the column too.
+  const handleLiveness = useCallback((state) => {
+    setLiveness(state)
+    if (state === 'offline') setIsStreamExpanded(false)
+  }, [])
 
   return (
     <Layout
@@ -299,18 +302,19 @@ export default function HomePage() {
         <MainContent
           isStreamExpanded={isStreamExpanded}
           onToggleStream={toggleStream}
-          streamSrc={streamSrc}
-          streamStatus={status}
+          onLivenessChange={handleLiveness}
+          isOffline={isOffline}
         />
       }
       rightSidebar={rightSidebar}
       pageWideContent={
-        isLive && isStreamExpanded ? (
+        !isOffline && isStreamExpanded ? (
           <LivestreamPlayer
-            src={streamSrc}
+            src={ROOSEVELT_STREAM_SRC}
             title="Theodore Roosevelt Memorial Live"
             isExpanded
             onToggleExpanded={toggleStream}
+            onLivenessChange={handleLiveness}
           />
         ) : null
       }

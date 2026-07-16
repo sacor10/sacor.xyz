@@ -1,14 +1,14 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import Layout from '../Layout'
 import {
   LivestreamPlayer,
   LivestreamWideNotice,
   LivestreamOfflineNotice,
 } from '../components/LivestreamPlayer'
-import { useYoutubeLive, livestreamEmbedSrc } from '../hooks/useYoutubeLive'
 
 const MTS_LIVE_URL = 'https://www.youtube.com/@mtsituation/live'
 const MTS_CHANNEL_ID = 'UClWkDGXEzsh77GAhs90wpXw'
+const MTS_STREAM_SRC = `https://www.youtube.com/embed/live_stream?channel=${MTS_CHANNEL_ID}&autoplay=1&mute=1&enablejsapi=1&modestbranding=1&rel=0&playsinline=1`
 
 function Sidebar() {
   return (
@@ -113,7 +113,7 @@ function Sidebar() {
   )
 }
 
-function Player({ isStreamExpanded, onToggleStream, streamSrc, streamStatus }) {
+function Player({ isStreamExpanded, onToggleStream, onLivenessChange, isOffline }) {
   return (
     <>
       <center>
@@ -202,24 +202,22 @@ function Player({ isStreamExpanded, onToggleStream, streamSrc, streamStatus }) {
 
       <br />
 
-      {streamStatus === 'live' ? (
-        isStreamExpanded ? (
-          <LivestreamWideNotice title="MTS Live" onCollapse={onToggleStream} />
-        ) : (
-          <LivestreamPlayer
-            src={streamSrc}
-            title="MTS Live"
-            isExpanded={false}
-            onToggleExpanded={onToggleStream}
-            autoUnmute
-          />
-        )
-      ) : (
+      {isOffline ? (
         <LivestreamOfflineNotice
           title="MTS Live"
-          status={streamStatus}
           watchUrl={MTS_LIVE_URL}
-          note="MTS goes live 09:00 PT weekdays — smash the button above when the show's on!!!"
+          note="MTS goes live 09:00 PT weekdays — tune in on YouTube when the show's on!!!"
+        />
+      ) : isStreamExpanded ? (
+        <LivestreamWideNotice title="MTS Live" onCollapse={onToggleStream} />
+      ) : (
+        <LivestreamPlayer
+          src={MTS_STREAM_SRC}
+          title="MTS Live"
+          isExpanded={false}
+          onToggleExpanded={onToggleStream}
+          onLivenessChange={onLivenessChange}
+          autoUnmute
         />
       )}
 
@@ -280,11 +278,16 @@ function Player({ isStreamExpanded, onToggleStream, streamSrc, streamStatus }) {
 
 export default function MtsPage() {
   const [isStreamExpanded, setIsStreamExpanded] = useState(false)
+  const [liveness, setLiveness] = useState('checking')
   const toggleStream = () => setIsStreamExpanded((expanded) => !expanded)
+  const isOffline = liveness === 'offline'
 
-  const { status, videoId } = useYoutubeLive(MTS_CHANNEL_ID)
-  const isLive = status === 'live'
-  const streamSrc = isLive ? livestreamEmbedSrc(videoId) : null
+  // Stable handler so the player isn't re-created on every render. A stream that
+  // drops offline can't be stretched, so collapse back to the column too.
+  const handleLiveness = useCallback((state) => {
+    setLiveness(state)
+    if (state === 'offline') setIsStreamExpanded(false)
+  }, [])
 
   return (
     <Layout
@@ -292,18 +295,19 @@ export default function MtsPage() {
         <Player
           isStreamExpanded={isStreamExpanded}
           onToggleStream={toggleStream}
-          streamSrc={streamSrc}
-          streamStatus={status}
+          onLivenessChange={handleLiveness}
+          isOffline={isOffline}
         />
       }
       rightSidebar={<Sidebar />}
       pageWideContent={
-        isLive && isStreamExpanded ? (
+        !isOffline && isStreamExpanded ? (
           <LivestreamPlayer
-            src={streamSrc}
+            src={MTS_STREAM_SRC}
             title="MTS Live"
             isExpanded
             onToggleExpanded={toggleStream}
+            onLivenessChange={handleLiveness}
             autoUnmute
           />
         ) : null
