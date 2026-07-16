@@ -23,10 +23,12 @@ import StumblePage from './pages/StumblePage'
 import StumbleProfilePage from './pages/stumble/StumbleProfilePage'
 import ModerationQueuePage from './pages/stumble/ModerationQueuePage'
 import { AuthProvider } from './auth/AuthContext.jsx'
+import CursorTrail from './components/CursorTrail.jsx'
 
 export default function App() {
   return (
     <AuthProvider>
+      <CursorTrail />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<HomePage />} />
