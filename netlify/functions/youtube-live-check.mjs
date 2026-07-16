@@ -15,66 +15,94 @@ import { json } from './_lib/stumble.mjs'
 // only way to show something friendlier is to ask the server first — exactly
 // like stumble-frame-check does for arbitrary sites.
 //
+// Correctness note: /channel/ID/live only serves the channel's own live watch
+// page while it's actually live. When it isn't, YouTube redirects to a page
+// full of *other* content (channel home, recommended live shelves). So we never
+// trust a loose regex sweep of the HTML — that's how an earlier version ended up
+// embedding random unrelated livestreams. Instead we parse the single
+// ytInitialPlayerResponse (the video the page is really about) and only accept
+// it when its channelId matches the channel we asked for AND it's live.
+//
 // Returns { live: true, videoId } when the channel is live now, otherwise
 // { live: false }. Never throws toward the client: an unreachable/unparseable
 // upstream returns { live: false, error } so the frontend shows its offline
-// card instead of the embed's error screen. Add ?debug=1 to get the raw signals
-// (upstream status, which markers matched, page title) for troubleshooting.
+// card instead of the embed's error screen. Add ?debug=1 for the raw signals.
 
 const PROBE_TIMEOUT_MS = 8000
 
 // A real desktop browser UA — YouTube serves a very different (JS-less) page to
-// unknown clients, and the live player response we parse only appears for one
-// that looks like a browser.
+// unknown clients, and the player response we parse only appears for one that
+// looks like a browser.
 const PROBE_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
   '(KHTML, like Gecko) Chrome/124.0 Safari/537.36'
 
 // Consent cookies so YouTube serves the real watch page instead of the EU
-// "before you continue" interstitial (which carries none of the player JSON we
-// parse). SOCS is the current cookie; CONSENT is the older one — send both.
+// "before you continue" interstitial (which carries no player JSON we parse).
 const CONSENT_COOKIE = 'SOCS=CAI; CONSENT=YES+1'
 
 const CHANNEL_RE = /^UC[\w-]{22}$/
 
-// Pull the first 11-char video id out of the live watch page. Prefer the
-// canonical link (only present on a real watch page) and fall back to the
-// videoDetails blob in ytInitialPlayerResponse.
-function extractVideoId(html) {
-  const canonical = html.match(
-    /<link\s+rel="canonical"\s+href="https:\/\/www\.youtube\.com\/watch\?v=([\w-]{11})"/i,
-  )
-  if (canonical) return canonical[1]
+// Pull one balanced JSON object out of the page, starting at the first '{' after
+// `marker`. YouTube inlines ytInitialPlayerResponse as a raw JS object literal,
+// so a brace counter (string-aware, so braces inside strings don't count) gives
+// us the exact object without depending on any trailing delimiter.
+function extractJsonObject(html, marker) {
+  const from = html.indexOf(marker)
+  if (from === -1) return null
+  const start = html.indexOf('{', from)
+  if (start === -1) return null
 
-  const details = html.match(/"videoDetails":\{"videoId":"([\w-]{11})"/)
-  if (details) return details[1]
-
-  const embedded = html.match(/\\?"videoId\\?":\\?"([\w-]{11})\\?"/)
-  if (embedded) return embedded[1]
-
+  let depth = 0
+  let inString = false
+  let escaped = false
+  for (let i = start; i < html.length; i++) {
+    const ch = html[i]
+    if (inString) {
+      if (escaped) escaped = false
+      else if (ch === '\\') escaped = true
+      else if (ch === '"') inString = false
+    } else if (ch === '"') {
+      inString = true
+    } else if (ch === '{') {
+      depth++
+    } else if (ch === '}') {
+      depth--
+      if (depth === 0) {
+        try {
+          return JSON.parse(html.slice(start, i + 1))
+        } catch {
+          return null
+        }
+      }
+    }
+  }
   return null
 }
 
-// Decide whether the page describes a broadcast that's on the air *right now*.
-// YouTube ships a few different markers depending on the page variant and A/B
-// bucket, so check several rather than betting on one:
-//   isLiveNow        — liveBroadcastDetails flag, the cleanest signal
-//   isLive           — videoDetails flag on a currently-live watch page
-//   hlsManifestUrl   — only present while a stream is actually broadcasting
-//   LIVE_NOW badge   — the red "LIVE" pill shown on live content
-// Any one of them (with a resolvable video id) means live. An *upcoming* stream
-// has none of these true, so scheduled-but-not-started still reads as offline.
-function detectLive(html) {
-  const signals = {
-    isLiveNow: /"isLiveNow":\s*true/.test(html),
-    isLive: /"isLive":\s*true/.test(html),
-    hlsManifestUrl: /"hlsManifestUrl":\s*"/.test(html),
-    // Weaker/diagnostic only: the red LIVE pill can appear in a shelf on a
-    // channel-home page for some *other* live video, so it doesn't decide.
-    liveBadge: /BADGE_STYLE_TYPE_LIVE_NOW/.test(html),
+// Inspect the parsed player response and decide whether it describes *this*
+// channel's broadcast, live right now. The channelId match is the load-bearing
+// guard: even if YouTube hands back some other video, a mismatch means offline
+// rather than embedding a stranger's stream.
+function evaluate(playerResponse, channel) {
+  const vd = playerResponse?.videoDetails
+  const micro = playerResponse?.microformat?.playerMicroformatRenderer
+  const status = playerResponse?.playabilityStatus?.status ?? null
+  const channelInPage = vd?.channelId ?? null
+  const belongsToChannel = channelInPage === channel
+  const isLiveNow = micro?.liveBroadcastDetails?.isLiveNow === true
+  const isLive = vd?.isLive === true
+  const live = belongsToChannel && status === 'OK' && (isLiveNow || isLive)
+
+  return {
+    live,
+    videoId: live ? vd.videoId : null,
+    status,
+    channelInPage,
+    belongsToChannel,
+    isLiveNow,
+    isLive,
   }
-  const live = signals.isLiveNow || signals.isLive || signals.hlsManifestUrl
-  return { live, signals }
 }
 
 export default async (req) => {
@@ -88,16 +116,13 @@ export default async (req) => {
   }
 
   // Live status flips over time, so cache only briefly — long enough to shield
-  // YouTube from every page view, short enough that "we just went live" shows
-  // up within a minute. Debug requests skip the cache so we always see fresh
-  // signals while troubleshooting.
+  // YouTube from every page view, short enough that "we just went live" shows up
+  // within a minute. Debug requests skip the cache for fresh signals.
   const cache = { 'Cache-Control': debug ? 'no-store' : 'public, max-age=60' }
-
-  const target = `https://www.youtube.com/channel/${channel}/live`
 
   let res
   try {
-    res = await fetch(target, {
+    res = await fetch(`https://www.youtube.com/channel/${channel}/live`, {
       method: 'GET',
       redirect: 'follow',
       signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
@@ -118,30 +143,32 @@ export default async (req) => {
   }
 
   const html = await res.text()
-  const { live, signals } = detectLive(html)
-  const videoId = extractVideoId(html)
+  const playerResponse = extractJsonObject(html, 'ytInitialPlayerResponse')
+  const verdict = evaluate(playerResponse, channel)
 
   if (debug) {
     const title = html.match(/<title>([^<]*)<\/title>/i)?.[1] ?? null
     return json(
       {
-        live: Boolean(live && videoId),
-        videoId,
-        signals,
+        live: verdict.live,
+        videoId: verdict.videoId,
+        requestedChannel: channel,
+        channelInPage: verdict.channelInPage,
+        belongsToChannel: verdict.belongsToChannel,
+        playabilityStatus: verdict.status,
+        isLiveNow: verdict.isLiveNow,
+        isLive: verdict.isLive,
+        hasPlayerResponse: Boolean(playerResponse),
         upstreamStatus: res.status,
         finalUrl: res.url,
-        htmlLength: html.length,
-        hasPlayerResponse: html.includes('ytInitialPlayerResponse'),
-        looksLikeConsent: /consent\.(youtube|google)\.com/.test(res.url) ||
-          html.includes('Before you continue'),
         title,
       },
       { headers: cache },
     )
   }
 
-  if (live && videoId) {
-    return json({ live: true, videoId }, { headers: cache })
+  if (verdict.live) {
+    return json({ live: true, videoId: verdict.videoId }, { headers: cache })
   }
 
   return json({ live: false }, { headers: cache })
