@@ -2,11 +2,16 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../Layout'
 import HitCounter from '../components/HitCounter'
-import { LivestreamPlayer, LivestreamWideNotice } from '../components/LivestreamPlayer'
+import {
+  LivestreamPlayer,
+  LivestreamWideNotice,
+  LivestreamOfflineNotice,
+} from '../components/LivestreamPlayer'
+import { useYoutubeLive, livestreamEmbedSrc } from '../hooks/useYoutubeLive'
 import { pinnedQuotes } from '../data/quotes'
 
 const ROOSEVELT_CHANNEL_ID = 'UCrrkptlW7UtbiUHFjdsfKPg'
-const ROOSEVELT_STREAM_SRC = `https://www.youtube.com/embed/live_stream?channel=${ROOSEVELT_CHANNEL_ID}&autoplay=1&mute=1&enablejsapi=1&modestbranding=1&rel=0&playsinline=1`
+const ROOSEVELT_LIVE_URL = `https://www.youtube.com/channel/${ROOSEVELT_CHANNEL_ID}/live`
 const quotePreview = pinnedQuotes.slice(0, 3)
 
 const rightSidebar = (
@@ -157,7 +162,7 @@ const rightSidebar = (
   </>
 )
 
-function MainContent({ isStreamExpanded, onToggleStream }) {
+function MainContent({ isStreamExpanded, onToggleStream, streamSrc, streamStatus }) {
   return (
     <>
     <center>
@@ -240,17 +245,26 @@ function MainContent({ isStreamExpanded, onToggleStream }) {
 
     <br />
 
-    {isStreamExpanded ? (
-      <LivestreamWideNotice
-        title="Theodore Roosevelt Memorial Live"
-        onCollapse={onToggleStream}
-      />
+    {streamStatus === 'live' ? (
+      isStreamExpanded ? (
+        <LivestreamWideNotice
+          title="Theodore Roosevelt Memorial Live"
+          onCollapse={onToggleStream}
+        />
+      ) : (
+        <LivestreamPlayer
+          src={streamSrc}
+          title="Theodore Roosevelt Memorial Live"
+          isExpanded={false}
+          onToggleExpanded={onToggleStream}
+        />
+      )
     ) : (
-      <LivestreamPlayer
-        src={ROOSEVELT_STREAM_SRC}
+      <LivestreamOfflineNotice
         title="Theodore Roosevelt Memorial Live"
-        isExpanded={false}
-        onToggleExpanded={onToggleStream}
+        status={streamStatus}
+        watchUrl={ROOSEVELT_LIVE_URL}
+        note="The memorial feed is off the air right now — check back soon!!!"
       />
     )}
 
@@ -275,19 +289,25 @@ export default function HomePage() {
   const [isStreamExpanded, setIsStreamExpanded] = useState(false)
   const toggleStream = () => setIsStreamExpanded((expanded) => !expanded)
 
+  const { status, videoId } = useYoutubeLive(ROOSEVELT_CHANNEL_ID)
+  const isLive = status === 'live'
+  const streamSrc = isLive ? livestreamEmbedSrc(videoId) : null
+
   return (
     <Layout
       mainContent={
         <MainContent
           isStreamExpanded={isStreamExpanded}
           onToggleStream={toggleStream}
+          streamSrc={streamSrc}
+          streamStatus={status}
         />
       }
       rightSidebar={rightSidebar}
       pageWideContent={
-        isStreamExpanded ? (
+        isLive && isStreamExpanded ? (
           <LivestreamPlayer
-            src={ROOSEVELT_STREAM_SRC}
+            src={streamSrc}
             title="Theodore Roosevelt Memorial Live"
             isExpanded
             onToggleExpanded={toggleStream}
