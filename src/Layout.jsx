@@ -9,19 +9,7 @@ const NAV_GROUPS = [
   {
     title: 'MAIN',
     links: [
-      { label: 'HOME',     to: '/' },
-      { label: 'ABOUT ME', to: '/#about-me' },
-    ],
-  },
-  {
-    title: 'DOWNLOADS',
-    links: [
-      { label: 'DOWNLOADS', to: '/downloads' },
-    ],
-  },
-  {
-    title: 'READS & MEDIA',
-    links: [
+      { label: 'HOME',       to: '/' },
       { label: 'BLOG POSTS', to: '/blog' },
       { label: 'QUOTES',     to: '/quotes' },
       { label: 'MTS LIVE',   to: '/mts' },
@@ -30,6 +18,7 @@ const NAV_GROUPS = [
   {
     title: 'TOOLS',
     links: [
+      { label: 'DOWNLOADS',    to: '/downloads' },
       { label: 'LIVE STOCKS',  to: '/stocks' },
       { label: 'STUMBLE!',     to: '/stumble', icon: '🎲' },
       { label: 'TRAVEL PLANS', to: '/travel-plans', owner: true },
