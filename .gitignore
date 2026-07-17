@@ -26,6 +26,9 @@ dist-ssr
 *.sln
 *.sw?
 
+# Local libSQL fallback database (used when TURSO_DATABASE_URL is unset)
+.data/
+
 # Local Netlify folder
 .netlify
 netlify/bin/
