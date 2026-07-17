@@ -96,7 +96,7 @@ function SignHereBox({ onSigned }) {
                   <input
                     type="text"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => setNameEdit(e.target.value)}
                     maxLength={40}
                     required
                     style={inputStyle}
