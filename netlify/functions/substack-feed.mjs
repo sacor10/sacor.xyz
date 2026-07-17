@@ -8,6 +8,9 @@ const FEEDS = [
   { url: 'https://moreincommon.substack.com/feed',  name: 'More in Common'   },
   { url: 'https://www.lennysnewsletter.com/feed',   name: "Lenny's Newsletter" },
   { url: 'https://thatskaizen.substack.com/feed',   name: "That's Kaizen"    },
+  { url: 'https://blog.exitgroup.us/feed',          name: "EXIT Newsletter"  },
+  { url: 'https://samkriss.substack.com/feed',      name: "Numb at the Lodge" },
+  { url: 'https://www.bullypulpit.eco/feed',        name: "The Bully Pulpit" },
 ]
 
 const TTL_MS = 30 * 60 * 1000
