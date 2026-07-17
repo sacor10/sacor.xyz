@@ -12,6 +12,9 @@ const FEED_COLORS = {
   'More in Common':   '#FF99CC',
   "Lenny's Newsletter": '#99CCFF',
   "That's Kaizen":    '#CC99FF',
+  'EXIT Newsletter':  '#FF3366',
+  'Numb at the Lodge': '#33FFCC',
+  'The Bully Pulpit': '#FFCC33',
 }
 
 const SUBSCRIPTIONS = [
@@ -24,6 +27,9 @@ const SUBSCRIPTIONS = [
   { name: 'More in Common', url: 'https://moreincommon.substack.com' },
   { name: "Lenny's Newsletter", url: 'https://www.lennysnewsletter.com' },
   { name: "That's Kaizen", url: 'https://thatskaizen.substack.com' },
+  { name: 'EXIT Newsletter', url: 'https://blog.exitgroup.us' },
+  { name: 'Numb at the Lodge', url: 'https://samkriss.substack.com' },
+  { name: 'The Bully Pulpit', url: 'https://www.bullypulpit.eco' },
 ]
 
 function formatDate(pubDate) {
