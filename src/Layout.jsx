@@ -18,6 +18,7 @@ const NAV_GROUPS = [
     title: 'TOOLS',
     links: [
       { label: 'DOWNLOADS',    to: '/downloads' },
+      { label: "WHAT'S THAT SONG", to: '/song-id', icon: '🎵' },
       { label: 'LIVE STOCKS',  to: '/stocks' },
       { label: 'STUMBLE!',     to: '/stumble', icon: '🎲' },
       { label: 'TRAVEL PLANS', to: '/travel-plans', owner: true },

@@ -1,0 +1,75 @@
+{
+  "matches": [{ "id": "579996245", "offset": 10.1, "timeskew": 0.0009, "frequencyskew": 0.0002 }],
+  "timestamp": 1752900000000,
+  "timezone": "Europe/Paris",
+  "tagid": "8E7B1CDD-1F26-4B27-B0F3-4B36AB0E2F5E",
+  "track": {
+    "layout": "5",
+    "type": "MUSIC",
+    "key": "144182809",
+    "title": "Warriors",
+    "subtitle": "Imagine Dragons",
+    "images": {
+      "background": "https://is4-ssl.mzstatic.com/image/thumb/bg.jpg",
+      "coverart": "https://is4-ssl.mzstatic.com/image/thumb/400x400cc.jpg",
+      "coverarthq": "https://is4-ssl.mzstatic.com/image/thumb/1000x1000cc.jpg",
+      "joecolor": "b:1c1c24p:f2f2f4s:e8c531"
+    },
+    "hub": {
+      "type": "APPLEMUSIC",
+      "image": "https://images.shazam.com/static/icons/hub/ios/v5/applemusic.png",
+      "displayname": "APPLE MUSIC",
+      "explicit": false,
+      "providers": [
+        {
+          "caption": "Open in Spotify",
+          "type": "SPOTIFY",
+          "actions": [
+            { "name": "hub:spotify:searchdeeplink", "type": "uri", "uri": "spotify:search:Warriors%20Imagine%20Dragons" }
+          ]
+        },
+        {
+          "caption": "Open in Deezer",
+          "type": "DEEZER",
+          "actions": [
+            { "name": "hub:deezer:searchdeeplink", "type": "uri", "uri": "deezer-query://www.deezer.com/play?query=%7Btrack%7D%20%7Bartist%7D" }
+          ]
+        }
+      ],
+      "options": [
+        {
+          "caption": "OPEN",
+          "actions": [
+            { "name": "hub:applemusic:deeplink", "type": "applemusicopen", "uri": "https://music.apple.com/us/album/warriors/1440831203?i=1440831624&mt=1&app=music" }
+          ],
+          "type": "open"
+        }
+      ]
+    },
+    "sections": [
+      {
+        "type": "SONG",
+        "tabname": "Song",
+        "metadata": [
+          { "title": "Album", "text": "Warriors" },
+          { "title": "Label", "text": "KIDinaKORNER/Interscope Records" },
+          { "title": "Released", "text": "2014" }
+        ]
+      },
+      { "type": "VIDEO", "tabname": "Video" }
+    ],
+    "url": "https://www.shazam.com/track/144182809/warriors",
+    "artists": [{ "id": "42", "adamid": "358714030" }],
+    "isrc": "USUM71409209",
+    "genres": { "primary": "Alternative" },
+    "urlparams": { "{tracktitle}": "Warriors", "{trackartist}": "Imagine Dragons" },
+    "myshazam": {
+      "apple": {
+        "actions": [
+          { "name": "myshazam:apple", "type": "uri", "uri": "https://music.apple.com/us/album/warriors/1440831203?i=1440831624&mt=1&app=music&itsct=Shazam_1" }
+        ]
+      }
+    },
+    "albumadamid": "1440831203"
+  }
+}

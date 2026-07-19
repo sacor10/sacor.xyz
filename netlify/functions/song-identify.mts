@@ -3,8 +3,8 @@ import { createHash } from 'node:crypto'
 import { MAX_CLIP_BYTES } from '../../src/lib/songid/constants'
 import { parseWav } from '../../src/lib/songid/wav'
 import { readSessionCookie, userHash } from './_lib/session.mjs'
-import { createAuddProvider } from './_lib/songid/audd'
-import { ProviderError } from './_lib/songid/normalize'
+import { ProviderError } from './_lib/songid/errors'
+import { createShazamProvider } from './_lib/songid/shazam'
 import { runSpeedSweep } from './_lib/songid/sweep'
 import type { IdentifyOutcome } from './_lib/songid/types'
 
@@ -71,10 +71,9 @@ export default async (req: Request) => {
   if (req.method !== 'POST') {
     return errorJson('method_not_allowed', 'POST an audio/wav clip.', 405)
   }
-  const token = String(process.env.AUDD_API_TOKEN || '').trim()
-  if (!token) {
-    return errorJson('not_configured', 'Song identification is not configured.', 503)
-  }
+  // The free (unofficial) Shazam endpoint — no key or account, so there is
+  // no provider configuration to check.
+  const provider = createShazamProvider()
 
   // Sign-in gate: only authenticated Google accounts may spend lookups.
   let session: { email: string } | null
@@ -82,7 +81,7 @@ export default async (req: Request) => {
     session = readSessionCookie(req)
   } catch {
     // Missing/short SESSION_SECRET makes auth unverifiable — treat as misconfig.
-    return errorJson('not_configured', 'Song identification is not configured.', 503)
+    return errorJson('not_configured', 'Song identification is not configured (SESSION_SECRET missing or too short).', 503)
   }
   if (!session) {
     return errorJson('auth_required', 'Sign in with Google to identify songs.', 401)
@@ -135,7 +134,6 @@ export default async (req: Request) => {
 
   const monthlyCap = readIntEnv('SONG_ID_MONTHLY_CALL_CAP', 1000)
   const maxAttempts = readIntEnv('SONG_ID_MAX_SWEEP_ATTEMPTS', 4)
-  const provider = createAuddProvider({ token })
 
   let sweep
   try {

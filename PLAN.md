@@ -11,7 +11,7 @@ Add a utility page to sacor.xyz: drop in a video/audio file, get told what song 
 - **ffmpeg.wasm is already in the stack**: `src/lib/mux.js` lazy-loads the single-threaded @ffmpeg/core 0.12.9 from unpkg (~30MB, no SharedArrayBuffer/COOP changes needed) for browser-side remuxing.
 - **Rate-limit pattern exists**: `netlify/functions/geocode.mjs` — `bumpCounter()` on Netlify Blobs, minute+day keys, 429 on limit, plus in-memory dedup cache. `stumble-submissions.mjs` similar.
 - **Error convention**: `{ code, message }` JSON envelope, shared across functions and the Express services.
-- **Secrets**: server-only vars via `process.env` in functions (Netlify UI in prod), documented in `.env.example`. `VITE_`-prefixed vars are baked into the client bundle — the AudD token must never be `VITE_*`.
+- **Secrets**: server-only vars via `process.env` in functions (Netlify UI in prod), documented in `.env.example`. `VITE_`-prefixed vars are baked into the client bundle — provider secrets must never be `VITE_*`. (Moot since the final provider needs no secret.)
 - `services/instagram-downloader` / `x-downloader` are legacy/local Express apps with **no committed production hosting** — not the model to follow here.
 
 ## Decisions (user-confirmed)
@@ -19,9 +19,8 @@ Add a utility page to sacor.xyz: drop in a video/audio file, get told what song 
 | Decision | Choice | Why |
 |---|---|---|
 | Extraction | **Client-side (ffmpeg.wasm)** | Netlify functions can't run a native ffmpeg binary (bundle limits, no committed alternative host); the site already ships the lazy ffmpeg.wasm pattern; full video never uploads (function body limit is ~6MB anyway); the ~30MB wasm cost is lazy-loaded and already accepted on other pages. |
-| Provider | **AudD** | Token auth, 300 free lookups (no card), then ~$5/1,000 pay-as-you-go, no trial cliff; returns Spotify/Apple Music objects directly. ACRCloud's bigger DB doesn't outweigh 14-day-trial + HMAC for a personal site. AcoustID rejected (exact-recording matching, wrong tool). |
-| Token location | `AUDD_API_TOKEN` env var, read only inside the Netlify function. Never `VITE_*`, never committed. Prod value set in Netlify UI. | |
-| Cost ceiling | **$5/month**, enforced by a **global monthly API-call counter in Netlify Blobs** (`SONG_ID_MONTHLY_CALL_CAP`, default 1000 calls ≈ $5). When hit → 503 "temporarily unavailable" until month rolls over. | |
+| Provider | **Shazam (unofficial, free)** | AudD was tried first, but its "300 free requests" turned out to be a trial, not a free tier, and it was removed entirely. Recognition uses the unofficial Shazam endpoint via the pure-JS `shazam-api` package — signature generated in-function, no account/key/cost; caveat: no SLA, could break, in which case a paid adapter would be written behind the `RecognitionProvider` interface. AcoustID rejected (exact-recording matching, wrong tool). |
+| Cost ceiling | **$0** — the provider is free. The **global monthly call counter in Netlify Blobs** (`SONG_ID_MONTHLY_CALL_CAP`, default 1000) is kept as a volume guard; when hit → 503 until the month rolls over. | |
 | Language | **TypeScript for all new files** (`.tsx`/`.ts`/`.mts`) — Vite and Netlify compile TS natively; existing JS files untouched. | |
 | Branch | Develop and push on `claude/song-identification-utility-5sumwq` (CLAUDE.md's "work on main" is overridden for this remote session by user choice — pushing main would trigger prod deploys). | |
 
@@ -47,18 +46,17 @@ Pipeline, in order:
 5. **Cache**: SHA-256 of clip bytes → Blobs lookup; hit returns the cached normalized result (match *and* no-match cached), so a retry costs zero API calls.
 6. **Speed sweep** (`_lib/songid/sweep.ts`): factors `[1.0, 1.25, 1.15, 1.33, 1.10, 0.90, 0.80]`, capped at first `SONG_ID_MAX_SWEEP_ATTEMPTS` (default 4). Sequential, short-circuit on first match. Each attempt first bumps the global monthly counter (cap → stop sweeping, return 503 if no attempt succeeded).
    - **Resampling trick**: `asetrate` semantics (pitch+tempo shift together) are achieved by **rewriting only the WAV header's sample-rate field** to `round(44100 × factor)` — byte-identical samples, mathematically exactly what `asetrate` does; the provider resamples on ingest. Zero DSP, zero native deps in the function.
-7. **Provider adapter** (`_lib/songid/audd.ts`): multipart POST to `api.audd.io` with `return=spotify,apple_music`, AbortController timeout (~8s/attempt within a total budget). `normalize.ts` maps AudD JSON → provider-agnostic shape; the frontend never sees AudD field names.
+7. **Provider adapter** (`_lib/songid/shazam.ts`): resamples the clip's PCM to 16kHz honoring the *declared* sample rate (so the sweep's header trick flows through), generates the Shazam signature in-process, POSTs to `amp.shazam.com`, and normalizes the response to the provider-agnostic shape; the frontend never sees provider field names.
 8. Response: `{ status: 'match'|'no_match', attemptsUsed, matchedFactor?, result?: { title, artist, album, releaseDate, coverArtUrl, spotifyUrl, appleMusicUrl, confidence } }`.
-   - **Honesty note**: AudD's recognize endpoint returns no numeric confidence — for AudD, any result *is* a confident match, so `confidence` is `null` (UI omits the meter). The field exists in the schema so an ACRCloud adapter could fill it later.
+   - **Honesty note**: Shazam returns no numeric confidence — any result it returns *is* a confident match, so `confidence` is `null` (UI omits the meter). The field exists in the schema so a scoring provider (e.g. ACRCloud) could fill it later.
 9. **Privacy**: audio processed in memory only, never written or persisted; logs record counts/outcomes/factors only — never audio bytes or filenames.
 
 ### Env vars (added to `.env.example`, values in Netlify UI)
 
 ```
-AUDD_API_TOKEN=            # server-only; NEVER VITE_-prefixed
 SONG_ID_DISABLED=          # "true" = kill switch, endpoint returns 503
 SONG_ID_MAX_SWEEP_ATTEMPTS=4
-SONG_ID_MONTHLY_CALL_CAP=1000   # ≈ $5/mo after free tier
+SONG_ID_MONTHLY_CALL_CAP=1000   # volume guard; provider calls are free
 SONG_ID_RATE_LIMIT_PER_HOUR=10
 ```
 
@@ -73,13 +71,13 @@ SONG_ID_RATE_LIMIT_PER_HOUR=10
 - `sweep.test.ts`: mock provider that only "matches" at declared rate 55125Hz → asserts sweep tries factors in spec order, finds 1.25, short-circuits, respects the attempt cap and monthly-cap stop.
 - `wav.test.ts`: header rewrite math, duration parsing, malformed-header rejection.
 - `rms.test.ts`: synthetic quiet-then-loud PCM → picks the loud window, not t=0.
-- `normalize.test.ts`: recorded AudD JSON fixtures (match, no-match, with/without spotify block) → normalized shape.
+- `shazam.test.ts`: recorded Shazam JSON fixtures (match, no-match, missing enrichment blocks) → normalized shape; resampler honors declared sample rate.
 - Real-music acceptance (normal + slowed clip via `ffmpeg -af "asetrate=44100*0.8,aresample=44100"`) needs a real token + real song — documented as a manual smoke check the user runs locally with `netlify dev`.
 
 ## Verification
 
 1. `npm test` (vitest suite above) and `npm run lint`.
-2. `npm run build` then `grep -r "$AUDD_API_TOKEN\|AUDD" dist/` — token and var name absent from bundle (acceptance criterion).
+2. `npm run build` then grep `dist/` for provider strings — nothing provider-related ships in the client bundle (acceptance criterion).
 3. Exercise the function handler directly in a test harness (construct `Request` objects): 429 after 10 hits from one IP; 415 with clean JSON for a PNG body; 503 when `SONG_ID_DISABLED=true`.
 4. Manual end-to-end (user, locally with `netlify dev` + real token): normal-speed clip identifies; 0.8× slowed clip identifies with "matched at 1.25×" message.
 
@@ -89,10 +87,10 @@ SONG_ID_RATE_LIMIT_PER_HOUR=10
 2. `tsconfig.json` + `typescript`/`vitest` dev deps + `npm test` script.
 3. `src/lib/ffmpeg.js` — extract shared loader; refactor `mux.js` to use it.
 4. `src/lib/songid/` — `magicBytes.ts`, `wav.ts`, `rms.ts`, `extractClip.ts` (+ tests, fixtures script).
-5. `netlify/functions/_lib/songid/` — `types.ts`, `wav.ts`, `sweep.ts`, `audd.ts`, `normalize.ts` (+ tests).
+5. `netlify/functions/_lib/songid/` — `types.ts`, `errors.ts`, `sweep.ts`, `shazam.ts` (+ tests).
 6. `netlify/functions/song-identify.mts` — handler wiring (kill switch, validation, rate limit, cache, sweep).
 7. `src/pages/SongIdPage.tsx` + route + `DOWNLOAD_TOOLS` entry (styling follows existing downloader pages).
-8. `.env.example` additions + README section (setup, env vars, cost: 1 lookup = 1–4 AudD calls; free tier 300 calls, then $0.005/call → ~0.5–2¢/lookup).
+8. `.env.example` additions + README section (setup: none; env vars are optional overrides; cost: $0 — the monthly call cap is a volume guard).
 
 Along the way: flag unfamiliar React/TS idioms in chat (e.g. discriminated unions for progress state, `useRef` for the drop zone, generics in the normalizer) rather than using them silently.
 

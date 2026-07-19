@@ -1,6 +1,5 @@
 import { withSampleRate, type WavInfo } from '../../../../src/lib/songid/wav'
-import type { RecognitionProvider } from './audd'
-import type { IdentifyOutcome } from './types'
+import type { IdentifyOutcome, RecognitionProvider } from './types'
 
 /**
  * Rate factors to try, most-likely first. Slowed edits dominate, so the
