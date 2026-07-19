@@ -73,7 +73,7 @@ export default async (req: Request) => {
   }
   const token = String(process.env.AUDD_API_TOKEN || '').trim()
   if (!token) {
-    return errorJson('not_configured', 'Song identification is not configured.', 503)
+    return errorJson('not_configured', 'Song identification is not configured (missing AUDD_API_TOKEN).', 503)
   }
 
   // Sign-in gate: only authenticated Google accounts may spend lookups.
@@ -82,7 +82,7 @@ export default async (req: Request) => {
     session = readSessionCookie(req)
   } catch {
     // Missing/short SESSION_SECRET makes auth unverifiable — treat as misconfig.
-    return errorJson('not_configured', 'Song identification is not configured.', 503)
+    return errorJson('not_configured', 'Song identification is not configured (SESSION_SECRET missing or too short).', 503)
   }
   if (!session) {
     return errorJson('auth_required', 'Sign in with Google to identify songs.', 401)

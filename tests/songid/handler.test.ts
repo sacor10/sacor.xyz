@@ -91,7 +91,20 @@ describe('song-identify handler', () => {
       }),
     )
     expect(res.status).toBe(503)
-    expect(await res.json()).toMatchObject({ code: 'not_configured' })
+    expect(await res.json()).toMatchObject({
+      code: 'not_configured',
+      message: expect.stringContaining('SESSION_SECRET'),
+    })
+  })
+
+  it('names the missing token when AUDD_API_TOKEN is unset', async () => {
+    vi.stubEnv('AUDD_API_TOKEN', '')
+    const res = await post(wavClip())
+    expect(res.status).toBe(503)
+    expect(await res.json()).toMatchObject({
+      code: 'not_configured',
+      message: expect.stringContaining('AUDD_API_TOKEN'),
+    })
   })
 
   it('rejects a non-WAV body with clean JSON, not a stack trace', async () => {
