@@ -19,7 +19,7 @@ Add a utility page to sacor.xyz: drop in a video/audio file, get told what song 
 | Decision | Choice | Why |
 |---|---|---|
 | Extraction | **Client-side (ffmpeg.wasm)** | Netlify functions can't run a native ffmpeg binary (bundle limits, no committed alternative host); the site already ships the lazy ffmpeg.wasm pattern; full video never uploads (function body limit is ~6MB anyway); the ~30MB wasm cost is lazy-loaded and already accepted on other pages. |
-| Provider | **AudD** | Token auth, 300 free lookups (no card), then ~$5/1,000 pay-as-you-go, no trial cliff; returns Spotify/Apple Music objects directly. ACRCloud's bigger DB doesn't outweigh 14-day-trial + HMAC for a personal site. AcoustID rejected (exact-recording matching, wrong tool). |
+| Provider | **Shazam (unofficial, free) by default; AudD as paid fallback** | AudD's "300 free requests" turned out to be a trial, not a free tier. Default is now the unofficial Shazam endpoint via the pure-JS `shazam-api` package — signature generated in-function, no account/key/cost; caveat: no SLA, could break. `SONG_ID_PROVIDER=audd` + `AUDD_API_TOKEN` switches to the paid AudD adapter (kept tested). AcoustID rejected (exact-recording matching, wrong tool). |
 | Token location | `AUDD_API_TOKEN` env var, read only inside the Netlify function. Never `VITE_*`, never committed. Prod value set in Netlify UI. | |
 | Cost ceiling | **$5/month**, enforced by a **global monthly API-call counter in Netlify Blobs** (`SONG_ID_MONTHLY_CALL_CAP`, default 1000 calls ≈ $5). When hit → 503 "temporarily unavailable" until month rolls over. | |
 | Language | **TypeScript for all new files** (`.tsx`/`.ts`/`.mts`) — Vite and Netlify compile TS natively; existing JS files untouched. | |
@@ -47,7 +47,7 @@ Pipeline, in order:
 5. **Cache**: SHA-256 of clip bytes → Blobs lookup; hit returns the cached normalized result (match *and* no-match cached), so a retry costs zero API calls.
 6. **Speed sweep** (`_lib/songid/sweep.ts`): factors `[1.0, 1.25, 1.15, 1.33, 1.10, 0.90, 0.80]`, capped at first `SONG_ID_MAX_SWEEP_ATTEMPTS` (default 4). Sequential, short-circuit on first match. Each attempt first bumps the global monthly counter (cap → stop sweeping, return 503 if no attempt succeeded).
    - **Resampling trick**: `asetrate` semantics (pitch+tempo shift together) are achieved by **rewriting only the WAV header's sample-rate field** to `round(44100 × factor)` — byte-identical samples, mathematically exactly what `asetrate` does; the provider resamples on ingest. Zero DSP, zero native deps in the function.
-7. **Provider adapter** (`_lib/songid/audd.ts`): multipart POST to `api.audd.io` with `return=spotify,apple_music`, AbortController timeout (~8s/attempt within a total budget). `normalize.ts` maps AudD JSON → provider-agnostic shape; the frontend never sees AudD field names.
+7. **Provider adapter**: default `_lib/songid/shazam.ts` — resamples the clip's PCM to 16kHz honoring the *declared* sample rate (so the sweep's header trick flows through), generates the Shazam signature in-process, POSTs to `amp.shazam.com`, normalizes the response. Fallback `_lib/songid/audd.ts` — multipart POST to `api.audd.io`, selected via `SONG_ID_PROVIDER=audd`. Both normalize to the provider-agnostic shape; the frontend never sees provider field names.
 8. Response: `{ status: 'match'|'no_match', attemptsUsed, matchedFactor?, result?: { title, artist, album, releaseDate, coverArtUrl, spotifyUrl, appleMusicUrl, confidence } }`.
    - **Honesty note**: AudD's recognize endpoint returns no numeric confidence — for AudD, any result *is* a confident match, so `confidence` is `null` (UI omits the meter). The field exists in the schema so an ACRCloud adapter could fill it later.
 9. **Privacy**: audio processed in memory only, never written or persisted; logs record counts/outcomes/factors only — never audio bytes or filenames.
@@ -55,7 +55,8 @@ Pipeline, in order:
 ### Env vars (added to `.env.example`, values in Netlify UI)
 
 ```
-AUDD_API_TOKEN=            # server-only; NEVER VITE_-prefixed
+SONG_ID_PROVIDER=shazam    # default: free unofficial Shazam; "audd" = paid fallback
+AUDD_API_TOKEN=            # only needed for SONG_ID_PROVIDER=audd; NEVER VITE_-prefixed
 SONG_ID_DISABLED=          # "true" = kill switch, endpoint returns 503
 SONG_ID_MAX_SWEEP_ATTEMPTS=4
 SONG_ID_MONTHLY_CALL_CAP=1000   # ≈ $5/mo after free tier
