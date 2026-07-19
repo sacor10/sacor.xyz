@@ -161,7 +161,7 @@ The in-browser YouTube downloader was removed. Running yt-dlp from Netlify Funct
 
 ## What's That Song (`/song-id`)
 
-Drop a video or audio file (`mp4`, `mov`, `webm`, `mp3`, `m4a`, `wav`, `ogg`, ≤50 MB) and the page names the song playing in it — including slowed/nightcore edits.
+Drop a video or audio file (`mp4`, `mov`, `webm`, `mp3`, `m4a`, `wav`, `ogg`, ≤50 MB) and the page names the song playing in it — including slowed/nightcore edits. **Google sign-in is required** — anonymous visitors get a sign-in prompt, and the function returns 401 without a valid session cookie (so the existing Account setup — `SESSION_SECRET`, `VITE_GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_ID` — is a prerequisite).
 
 How it works:
 
@@ -178,7 +178,8 @@ How it works:
 
 One user lookup = 1–4 AudD calls (1 for a normal-speed match, up to `SONG_ID_MAX_SWEEP_ATTEMPTS` for no-match/slowed clips). After the 300 free requests, AudD is ~$5 per 1,000 calls, so a lookup costs **~0.5–2¢**. Guardrails, all enforced in the function:
 
-- per-IP limit: `SONG_ID_RATE_LIMIT_PER_HOUR` (default 10) → HTTP 429
+- sign-in required → HTTP 401 for anonymous requests
+- per-user limit: `SONG_ID_RATE_LIMIT_PER_HOUR` (default 10) → HTTP 429
 - monthly budget: `SONG_ID_MONTHLY_CALL_CAP` provider calls (default 1000 ≈ $5/mo) → HTTP 503 until the month rolls over
 - results are cached in Netlify Blobs by clip hash, so retries cost zero calls
 - kill switch: `SONG_ID_DISABLED=true`

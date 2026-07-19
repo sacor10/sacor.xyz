@@ -41,15 +41,16 @@ Add a utility page to sacor.xyz: drop in a video/audio file, get told what song 
 
 Pipeline, in order:
 1. **Kill switch**: `SONG_ID_DISABLED=true` → 503.
-2. Method/body checks; **magic-byte validation** that body is RIFF/WAVE, mono 16-bit PCM, and duration ≤12.5s (computed from header + byte length; hard body cap ~1.5MB). Unsupported → 415 `{ code, message }`, never a stack trace.
-3. **Per-IP rate limit**: 10/hour (`SONG_ID_RATE_LIMIT_PER_HOUR`), Netlify Blobs `bumpCounter` pattern copied from `geocode.mjs`, keyed by salted SHA-256 of client IP (`context.ip` / `x-nf-client-connection-ip`) + hour bucket. Over → 429 with when-to-retry message. Blobs is the shared store — survives serverless invocations.
-4. **Cache**: SHA-256 of clip bytes → Blobs lookup; hit returns the cached normalized result (match *and* no-match cached), so a retry costs zero API calls.
-5. **Speed sweep** (`_lib/songid/sweep.ts`): factors `[1.0, 1.25, 1.15, 1.33, 1.10, 0.90, 0.80]`, capped at first `SONG_ID_MAX_SWEEP_ATTEMPTS` (default 4). Sequential, short-circuit on first match. Each attempt first bumps the global monthly counter (cap → stop sweeping, return 503 if no attempt succeeded).
+2. **Sign-in gate** (added after initial ship): `readSessionCookie` from `_lib/session.mjs` must yield a valid Google session, else 401 `auth_required`; the page shows a `GoogleSignInButton` to anonymous visitors.
+3. Method/body checks; **magic-byte validation** that body is RIFF/WAVE, mono 16-bit PCM, and duration ≤12.5s (computed from header + byte length; hard body cap ~1.5MB). Unsupported → 415 `{ code, message }`, never a stack trace.
+4. **Per-user rate limit**: 10/hour (`SONG_ID_RATE_LIMIT_PER_HOUR`), Netlify Blobs `bumpCounter` pattern copied from `geocode.mjs`, keyed by `userHash(email)` + hour bucket. Over → 429 with when-to-retry message. Blobs is the shared store — survives serverless invocations.
+5. **Cache**: SHA-256 of clip bytes → Blobs lookup; hit returns the cached normalized result (match *and* no-match cached), so a retry costs zero API calls.
+6. **Speed sweep** (`_lib/songid/sweep.ts`): factors `[1.0, 1.25, 1.15, 1.33, 1.10, 0.90, 0.80]`, capped at first `SONG_ID_MAX_SWEEP_ATTEMPTS` (default 4). Sequential, short-circuit on first match. Each attempt first bumps the global monthly counter (cap → stop sweeping, return 503 if no attempt succeeded).
    - **Resampling trick**: `asetrate` semantics (pitch+tempo shift together) are achieved by **rewriting only the WAV header's sample-rate field** to `round(44100 × factor)` — byte-identical samples, mathematically exactly what `asetrate` does; the provider resamples on ingest. Zero DSP, zero native deps in the function.
-6. **Provider adapter** (`_lib/songid/audd.ts`): multipart POST to `api.audd.io` with `return=spotify,apple_music`, AbortController timeout (~8s/attempt within a total budget). `normalize.ts` maps AudD JSON → provider-agnostic shape; the frontend never sees AudD field names.
-7. Response: `{ status: 'match'|'no_match', attemptsUsed, matchedFactor?, result?: { title, artist, album, releaseDate, coverArtUrl, spotifyUrl, appleMusicUrl, confidence } }`.
+7. **Provider adapter** (`_lib/songid/audd.ts`): multipart POST to `api.audd.io` with `return=spotify,apple_music`, AbortController timeout (~8s/attempt within a total budget). `normalize.ts` maps AudD JSON → provider-agnostic shape; the frontend never sees AudD field names.
+8. Response: `{ status: 'match'|'no_match', attemptsUsed, matchedFactor?, result?: { title, artist, album, releaseDate, coverArtUrl, spotifyUrl, appleMusicUrl, confidence } }`.
    - **Honesty note**: AudD's recognize endpoint returns no numeric confidence — for AudD, any result *is* a confident match, so `confidence` is `null` (UI omits the meter). The field exists in the schema so an ACRCloud adapter could fill it later.
-8. **Privacy**: audio processed in memory only, never written or persisted; logs record counts/outcomes/factors only — never audio bytes or filenames.
+9. **Privacy**: audio processed in memory only, never written or persisted; logs record counts/outcomes/factors only — never audio bytes or filenames.
 
 ### Env vars (added to `.env.example`, values in Netlify UI)
 
