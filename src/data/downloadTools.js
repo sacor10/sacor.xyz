@@ -5,4 +5,5 @@ export const DOWNLOAD_TOOLS = [
   { label: 'TIKTOK',        to: '/tiktok-downloader',    icon: 'tiktok-logo', blurb: 'Public videos → MP4' },
   { label: 'LINKEDIN',      to: '/linkedin-downloader',  icon: 'li-logo',     blurb: 'Public post videos → MP4 / ZIP' },
   { label: 'FACEBOOK',      to: '/facebook-downloader',  icon: 'fb-logo',     blurb: 'Reels / Watch / posts → MP4' },
+  { label: "WHAT'S THAT SONG", to: '/song-id',           icon: 'song-logo',   blurb: 'Video/audio clip → song name' },
 ]
