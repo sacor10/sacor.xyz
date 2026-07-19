@@ -2,12 +2,12 @@
 // the pure-JS `shazam-api` package: it builds the fingerprint signature itself
 // (fft.js) and needs no account, token, or trial. Trade-off vs a paid API:
 // it's unofficial, so it has no SLA and could break or start blocking
-// datacenter IPs without notice — if that happens, switch SONG_ID_PROVIDER
-// back to the AudD adapter.
+// datacenter IPs without notice — if that happens, a paid provider adapter
+// would have to be added behind the RecognitionProvider interface.
 
 import { Shazam } from 'shazam-api'
 import { parseWav, wavSamples } from '../../../../src/lib/songid/wav'
-import { ProviderError } from './normalize'
+import { ProviderError } from './errors'
 import type { RecognitionProvider, SongMatch } from './types'
 
 /** Shazam signatures are generated from 16kHz mono s16 PCM. */

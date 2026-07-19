@@ -1,5 +1,5 @@
-// Provider-agnostic shapes: the frontend only ever sees these, never AudD
-// field names, so the provider can be swapped without touching the UI.
+// Provider-agnostic shapes: the frontend only ever sees these, never the
+// provider's field names, so the provider can be swapped without touching the UI.
 
 export interface SongMatch {
   title: string
@@ -10,9 +10,9 @@ export interface SongMatch {
   spotifyUrl: string | null
   appleMusicUrl: string | null
   /**
-   * 0..1 when the provider reports one. AudD does not — any AudD result is a
-   * confident match — so this stays null there; an ACRCloud adapter would
-   * fill it.
+   * 0..1 when the provider reports one. Shazam does not — any result it
+   * returns is a confident match — so this stays null there; a provider
+   * that scores matches (e.g. ACRCloud) would fill it.
    */
   confidence: number | null
 }

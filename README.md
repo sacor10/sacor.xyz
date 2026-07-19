@@ -171,13 +171,13 @@ How it works:
 
 ### Setup
 
-None. With the default Shazam provider there is nothing to configure beyond the existing Account env vars (`SESSION_SECRET`, Google client IDs). The `SONG_ID_*` knobs in `.env.example` are optional overrides.
+None. There is nothing to configure beyond the existing Account env vars (`SESSION_SECRET`, Google client IDs). The `SONG_ID_*` knobs in `.env.example` are optional overrides.
 
-**Caveat**: the Shazam endpoint is unofficial — no SLA, and it could break or start rejecting serverless IPs without notice. If it does, set `SONG_ID_PROVIDER=audd` plus `AUDD_API_TOKEN` (paid, ~$5 per 1,000 calls at <https://dashboard.audd.io>) — the AudD adapter is kept working and tested for exactly that case.
+**Caveat**: the Shazam endpoint is unofficial — no SLA, and it could break or start rejecting serverless IPs without notice. If it does, a paid provider adapter (e.g. ACRCloud) would need to be written behind the same `RecognitionProvider` interface — the normalized response shape means the frontend wouldn't change.
 
 ### Cost per lookup
 
-**$0 with the default provider.** One user lookup = 1–4 provider calls (1 for a normal-speed match, up to `SONG_ID_MAX_SWEEP_ATTEMPTS` for no-match/slowed clips); on the AudD fallback that's ~0.5–2¢ per lookup. Guardrails, all enforced in the function (the monthly cap doubles as a volume guard even when calls are free):
+**$0.** One user lookup = 1–4 provider calls (1 for a normal-speed match, up to `SONG_ID_MAX_SWEEP_ATTEMPTS` for no-match/slowed clips). Guardrails, all enforced in the function (the monthly cap is a volume guard even though calls are free):
 
 - sign-in required → HTTP 401 for anonymous requests
 - per-user limit: `SONG_ID_RATE_LIMIT_PER_HOUR` (default 10) → HTTP 429

@@ -3,11 +3,10 @@ import { createHash } from 'node:crypto'
 import { MAX_CLIP_BYTES } from '../../src/lib/songid/constants'
 import { parseWav } from '../../src/lib/songid/wav'
 import { readSessionCookie, userHash } from './_lib/session.mjs'
-import { createAuddProvider } from './_lib/songid/audd'
-import { ProviderError } from './_lib/songid/normalize'
+import { ProviderError } from './_lib/songid/errors'
 import { createShazamProvider } from './_lib/songid/shazam'
 import { runSpeedSweep } from './_lib/songid/sweep'
-import type { IdentifyOutcome, RecognitionProvider } from './_lib/songid/types'
+import type { IdentifyOutcome } from './_lib/songid/types'
 
 /**
  * Song identification proxy. The browser sends a 12s mono PCM WAV clip; this
@@ -72,19 +71,9 @@ export default async (req: Request) => {
   if (req.method !== 'POST') {
     return errorJson('method_not_allowed', 'POST an audio/wav clip.', 405)
   }
-  // Default provider is the free (unofficial) Shazam endpoint — needs no
-  // config at all. Set SONG_ID_PROVIDER=audd + AUDD_API_TOKEN to use the
-  // paid AudD API instead (e.g. if Shazam starts blocking function IPs).
-  let provider: RecognitionProvider
-  if (String(process.env.SONG_ID_PROVIDER || 'shazam').trim().toLowerCase() === 'audd') {
-    const token = String(process.env.AUDD_API_TOKEN || '').trim()
-    if (!token) {
-      return errorJson('not_configured', 'Song identification is not configured (missing AUDD_API_TOKEN).', 503)
-    }
-    provider = createAuddProvider({ token })
-  } else {
-    provider = createShazamProvider()
-  }
+  // The free (unofficial) Shazam endpoint — no key or account, so there is
+  // no provider configuration to check.
+  const provider = createShazamProvider()
 
   // Sign-in gate: only authenticated Google accounts may spend lookups.
   let session: { email: string } | null

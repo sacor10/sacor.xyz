@@ -18,16 +18,18 @@ vi.mock('@netlify/blobs', () => ({
 import handler from '../../netlify/functions/song-identify.mts'
 import { signSession } from '../../netlify/functions/_lib/session.mjs'
 
-const auddMatch = readFileSync(join(__dirname, 'fixtures/audd-match.json'), 'utf8')
-const auddNoMatch = readFileSync(join(__dirname, 'fixtures/audd-no-match.json'), 'utf8')
+const shazamMatch = readFileSync(join(__dirname, 'fixtures/shazam-match.json'), 'utf8')
+const shazamNoMatch = readFileSync(join(__dirname, 'fixtures/shazam-no-match.json'), 'utf8')
 
-const stubAudd = (body: string) => {
+// Intercepts the Shazam recognize POST that shazam-api makes via global fetch.
+const stubShazamFetch = (body: string) => {
   const impl = vi.fn(async (..._args: unknown[]) => new Response(body, { status: 200 }))
   vi.stubGlobal('fetch', impl)
   return impl
 }
 
-const wavClip = (seconds = 10, seed = 1) =>
+// Short clips keep the real in-process signature generation fast in tests.
+const wavClip = (seconds = 2, seed = 1) =>
   buildWav(Int16Array.from({ length: 8000 * seconds }, (_, i) => ((i * seed * 31) % 4096) - 2048), 8000)
 
 const post = (body: Uint8Array | ArrayBuffer, email: string | null = 'tester@example.com') =>
@@ -43,10 +45,6 @@ const post = (body: Uint8Array | ArrayBuffer, email: string | null = 'tester@exa
 
 beforeEach(() => {
   blobData.clear()
-  // Most pipeline tests pin the AudD provider so the stubbed fetch bodies
-  // stay AudD-shaped; the Shazam-default tests override this per test.
-  vi.stubEnv('SONG_ID_PROVIDER', 'audd')
-  vi.stubEnv('AUDD_API_TOKEN', 'test-token')
   vi.stubEnv('SESSION_SECRET', 'unit-test-secret-32-bytes-long!!')
 })
 
@@ -100,16 +98,6 @@ describe('song-identify handler', () => {
     })
   })
 
-  it('names the missing token when AUDD_API_TOKEN is unset', async () => {
-    vi.stubEnv('AUDD_API_TOKEN', '')
-    const res = await post(wavClip())
-    expect(res.status).toBe(503)
-    expect(await res.json()).toMatchObject({
-      code: 'not_configured',
-      message: expect.stringContaining('AUDD_API_TOKEN'),
-    })
-  })
-
   it('rejects a non-WAV body with clean JSON, not a stack trace', async () => {
     const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, ...new Array(100).fill(0)])
     const res = await post(png)
@@ -127,20 +115,20 @@ describe('song-identify handler', () => {
     expect(await res.json()).toMatchObject({ code: 'clip_too_long' })
   })
 
-  it('identifies a clip, then serves the repeat from cache with no provider call', async () => {
-    const fetchImpl = stubAudd(auddMatch)
+  it('identifies a clip via Shazam, then serves the repeat from cache with no provider call', async () => {
+    const fetchImpl = stubShazamFetch(shazamMatch)
     const clip = wavClip()
 
     const first = await post(clip)
     expect(first.status).toBe(200)
-    const outcome = await first.json()
-    expect(outcome).toMatchObject({
+    expect(await first.json()).toMatchObject({
       status: 'match',
       attemptsUsed: 1,
       matchedFactor: 1,
       result: { title: 'Warriors', artist: 'Imagine Dragons' },
     })
     expect(fetchImpl).toHaveBeenCalledTimes(1)
+    expect(String(fetchImpl.mock.calls[0][0])).toContain('amp.shazam.com')
 
     const second = await post(clip)
     expect(second.status).toBe(200)
@@ -149,17 +137,18 @@ describe('song-identify handler', () => {
   })
 
   it('sweeps up to the attempt cap on no-match', async () => {
-    const fetchImpl = stubAudd(auddNoMatch)
+    const fetchImpl = stubShazamFetch(shazamNoMatch)
     vi.stubEnv('SONG_ID_MAX_SWEEP_ATTEMPTS', '3')
-    const res = await post(wavClip(10, 3))
+    const res = await post(wavClip(2, 3))
     expect(await res.json()).toMatchObject({ status: 'no_match', attemptsUsed: 3 })
     expect(fetchImpl).toHaveBeenCalledTimes(3)
   })
 
   it('returns 429 with a useful message once the per-user hourly limit is hit', async () => {
-    stubAudd(auddNoMatch)
+    stubShazamFetch(shazamNoMatch)
     vi.stubEnv('SONG_ID_RATE_LIMIT_PER_HOUR', '2')
-    const clip = wavClip(10, 7)
+    vi.stubEnv('SONG_ID_MAX_SWEEP_ATTEMPTS', '1')
+    const clip = wavClip(2, 7)
     expect((await post(clip, 'heavy@example.com')).status).toBe(200)
     expect((await post(clip, 'heavy@example.com')).status).toBe(200)
     const limited = await post(clip, 'heavy@example.com')
@@ -169,47 +158,24 @@ describe('song-identify handler', () => {
       message: expect.stringContaining('2 lookups per hour'),
     })
     // a different signed-in user is unaffected
-    expect((await post(wavClip(10, 8), 'other@example.com')).status).toBe(200)
+    expect((await post(wavClip(2, 8), 'other@example.com')).status).toBe(200)
   })
 
   it('returns 503 quota_exhausted when the monthly cap is already spent', async () => {
-    stubAudd(auddNoMatch)
+    stubShazamFetch(shazamNoMatch)
     vi.stubEnv('SONG_ID_MONTHLY_CALL_CAP', '1')
-    expect((await post(wavClip(10, 11), 'a@example.com')).status).toBe(200) // spends the 1 call
-    const res = await post(wavClip(10, 12), 'b@example.com')
+    expect((await post(wavClip(2, 11), 'a@example.com')).status).toBe(200) // spends the 1 call
+    const res = await post(wavClip(2, 12), 'b@example.com')
     expect(res.status).toBe(503)
     expect(await res.json()).toMatchObject({ code: 'quota_exhausted' })
   })
 
   it('maps provider errors to 502', async () => {
-    stubAudd(readFileSync(join(__dirname, 'fixtures/audd-error.json'), 'utf8'))
-    const res = await post(wavClip(10, 21), 'c@example.com')
+    // A payload with no `matches` array makes the shazam-api client blow up,
+    // which the adapter wraps as a ProviderError.
+    stubShazamFetch('{}')
+    const res = await post(wavClip(2, 21), 'c@example.com')
     expect(res.status).toBe(502)
     expect(await res.json()).toMatchObject({ code: 'provider_error' })
-  })
-
-  it('identifies via the free Shazam provider by default, with no token configured', async () => {
-    vi.stubEnv('SONG_ID_PROVIDER', '')
-    vi.stubEnv('AUDD_API_TOKEN', '')
-    const fetchImpl = stubAudd(readFileSync(join(__dirname, 'fixtures/shazam-match.json'), 'utf8'))
-    const res = await post(wavClip(2, 31), 'shazam-user@example.com')
-    expect(res.status).toBe(200)
-    expect(await res.json()).toMatchObject({
-      status: 'match',
-      attemptsUsed: 1,
-      matchedFactor: 1,
-      result: { title: 'Warriors', artist: 'Imagine Dragons' },
-    })
-    expect(fetchImpl).toHaveBeenCalledTimes(1)
-    expect(String(fetchImpl.mock.calls[0][0])).toContain('amp.shazam.com')
-  })
-
-  it('sweeps on a Shazam no-match', async () => {
-    vi.stubEnv('SONG_ID_PROVIDER', 'shazam')
-    vi.stubEnv('SONG_ID_MAX_SWEEP_ATTEMPTS', '2')
-    const fetchImpl = stubAudd(readFileSync(join(__dirname, 'fixtures/shazam-no-match.json'), 'utf8'))
-    const res = await post(wavClip(2, 32), 'shazam-user2@example.com')
-    expect(await res.json()).toMatchObject({ status: 'no_match', attemptsUsed: 2 })
-    expect(fetchImpl).toHaveBeenCalledTimes(2)
   })
 })
