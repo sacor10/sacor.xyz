@@ -31,7 +31,8 @@
     "react-markdown": "^9.0.1",
     "react-router-dom": "^7.14.1",
     "remark-gfm": "^4.0.0",
-    "sanitize-filename": "^1.6.4"
+    "sanitize-filename": "^1.6.4",
+    "shazam-api": "^0.3.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

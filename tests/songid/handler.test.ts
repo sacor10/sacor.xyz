@@ -22,7 +22,7 @@ const auddMatch = readFileSync(join(__dirname, 'fixtures/audd-match.json'), 'utf
 const auddNoMatch = readFileSync(join(__dirname, 'fixtures/audd-no-match.json'), 'utf8')
 
 const stubAudd = (body: string) => {
-  const impl = vi.fn(async () => new Response(body, { status: 200 }))
+  const impl = vi.fn(async (..._args: unknown[]) => new Response(body, { status: 200 }))
   vi.stubGlobal('fetch', impl)
   return impl
 }
@@ -43,6 +43,9 @@ const post = (body: Uint8Array | ArrayBuffer, email: string | null = 'tester@exa
 
 beforeEach(() => {
   blobData.clear()
+  // Most pipeline tests pin the AudD provider so the stubbed fetch bodies
+  // stay AudD-shaped; the Shazam-default tests override this per test.
+  vi.stubEnv('SONG_ID_PROVIDER', 'audd')
   vi.stubEnv('AUDD_API_TOKEN', 'test-token')
   vi.stubEnv('SESSION_SECRET', 'unit-test-secret-32-bytes-long!!')
 })
@@ -183,5 +186,30 @@ describe('song-identify handler', () => {
     const res = await post(wavClip(10, 21), 'c@example.com')
     expect(res.status).toBe(502)
     expect(await res.json()).toMatchObject({ code: 'provider_error' })
+  })
+
+  it('identifies via the free Shazam provider by default, with no token configured', async () => {
+    vi.stubEnv('SONG_ID_PROVIDER', '')
+    vi.stubEnv('AUDD_API_TOKEN', '')
+    const fetchImpl = stubAudd(readFileSync(join(__dirname, 'fixtures/shazam-match.json'), 'utf8'))
+    const res = await post(wavClip(2, 31), 'shazam-user@example.com')
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({
+      status: 'match',
+      attemptsUsed: 1,
+      matchedFactor: 1,
+      result: { title: 'Warriors', artist: 'Imagine Dragons' },
+    })
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
+    expect(String(fetchImpl.mock.calls[0][0])).toContain('amp.shazam.com')
+  })
+
+  it('sweeps on a Shazam no-match', async () => {
+    vi.stubEnv('SONG_ID_PROVIDER', 'shazam')
+    vi.stubEnv('SONG_ID_MAX_SWEEP_ATTEMPTS', '2')
+    const fetchImpl = stubAudd(readFileSync(join(__dirname, 'fixtures/shazam-no-match.json'), 'utf8'))
+    const res = await post(wavClip(2, 32), 'shazam-user2@example.com')
+    expect(await res.json()).toMatchObject({ status: 'no_match', attemptsUsed: 2 })
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
   })
 })

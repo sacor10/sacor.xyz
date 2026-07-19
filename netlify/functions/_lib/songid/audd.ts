@@ -1,5 +1,5 @@
 import { normalizeAuddResponse, ProviderError } from './normalize'
-import type { SongMatch } from './types'
+import type { RecognitionProvider } from './types'
 
 const AUDD_ENDPOINT = 'https://api.audd.io/'
 
@@ -7,10 +7,6 @@ export interface AuddProviderOptions {
   token: string
   timeoutMs?: number
   fetchImpl?: typeof fetch
-}
-
-export interface RecognitionProvider {
-  recognize(clip: Uint8Array): Promise<SongMatch | null>
 }
 
 export function createAuddProvider({

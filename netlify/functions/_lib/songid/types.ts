@@ -20,3 +20,8 @@ export interface SongMatch {
 export type IdentifyOutcome =
   | { status: 'match'; attemptsUsed: number; matchedFactor: number; result: SongMatch }
   | { status: 'no_match'; attemptsUsed: number }
+
+export interface RecognitionProvider {
+  /** Returns the match, or null when the provider is confident there is none. */
+  recognize(clip: Uint8Array): Promise<SongMatch | null>
+}
