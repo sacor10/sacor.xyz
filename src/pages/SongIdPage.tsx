@@ -2,6 +2,8 @@ import { useRef, useState } from 'react'
 import type { DragEvent, ChangeEvent } from 'react'
 import Layout from '../Layout'
 import DownloadsNav from '../components/DownloadsNav'
+import { useAuth } from '../auth/useAuth'
+import GoogleSignInButton from '../auth/GoogleSignInButton'
 import type { IdentifyOutcome } from '../../netlify/functions/_lib/songid/types'
 import { MAX_SOURCE_FILE_BYTES } from '../lib/songid/constants'
 import { sniffMediaKind } from '../lib/songid/magicBytes'
@@ -47,6 +49,7 @@ async function identify(file: File, setState: (s: PageState) => void): Promise<v
     const response = await fetch(API_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'audio/wav' },
+      credentials: 'same-origin',
       body: clip as unknown as BodyInit,
     })
     if (!response.ok) {
@@ -175,8 +178,9 @@ function Sidebar() {
           <tr>
             <td bgcolor="#000000">
               <font face="Comic Sans MS" size="2" color="#FFFFFF">
-                10 lookups per hour, files up to 50 MB: mp4, mov, webm, mp3, m4a, wav, ogg.
-                Music only — it won't name your neighbor's dog from a bark.
+                Google sign-in required. 10 lookups per hour per account, files up to 50 MB:
+                mp4, mov, webm, mp3, m4a, wav, ogg. Music only — it won't name your
+                neighbor's dog from a bark.
               </font>
             </td>
           </tr>
@@ -187,6 +191,7 @@ function Sidebar() {
 }
 
 export default function SongIdPage() {
+  const { isSignedIn, loading: authLoading } = useAuth()
   const [state, setState] = useState<PageState>({ kind: 'idle' })
   const [dragOver, setDragOver] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -254,6 +259,25 @@ export default function SongIdPage() {
         <tbody>
           <tr>
             <td bgcolor="#000000">
+              {authLoading ? (
+                <center>
+                  <font face="Courier New" size="3" color="#888888">checking sign-in...</font>
+                </center>
+              ) : !isSignedIn ? (
+                <center>
+                  <br />
+                  <font face="Comic Sans MS" size="3" color="#FFFFFF">
+                    You must <b className="cyan">sign in with Google</b> to identify songs.
+                    <br />
+                    (Keeps the fingerprint bill from being run up by random robots!!!)
+                  </font>
+                  <br />
+                  <br />
+                  <GoogleSignInButton />
+                  <br />
+                </center>
+              ) : (
+              <>
               <div
                 onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
                 onDragLeave={() => setDragOver(false)}
@@ -312,6 +336,8 @@ export default function SongIdPage() {
                   <br />
                   <ResultCard outcome={state.outcome} />
                 </>
+              )}
+              </>
               )}
             </td>
           </tr>
