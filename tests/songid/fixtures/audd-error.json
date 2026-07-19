@@ -1,0 +1,7 @@
+{
+  "status": "error",
+  "error": {
+    "error_code": 901,
+    "error_message": "Recognition failed: api_token limit reached."
+  }
+}

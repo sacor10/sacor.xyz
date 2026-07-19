@@ -159,6 +159,32 @@ No service or env var setup is required.
 
 The in-browser YouTube downloader was removed. Running yt-dlp from Netlify Functions (AWS Lambda datacenter IPs) triggered YouTube's "Sign in to confirm you're not a bot" challenge, which can't be reliably worked around server-side without a residential proxy or account cookies. The `/youtube-downloader` route now redirects to `/ytmp4`, the downloadable Windows EXE that runs yt-dlp locally from the user's own (residential) IP.
 
+## What's That Song (`/song-id`)
+
+Drop a video or audio file (`mp4`, `mov`, `webm`, `mp3`, `m4a`, `wav`, `ogg`, ≤50 MB) and the page names the song playing in it — including slowed/nightcore edits.
+
+How it works:
+
+- **In the browser**: ffmpeg.wasm (the same lazy-loaded ~30 MB core the Facebook downloader uses) decodes the audio track, a sliding RMS window picks the most music-dense 12 seconds, and only that ~1 MB mono WAV clip is uploaded. The full file never leaves the browser.
+- **Server** (`netlify/functions/song-identify.mts`): validates the clip by magic bytes, rate-limits, then queries AudD. The frontend only ever sees a normalized shape, never AudD's.
+- **Speed sweep**: sped/slowed edits shift pitch and time together, which breaks fingerprint hashes. The function replays the clip at rate factors `1.0, 1.25, 1.15, 1.33` (up to `SONG_ID_MAX_SWEEP_ATTEMPTS`, max list continues `1.10, 0.90, 0.80`) by rewriting the WAV header's declared sample rate — exactly `asetrate` semantics, zero DSP — and short-circuits on the first match. The UI reports the matched factor ("matched at 1.25× — this clip is slowed to about 0.8× speed").
+
+### Setup
+
+1. Create an AudD token at <https://dashboard.audd.io> (300 free requests, no card).
+2. Set `AUDD_API_TOKEN` in `.env` (local, used by `netlify dev`) and in the Netlify UI (production). See `.env.example` for the other `SONG_ID_*` knobs.
+
+### Cost per lookup
+
+One user lookup = 1–4 AudD calls (1 for a normal-speed match, up to `SONG_ID_MAX_SWEEP_ATTEMPTS` for no-match/slowed clips). After the 300 free requests, AudD is ~$5 per 1,000 calls, so a lookup costs **~0.5–2¢**. Guardrails, all enforced in the function:
+
+- per-IP limit: `SONG_ID_RATE_LIMIT_PER_HOUR` (default 10) → HTTP 429
+- monthly budget: `SONG_ID_MONTHLY_CALL_CAP` provider calls (default 1000 ≈ $5/mo) → HTTP 503 until the month rolls over
+- results are cached in Netlify Blobs by clip hash, so retries cost zero calls
+- kill switch: `SONG_ID_DISABLED=true`
+
+Uploaded audio is processed in memory and never persisted; logs record counts and outcomes only. Tests: `npm test` (vitest) covers the WAV/RMS/sweep/normalization logic against synthetic fixtures (`node scripts/make-songid-fixtures.mjs` regenerates them).
+
 ## Account / Google Sign-In
 
 The site supports Google sign-in. Any signed-in Google account can create and manage its own Travel Plans, and can also access plans shared with that exact email address.

@@ -6,6 +6,7 @@ import XDownloaderPage from './pages/XDownloaderPage'
 import TikTokDownloaderPage from './pages/TikTokDownloaderPage'
 import LinkedInDownloaderPage from './pages/LinkedInDownloaderPage'
 import FacebookDownloaderPage from './pages/FacebookDownloaderPage'
+import SongIdPage from './pages/SongIdPage'
 import DownloadsPage from './pages/DownloadsPage'
 import WebringPage from './pages/WebringPage'
 import BlogIndexPage from './pages/BlogIndexPage'
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/tiktok-downloader" element={<TikTokDownloaderPage />} />
           <Route path="/linkedin-downloader" element={<LinkedInDownloaderPage />} />
           <Route path="/facebook-downloader" element={<FacebookDownloaderPage />} />
+          <Route path="/song-id" element={<SongIdPage />} />
           <Route path="/webring" element={<WebringPage />} />
           <Route path="/blog" element={<BlogIndexPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
