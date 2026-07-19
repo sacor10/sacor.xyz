@@ -16,6 +16,7 @@ vi.mock('@netlify/blobs', () => ({
 }))
 
 import handler from '../../netlify/functions/song-identify.mts'
+import { signSession } from '../../netlify/functions/_lib/session.mjs'
 
 const auddMatch = readFileSync(join(__dirname, 'fixtures/audd-match.json'), 'utf8')
 const auddNoMatch = readFileSync(join(__dirname, 'fixtures/audd-no-match.json'), 'utf8')
@@ -29,20 +30,21 @@ const stubAudd = (body: string) => {
 const wavClip = (seconds = 10, seed = 1) =>
   buildWav(Int16Array.from({ length: 8000 * seconds }, (_, i) => ((i * seed * 31) % 4096) - 2048), 8000)
 
-const post = (body: Uint8Array | ArrayBuffer, ip = '203.0.113.7') =>
+const post = (body: Uint8Array | ArrayBuffer, email: string | null = 'tester@example.com') =>
   handler(
     new Request('https://sacor.xyz/.netlify/functions/song-identify', {
       method: 'POST',
+      headers: email ? { cookie: `sacor_session=${signSession({ email, picture: '' })}` } : {},
       body: body instanceof Uint8Array
         ? body.slice().buffer as ArrayBuffer
         : body,
     }),
-    { ip },
   )
 
 beforeEach(() => {
   blobData.clear()
   vi.stubEnv('AUDD_API_TOKEN', 'test-token')
+  vi.stubEnv('SESSION_SECRET', 'unit-test-secret-32-bytes-long!!')
 })
 
 afterEach(() => {
@@ -59,8 +61,37 @@ describe('song-identify handler', () => {
   })
 
   it('rejects non-POST', async () => {
-    const res = await handler(new Request('https://x/', { method: 'GET' }), {})
+    const res = await handler(new Request('https://x/', { method: 'GET' }))
     expect(res.status).toBe(405)
+  })
+
+  it('rejects anonymous and forged-cookie requests with 401', async () => {
+    const noCookie = await post(wavClip(), null)
+    expect(noCookie.status).toBe(401)
+    expect(await noCookie.json()).toMatchObject({ code: 'auth_required' })
+
+    const forged = await handler(
+      new Request('https://x/', {
+        method: 'POST',
+        headers: { cookie: 'sacor_session=not.a.real.token' },
+        body: wavClip().slice().buffer as ArrayBuffer,
+      }),
+    )
+    expect(forged.status).toBe(401)
+  })
+
+  it('returns 503 when SESSION_SECRET is unset (auth unverifiable)', async () => {
+    vi.stubEnv('SESSION_SECRET', '')
+    const res = await handler(
+      new Request('https://x/', {
+        method: 'POST',
+        // well-formed body.sig token so verification reaches the HMAC (and the missing secret)
+        headers: { cookie: 'sacor_session=abc.def' },
+        body: wavClip().slice().buffer as ArrayBuffer,
+      }),
+    )
+    expect(res.status).toBe(503)
+    expect(await res.json()).toMatchObject({ code: 'not_configured' })
   })
 
   it('rejects a non-WAV body with clean JSON, not a stack trace', async () => {
@@ -109,34 +140,34 @@ describe('song-identify handler', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(3)
   })
 
-  it('returns 429 with a useful message once the hourly limit is hit', async () => {
+  it('returns 429 with a useful message once the per-user hourly limit is hit', async () => {
     stubAudd(auddNoMatch)
     vi.stubEnv('SONG_ID_RATE_LIMIT_PER_HOUR', '2')
     const clip = wavClip(10, 7)
-    expect((await post(clip, '198.51.100.9')).status).toBe(200)
-    expect((await post(clip, '198.51.100.9')).status).toBe(200)
-    const limited = await post(clip, '198.51.100.9')
+    expect((await post(clip, 'heavy@example.com')).status).toBe(200)
+    expect((await post(clip, 'heavy@example.com')).status).toBe(200)
+    const limited = await post(clip, 'heavy@example.com')
     expect(limited.status).toBe(429)
     expect(await limited.json()).toMatchObject({
       code: 'rate_limited',
       message: expect.stringContaining('2 lookups per hour'),
     })
-    // a different caller is unaffected
-    expect((await post(wavClip(10, 8), '198.51.100.10')).status).toBe(200)
+    // a different signed-in user is unaffected
+    expect((await post(wavClip(10, 8), 'other@example.com')).status).toBe(200)
   })
 
   it('returns 503 quota_exhausted when the monthly cap is already spent', async () => {
     stubAudd(auddNoMatch)
     vi.stubEnv('SONG_ID_MONTHLY_CALL_CAP', '1')
-    expect((await post(wavClip(10, 11), '198.51.100.20')).status).toBe(200) // spends the 1 call
-    const res = await post(wavClip(10, 12), '198.51.100.21')
+    expect((await post(wavClip(10, 11), 'a@example.com')).status).toBe(200) // spends the 1 call
+    const res = await post(wavClip(10, 12), 'b@example.com')
     expect(res.status).toBe(503)
     expect(await res.json()).toMatchObject({ code: 'quota_exhausted' })
   })
 
   it('maps provider errors to 502', async () => {
     stubAudd(readFileSync(join(__dirname, 'fixtures/audd-error.json'), 'utf8'))
-    const res = await post(wavClip(10, 21), '198.51.100.30')
+    const res = await post(wavClip(10, 21), 'c@example.com')
     expect(res.status).toBe(502)
     expect(await res.json()).toMatchObject({ code: 'provider_error' })
   })

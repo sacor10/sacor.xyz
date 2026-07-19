@@ -2,6 +2,7 @@ import { getStore, type Store } from '@netlify/blobs'
 import { createHash } from 'node:crypto'
 import { MAX_CLIP_BYTES } from '../../src/lib/songid/constants'
 import { parseWav } from '../../src/lib/songid/wav'
+import { readSessionCookie, userHash } from './_lib/session.mjs'
 import { createAuddProvider } from './_lib/songid/audd'
 import { ProviderError } from './_lib/songid/normalize'
 import { runSpeedSweep } from './_lib/songid/sweep'
@@ -14,7 +15,8 @@ import type { IdentifyOutcome } from './_lib/songid/types'
  *
  * Abuse controls (each on its own because a paid API sits behind this):
  *   - kill switch env var (SONG_ID_DISABLED)
- *   - per-IP hourly rate limit in Netlify Blobs (shared across invocations)
+ *   - requires a signed-in Google session (blocks anonymous scripting)
+ *   - per-user hourly rate limit in Netlify Blobs (shared across invocations)
  *   - global monthly provider-call cap in Blobs = the cost ceiling
  *   - result cache keyed by clip hash, so retries cost zero provider calls
  * Privacy: audio lives in function memory only — never persisted, never
@@ -62,14 +64,7 @@ async function bumpCounter(store: Store, key: string, limit: number): Promise<bo
 const hourKey = () => new Date().toISOString().slice(0, 13)
 const monthKey = () => new Date().toISOString().slice(0, 7)
 
-const clientIpHash = (req: Request, context: { ip?: string }): string => {
-  const ip = context?.ip || req.headers.get('x-nf-client-connection-ip') || 'unknown'
-  // Salted so raw IPs never appear in Blobs keys.
-  const salt = process.env.SESSION_SECRET || 'songid'
-  return createHash('sha256').update(`${salt}:${ip}`).digest('hex').slice(0, 32)
-}
-
-export default async (req: Request, context: { ip?: string }) => {
+export default async (req: Request) => {
   if (process.env.SONG_ID_DISABLED === 'true') {
     return errorJson('disabled', 'Song identification is temporarily switched off.', 503)
   }
@@ -79,6 +74,18 @@ export default async (req: Request, context: { ip?: string }) => {
   const token = String(process.env.AUDD_API_TOKEN || '').trim()
   if (!token) {
     return errorJson('not_configured', 'Song identification is not configured.', 503)
+  }
+
+  // Sign-in gate: only authenticated Google accounts may spend lookups.
+  let session: { email: string } | null
+  try {
+    session = readSessionCookie(req)
+  } catch {
+    // Missing/short SESSION_SECRET makes auth unverifiable — treat as misconfig.
+    return errorJson('not_configured', 'Song identification is not configured.', 503)
+  }
+  if (!session) {
+    return errorJson('auth_required', 'Sign in with Google to identify songs.', 401)
   }
 
   const clip = new Uint8Array(await req.arrayBuffer())
@@ -95,12 +102,12 @@ export default async (req: Request, context: { ip?: string }) => {
 
   const store = getStore(STORE_NAME)
 
-  // Per-IP hourly limit. Fail closed: this endpoint spends real money and has
-  // no auth gate, so a Blobs outage should pause it rather than uncap it.
+  // Per-user hourly limit (caps a runaway or shared account). Fail closed:
+  // this endpoint spends real money, so a Blobs outage pauses it, not uncaps it.
   const hourlyLimit = readIntEnv('SONG_ID_RATE_LIMIT_PER_HOUR', 10)
   let allowed = false
   try {
-    allowed = await bumpCounter(store, `rate/hour/${hourKey()}/${clientIpHash(req, context)}`, hourlyLimit)
+    allowed = await bumpCounter(store, `rate/hour/${hourKey()}/user-${userHash(session.email)}`, hourlyLimit)
   } catch (err) {
     console.warn('songid rate-limit check failed', err)
     return errorJson('unavailable', 'Song identification is briefly unavailable. Try again in a minute.', 503)
