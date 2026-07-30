@@ -4,7 +4,7 @@ import HitCounter from '../components/HitCounter'
 import StockChart from '../components/StockChart'
 import { useAuth } from '../auth/useAuth'
 
-const QUICK_PICKS = ['GC=F', 'GDX', 'BTC-USD', 'NVDA', 'SPCX']
+const QUICK_PICKS = ['GC=F', 'GDX', 'BTC-USD', 'NVDA', 'SPCX', 'TSLA']
 // Display labels for tickers whose data symbol is not friendly to read.
 // GC=F is Yahoo's COMEX front-month gold futures contract.
 const SYMBOL_LABELS = { 'GC=F': 'GOLD' }
