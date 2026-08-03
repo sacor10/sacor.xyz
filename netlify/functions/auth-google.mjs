@@ -2,6 +2,7 @@ import {
   canAccessTravelPlans,
   canCreateTravelPlans,
   isOwnerEmail,
+  isQuotesAdminEmail,
   normalizeEmail,
   signSession,
   setSessionCookieHeader,
@@ -75,6 +76,7 @@ export default async (req) => {
       canAccessTravelPlans: canAccessTravelPlans(email),
       canCreateTravelPlans: canCreateTravelPlans(email),
       isOwner: isOwnerEmail(email),
+      isQuotesAdmin: isQuotesAdminEmail(email),
       isModerator: await isModeratorEmail(getUsersStore(), email),
     },
     {

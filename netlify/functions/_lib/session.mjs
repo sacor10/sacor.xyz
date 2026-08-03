@@ -31,6 +31,15 @@ export function isOwnerEmail(email) {
   return !!normalized && getTravelPlanEmails().includes(normalized)
 }
 
+const DEFAULT_QUOTES_ADMINS = ['sacor10@gmail.com']
+
+export function isQuotesAdminEmail(email) {
+  const raw = process.env.QUOTES_ADMIN_EMAILS || ''
+  const list = raw ? raw.split(',').map(normalizeEmail).filter(Boolean) : DEFAULT_QUOTES_ADMINS
+  const normalized = normalizeEmail(email)
+  return !!normalized && list.includes(normalized)
+}
+
 export function userHash(email) {
   const normalized = normalizeEmail(email)
   if (!normalized) throw new Error('userHash requires an email')
@@ -89,6 +98,7 @@ export function verifySession(token) {
     canAccessTravelPlans: canAccessTravelPlans(email),
     canCreateTravelPlans: canCreateTravelPlans(email),
     isOwner: isOwnerEmail(email),
+    isQuotesAdmin: isQuotesAdminEmail(email),
   }
 }
 

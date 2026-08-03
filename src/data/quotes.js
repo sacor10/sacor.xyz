@@ -1,6 +1,7 @@
-// Single source of truth for curated quotes and messages from other people.
-// Source-file order is display order: pinned quotes first on the page, older
-// catalog entries underneath.
+// One-time seed data for the quotes database (netlify/functions/quotes.mjs).
+// This is imported by the function on its first run to populate the Turso
+// `quotes` table; after that, the database is the source of truth and this
+// file is no longer read by the running app. Kept here for reference/history.
 
 export const quotes = [
   {
@@ -34,6 +35,3 @@ export const quotes = [
     pinned: true,
   },
 ]
-
-export const pinnedQuotes = quotes.filter((quote) => quote.pinned)
-export const olderQuotes = quotes.filter((quote) => !quote.pinned)

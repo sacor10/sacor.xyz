@@ -1,10 +1,101 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../Layout'
 import HitCounter from '../components/HitCounter'
 import { DOWNLOAD_TOOLS } from '../data/downloadTools'
-import { pinnedQuotes } from '../data/quotes'
+import { useAuth } from '../auth/useAuth'
 
-const quotePreview = pinnedQuotes.slice(0, 3)
+const QUOTES_API = '/.netlify/functions/quotes'
+
+function QuotePreviewBox() {
+  const { loading, isSignedIn } = useAuth()
+  const [quotes, setQuotes] = useState([])
+  const [fetchState, setFetchState] = useState('loading') // loading | ready | error
+
+  useEffect(() => {
+    if (loading || !isSignedIn) return
+    let cancelled = false
+    fetch(QUOTES_API, { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((data) => {
+        if (cancelled) return
+        setQuotes((data.quotes || []).filter((q) => q.pinned).slice(0, 3))
+        setFetchState('ready')
+      })
+      .catch(() => {
+        if (!cancelled) setFetchState('error')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [loading, isSignedIn])
+
+  const status = loading || isSignedIn === false ? 'signed-out' : fetchState
+
+  return (
+    <table
+      width="100%"
+      cellPadding="8"
+      cellSpacing="0"
+      border="0"
+      className="bevelbox"
+      bgcolor="#4B0082"
+    >
+      <tbody>
+        <tr>
+          <td align="center" bgcolor="#FFFF00" className="section-bar-sm">
+            <font face="Impact" size="4" color="#000000">
+              ~ QUOTES FROM OTHERS ~
+            </font>
+          </td>
+        </tr>
+        <tr>
+          <td bgcolor="#000000">
+            {status === 'signed-out' && (
+              <center>
+                <font face="Comic Sans MS" size="2" color="#FFFFFF">
+                  Sign in with Google to read the quotes.
+                </font>
+              </center>
+            )}
+            {(status === 'loading' || status === 'error') && (
+              <center>
+                <font face="Comic Sans MS" size="2" color="#FFFFFF">
+                  {status === 'loading' ? 'loading...' : 'could not load quotes'}
+                </font>
+              </center>
+            )}
+            {status === 'ready' && (
+              <marquee behavior="scroll" direction="up" scrollamount="2" height="80">
+                <font face="Comic Sans MS" size="3" color="#00FFFF">
+                  {quotes.map((quote, index) => (
+                    <span key={quote.id}>
+                      <span style={{ whiteSpace: 'pre-line' }}>&quot;{quote.text}&quot;</span>
+                      <br />
+                      <font face="Courier New" size="2" color="#FFFF00">
+                        - {quote.speaker}
+                      </font>
+                      {index < quotes.length - 1 && (
+                        <>
+                          <br />
+                          <br />
+                        </>
+                      )}
+                    </span>
+                  ))}
+                </font>
+              </marquee>
+            )}
+            <br />
+            <center>
+              <Link to="/quotes" className="navbtn-link">&#9733; MORE QUOTES &#9733;</Link>
+            </center>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  )
+}
 
 // Other corners of the site worth wandering into, shown as a little link grid on
 // the home page.
@@ -62,51 +153,7 @@ const rightSidebar = (
     <br />
 
     {/* QUOTES FROM OTHERS */}
-    <table
-      width="100%"
-      cellPadding="8"
-      cellSpacing="0"
-      border="0"
-      className="bevelbox"
-      bgcolor="#4B0082"
-    >
-      <tbody>
-        <tr>
-          <td align="center" bgcolor="#FFFF00" className="section-bar-sm">
-            <font face="Impact" size="4" color="#000000">
-              ~ QUOTES FROM OTHERS ~
-            </font>
-          </td>
-        </tr>
-        <tr>
-          <td bgcolor="#000000">
-            <marquee behavior="scroll" direction="up" scrollamount="2" height="80">
-              <font face="Comic Sans MS" size="3" color="#00FFFF">
-                {quotePreview.map((quote, index) => (
-                  <span key={quote.id}>
-                    <span style={{ whiteSpace: 'pre-line' }}>&quot;{quote.text}&quot;</span>
-                    <br />
-                    <font face="Courier New" size="2" color="#FFFF00">
-                      - {quote.speaker}
-                    </font>
-                    {index < quotePreview.length - 1 && (
-                      <>
-                        <br />
-                        <br />
-                      </>
-                    )}
-                  </span>
-                ))}
-              </font>
-            </marquee>
-            <br />
-            <center>
-              <Link to="/quotes" className="navbtn-link">&#9733; MORE QUOTES &#9733;</Link>
-            </center>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <QuotePreviewBox />
 
     <br />
 
