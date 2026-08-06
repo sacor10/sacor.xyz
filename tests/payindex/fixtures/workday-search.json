@@ -1,0 +1,14 @@
+{
+  "jobPostings": [
+    {
+      "title": "Software Developer II",
+      "externalPath": "/job/San-Francisco-CA/Software-Developer-II_R12345",
+      "locationsText": "San Francisco, CA"
+    },
+    {
+      "title": "Software Developer II",
+      "externalPath": "/job/Denver-CO/Software-Developer-II_R99999",
+      "locationsText": "Denver, CO"
+    }
+  ]
+}

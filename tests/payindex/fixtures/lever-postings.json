@@ -1,0 +1,30 @@
+[
+  {
+    "id": "abc-123",
+    "text": "Software Developer",
+    "hostedUrl": "https://jobs.lever.co/netflix/abc-123",
+    "categories": { "location": "Los Gatos, CA" },
+    "salaryRange": { "min": 140000, "max": 180000, "currency": "USD", "interval": "per-year-salary" }
+  },
+  {
+    "id": "def-456",
+    "text": "Software Developer",
+    "hostedUrl": "https://jobs.lever.co/netflix/def-456",
+    "categories": { "location": "Austin, TX" },
+    "descriptionPlain": "This role pays $60.00 to $75.00 per hour depending on experience."
+  },
+  {
+    "id": "ghi-789",
+    "text": "Recruiting Coordinator",
+    "hostedUrl": "https://jobs.lever.co/netflix/ghi-789",
+    "categories": { "location": "Austin, TX" },
+    "salaryRange": { "min": 60000, "max": 75000, "currency": "USD" }
+  },
+  {
+    "id": "jkl-012",
+    "text": "Software Developer",
+    "hostedUrl": "https://jobs.lever.co/netflix/jkl-012",
+    "categories": { "location": "Remote" },
+    "descriptionPlain": "Fully remote, no specific location required. $150,000 - $180,000."
+  }
+]

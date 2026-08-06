@@ -70,6 +70,25 @@ describe('createHttpContext', () => {
     expect(networkCalls).toBe(1)
   })
 
+  it('does not collide cache entries for the same URL with different POST bodies', async () => {
+    const bodiesSeen: string[] = []
+    const http = createHttpContext({
+      cacheDir,
+      fetchImpl: (async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = typeof input === 'string' ? input : input.toString()
+        if (url.endsWith('/robots.txt')) return new Response('', { status: 200 })
+        const body = typeof init?.body === 'string' ? init.body : ''
+        bodiesSeen.push(body)
+        return new Response(`response-for:${body}`, { status: 200 })
+      }) as typeof fetch,
+    })
+    const first = await http.fetchText('https://example.com/search', { method: 'POST', body: 'query=a' })
+    const second = await http.fetchText('https://example.com/search', { method: 'POST', body: 'query=b' })
+    expect(first).toBe('response-for:query=a')
+    expect(second).toBe('response-for:query=b')
+    expect(bodiesSeen).toEqual(['query=a', 'query=b'])
+  })
+
   it('parses JSON responses via fetchJson', async () => {
     const http = createHttpContext({
       cacheDir,

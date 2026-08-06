@@ -1,0 +1,32 @@
+{
+  "jobs": [
+    {
+      "id": 111,
+      "title": "Software Engineer",
+      "absolute_url": "https://boards.greenhouse.io/stripe/jobs/111",
+      "content": "<p>We are hiring! The base salary range for this role is $150,000 - $190,000 depending on experience.</p>",
+      "location": { "name": "San Francisco, CA" }
+    },
+    {
+      "id": 112,
+      "title": "Product Manager",
+      "absolute_url": "https://boards.greenhouse.io/stripe/jobs/112",
+      "content": "<p>$160,000 - $200,000</p>",
+      "location": { "name": "San Francisco, CA" }
+    },
+    {
+      "id": 113,
+      "title": "Software Engineer",
+      "absolute_url": "https://boards.greenhouse.io/stripe/jobs/113",
+      "content": "<p>Competitive pay, no range disclosed here.</p>",
+      "location": { "name": "San Francisco, CA" }
+    },
+    {
+      "id": 114,
+      "title": "Software Engineer",
+      "absolute_url": "https://boards.greenhouse.io/stripe/jobs/114",
+      "content": "<p>$150,000 - $190,000</p>",
+      "location": { "name": "Denver, CO" }
+    }
+  ]
+}

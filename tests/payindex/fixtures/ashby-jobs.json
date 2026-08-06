@@ -1,0 +1,31 @@
+{
+  "jobs": [
+    {
+      "id": "ashby-1",
+      "title": "Software Developer",
+      "jobUrl": "https://jobs.ashbyhq.com/ramp/ashby-1",
+      "location": "New York, NY",
+      "compensation": {
+        "summaryComponents": [
+          { "minValue": 165000, "maxValue": 205000, "interval": "ANNUAL" }
+        ]
+      }
+    },
+    {
+      "id": "ashby-2",
+      "title": "Software Developer",
+      "jobUrl": "https://jobs.ashbyhq.com/ramp/ashby-2",
+      "location": "New York, NY",
+      "compensation": { "summaryComponents": [] }
+    },
+    {
+      "id": "ashby-3",
+      "title": "Account Executive",
+      "jobUrl": "https://jobs.ashbyhq.com/ramp/ashby-3",
+      "location": "New York, NY",
+      "compensation": {
+        "summaryComponents": [{ "minValue": 90000, "maxValue": 120000, "interval": "ANNUAL" }]
+      }
+    }
+  ]
+}

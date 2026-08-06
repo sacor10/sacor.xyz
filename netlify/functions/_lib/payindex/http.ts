@@ -144,7 +144,12 @@ export function createHttpContext(options: HttpContextOptions = {}): HttpContext
 
     const parsed = new URL(url)
     const origin = parsed.origin
-    const cacheKey = createHash('sha256').update(`${init?.method ?? 'GET'} ${url}`).digest('hex')
+    // Include the body in the cache key — POST requests (e.g. Workday's
+    // search endpoint) reuse one URL for many different queries, and
+    // without this a second query would wrongly return the first query's
+    // cached response.
+    const bodyPart = typeof init?.body === 'string' ? init.body : ''
+    const cacheKey = createHash('sha256').update(`${init?.method ?? 'GET'} ${url}\n${bodyPart}`).digest('hex')
 
     const cached = await readCache(cacheDir, cacheKey, cacheTtlMs)
     if (cached !== null) return cached
