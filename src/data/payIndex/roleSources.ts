@@ -160,6 +160,14 @@ export interface LevelsFyiEntry {
   readonly sourceId: 'levelsfyi'
   readonly jobId: string
   readonly companySlug: string
+  // Levels.fyi's markdown export isn't reliably broken out per metro, so
+  // this pins each entry to ONE basket city (the employer's primary/HQ
+  // market) rather than looping every entry across all 25 cities, which
+  // would falsely imply Levels.fyi geo-attributed the same company-wide
+  // figures 25 different ways. Already excluded from the headline (rule 7,
+  // kind: 'aggregate') — this only affects which city's transparency page
+  // the context figure appears on.
+  readonly cityId: string
   readonly lastVerifiedAt: string
 }
 
@@ -170,7 +178,7 @@ export interface LevelsFyiEntry {
 // page with required attribution only. Reuses the same employer slugs as
 // the ATS board config where the employer publishes on both.
 export const levelsFyiEntries: LevelsFyiEntry[] = [
-  { id: 'levelsfyi-stripe-swe', sourceId: 'levelsfyi', jobId: 'software-developer', companySlug: 'stripe', lastVerifiedAt: '2026-08-06' },
-  { id: 'levelsfyi-netflix-swe', sourceId: 'levelsfyi', jobId: 'software-developer', companySlug: 'netflix', lastVerifiedAt: '2026-08-06' },
-  { id: 'levelsfyi-salesforce-swe', sourceId: 'levelsfyi', jobId: 'software-developer', companySlug: 'salesforce', lastVerifiedAt: '2026-08-06' },
+  { id: 'levelsfyi-stripe-swe', sourceId: 'levelsfyi', jobId: 'software-developer', companySlug: 'stripe', cityId: 'san-francisco-ca', lastVerifiedAt: '2026-08-06' },
+  { id: 'levelsfyi-netflix-swe', sourceId: 'levelsfyi', jobId: 'software-developer', companySlug: 'netflix', cityId: 'los-angeles-ca', lastVerifiedAt: '2026-08-06' },
+  { id: 'levelsfyi-salesforce-swe', sourceId: 'levelsfyi', jobId: 'software-developer', companySlug: 'salesforce', cityId: 'san-francisco-ca', lastVerifiedAt: '2026-08-06' },
 ]
