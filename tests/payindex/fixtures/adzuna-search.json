@@ -1,0 +1,53 @@
+{
+  "count": 5,
+  "results": [
+    {
+      "id": "1001",
+      "title": "Retail Cashier",
+      "salary_min": 30000,
+      "salary_max": 34000,
+      "salary_is_predicted": "0",
+      "redirect_url": "https://www.adzuna.com/land/ad/1001",
+      "created": "2026-07-01T00:00:00Z",
+      "location": { "display_name": "New York, NY" }
+    },
+    {
+      "id": "1002",
+      "title": "Retail Cashier",
+      "salary_min": 40000,
+      "salary_max": 44000,
+      "salary_is_predicted": "1",
+      "redirect_url": "https://www.adzuna.com/land/ad/1002",
+      "created": "2026-07-01T00:00:00Z",
+      "location": { "display_name": "New York, NY" }
+    },
+    {
+      "id": "1003",
+      "title": "Assistant Store Manager",
+      "salary_min": 45000,
+      "salary_max": 50000,
+      "salary_is_predicted": "0",
+      "redirect_url": "https://www.adzuna.com/land/ad/1003",
+      "created": "2026-07-01T00:00:00Z",
+      "location": { "display_name": "New York, NY" }
+    },
+    {
+      "id": "1004",
+      "title": "Retail Cashier",
+      "salary_min": 31000,
+      "salary_max": 35000,
+      "salary_is_predicted": "0",
+      "redirect_url": "https://www.adzuna.com/land/ad/1004",
+      "created": "2026-07-01T00:00:00Z",
+      "location": { "display_name": "Los Angeles, CA" }
+    },
+    {
+      "id": "1005",
+      "title": "Retail Cashier",
+      "salary_is_predicted": "0",
+      "redirect_url": "https://www.adzuna.com/land/ad/1005",
+      "created": "2026-07-01T00:00:00Z",
+      "location": { "display_name": "New York, NY" }
+    }
+  ]
+}
