@@ -48,7 +48,7 @@ describe('greenhouseAdapter', () => {
       rawMin: 150000,
       rawMax: 190000,
       payBasis: 'annual',
-      observationKey: `ats:greenhouse:${greenhouseBoards[0].token}:111`,
+      observationKey: `ats:greenhouse:2026-07:${greenhouseBoards[0].token}:111`,
     })
   })
 

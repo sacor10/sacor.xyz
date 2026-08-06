@@ -97,7 +97,9 @@ export const workdayAdapter: SourceAdapter = {
           sourceUrl: detail.jobPostingInfo?.externalUrl ?? `https://${board.tenant}.${board.dataCenter}.myworkdayjobs.com${posting.externalPath}`,
           fetchedAt: new Date().toISOString(),
           sampleSize: 1,
-          observationKey: `ats:workday:${board.tenant}:${posting.externalPath}`,
+          // Period-scoped — see the comment on the equivalent line in
+          // adapters/adzuna.ts for why.
+          observationKey: `ats:workday:${period}:${board.tenant}:${posting.externalPath}`,
         })
       }
     }

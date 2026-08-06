@@ -109,7 +109,12 @@ export const adzunaAdapter: SourceAdapter = {
           sourceUrl: result.redirect_url,
           fetchedAt: new Date().toISOString(),
           sampleSize: 1,
-          observationKey: `adzuna:${result.id}`,
+          // Includes period: the same live posting can legitimately be
+          // re-observed next period, and each period's observation must be
+          // its own row — observationKey is unique per (posting, period),
+          // not unique for all time, or a still-live posting would vanish
+          // from every period after its first.
+          observationKey: `adzuna:${period}:${result.id}`,
         })
       }
 

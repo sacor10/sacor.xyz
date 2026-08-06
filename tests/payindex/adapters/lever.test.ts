@@ -34,7 +34,7 @@ describe('leverAdapter', () => {
     const losGatos = { ...austin, id: 'los-gatos-fake', name: 'Los Gatos, CA' }
     const observations = await leverAdapter.fetchObservations(softwareDeveloper, losGatos, '2026-07', stubContext())
     expect(observations).toHaveLength(1)
-    expect(observations[0]).toMatchObject({ rawMin: 140000, rawMax: 180000, payBasis: 'annual', observationKey: `ats:lever:${leverBoards[0].token}:abc-123` })
+    expect(observations[0]).toMatchObject({ rawMin: 140000, rawMax: 180000, payBasis: 'annual', observationKey: `ats:lever:2026-07:${leverBoards[0].token}:abc-123` })
   })
 
   it('falls back to parsing descriptionPlain when there is no structured salaryRange', async () => {
@@ -42,11 +42,11 @@ describe('leverAdapter', () => {
     // Austin has two candidate postings for this job: def-456 (hourly text,
     // no structured range) and jkl-012 (remote, rejected by matchesCity).
     expect(observations).toHaveLength(1)
-    expect(observations[0]).toMatchObject({ rawMin: 60, rawMax: 75, payBasis: 'hourly', observationKey: `ats:lever:${leverBoards[0].token}:def-456` })
+    expect(observations[0]).toMatchObject({ rawMin: 60, rawMax: 75, payBasis: 'hourly', observationKey: `ats:lever:2026-07:${leverBoards[0].token}:def-456` })
   })
 
   it('excludes a title that does not match the job keywords', async () => {
     const observations = await leverAdapter.fetchObservations(softwareDeveloper, austin, '2026-07', stubContext())
-    expect(observations.every((o) => o.observationKey !== `ats:lever:${leverBoards[0].token}:ghi-789`)).toBe(true)
+    expect(observations.every((o) => o.observationKey !== `ats:lever:2026-07:${leverBoards[0].token}:ghi-789`)).toBe(true)
   })
 })

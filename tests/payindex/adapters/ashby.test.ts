@@ -37,12 +37,12 @@ describe('ashbyAdapter', () => {
       rawMin: 165000,
       rawMax: 205000,
       payBasis: 'annual',
-      observationKey: `ats:ashby:${ashbyBoards[0].token}:ashby-1`,
+      observationKey: `ats:ashby:2026-07:${ashbyBoards[0].token}:ashby-1`,
     })
   })
 
   it('skips a posting with no usable compensation component', async () => {
     const observations = await ashbyAdapter.fetchObservations(softwareDeveloper, newYork, '2026-07', stubContext())
-    expect(observations.every((o) => o.observationKey !== `ats:ashby:${ashbyBoards[0].token}:ashby-2`)).toBe(true)
+    expect(observations.every((o) => o.observationKey !== `ats:ashby:2026-07:${ashbyBoards[0].token}:ashby-2`)).toBe(true)
   })
 })

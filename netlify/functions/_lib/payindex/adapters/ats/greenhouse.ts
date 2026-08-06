@@ -76,7 +76,9 @@ export const greenhouseAdapter: SourceAdapter = {
           sourceUrl: posting.absolute_url,
           fetchedAt: new Date().toISOString(),
           sampleSize: 1,
-          observationKey: `ats:greenhouse:${board.token}:${posting.id}`,
+          // Period-scoped — see the comment on the equivalent line in
+          // adapters/adzuna.ts for why.
+          observationKey: `ats:greenhouse:${period}:${board.token}:${posting.id}`,
         })
       }
     }

@@ -42,7 +42,7 @@ describe('workdayAdapter', () => {
       rawMin: 170000,
       rawMax: 210000,
       payBasis: 'annual',
-      observationKey: `ats:workday:${workdayBoards[0].tenant}:/job/San-Francisco-CA/Software-Developer-II_R12345`,
+      observationKey: `ats:workday:2026-07:${workdayBoards[0].tenant}:/job/San-Francisco-CA/Software-Developer-II_R12345`,
     })
   })
 

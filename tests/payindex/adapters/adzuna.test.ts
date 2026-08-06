@@ -68,7 +68,7 @@ describe('adzunaAdapter', () => {
       rawMin: 30000,
       rawMax: 34000,
       payBasis: 'annual',
-      observationKey: 'adzuna:1001',
+      observationKey: 'adzuna:2026-07:1001',
     })
   })
 
