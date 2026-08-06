@@ -191,6 +191,17 @@ const DDL_STATEMENTS = [
     version TEXT PRIMARY KEY,
     applied_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
   )`,
+
+  // A fixed-basket index compares every period against ONE baseline, not a
+  // rolling prior period (Chapwood-style) — the first period ever ingested
+  // becomes the baseline, once, and every later period is measured against
+  // it. Single-row table (id is CHECK'd to 1) set once and never updated by
+  // ordinary ingest; see repo.ts's setBaselinePeriodIfUnset.
+  `CREATE TABLE IF NOT EXISTS pay_index_baseline (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    period TEXT NOT NULL,
+    set_at TEXT NOT NULL
+  )`,
 ]
 
 function nowIso(): string {
