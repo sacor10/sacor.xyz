@@ -28,6 +28,14 @@ export interface Observation {
   readonly transcribed?: boolean
 }
 
+// An Observation as stored (has a DB id) plus its normalized annual figure.
+// Aggregation only ever reads annualPoint — it never re-derives it from raw
+// values, so normalization logic lives in exactly one place (normalize.ts).
+export interface NormalizedObservation extends Observation {
+  readonly id: number
+  readonly annualPoint: number
+}
+
 export type CellStatus = 'included' | 'gap_no_data' | 'gap_below_threshold'
 
 export interface CellValue {
