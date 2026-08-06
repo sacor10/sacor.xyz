@@ -1,99 +1,247 @@
-# "What's that song?" — song identification utility for sacor.xyz
+# Pay Index — a fixed-basket, unadjusted wage-change tracker for sacor.xyz
 
 ## Context
 
-Add a utility page to sacor.xyz: drop in a video/audio file, get told what song is playing. Music-heavy clips are often slowed/nightcore edits, so plain fingerprint lookup fails; the design includes a speed sweep. This plan is Phase 1 of the user's spec — it becomes `PLAN.md` in the repo (deliverable 1), then implementation follows.
+Build a **Pay Index**: the pay analog of the Chapwood Index. Same job titles,
+same cities, same method, every period. It answers "what happened to actual
+advertised pay for the same jobs in the same places" without any of the
+machinery that makes official wage series feel laundered: no quality
+adjustment, no substitution, no compositional reweighting, no seasonal
+adjustment, and no government data anywhere in the pipeline. This plan is
+Phase 1 of the user's spec — it becomes `PLAN.md` in the repo (deliverable 1),
+then implementation follows.
+
+The entire value of the thing is methodological discipline, so this plan
+spends most of its effort on **enforcing the method in code** — DB triggers,
+type shapes that make violations unrepresentable, and tests — rather than
+documenting rules and hoping ingestion respects them. A number that quietly
+degrades is worse than no number, so coverage stats publish next to every
+headline figure and a dead source raises an alert instead of a silent gap.
 
 ## What the repo actually is (verified, not assumed)
 
-- **Frontend**: React 19 SPA, Vite 8, plain JS/JSX (no tsconfig). Routes in `src/App.jsx`, utility grid in `src/data/downloadTools.js`.
-- **Hosting**: **Netlify** (`netlify.toml`, publish `dist`, NODE_VERSION 20). **Not static-only** — ~32 serverless functions in `netlify/functions/*.mjs` (Web `Request`/`Response` API) are the real backend. No GitHub Actions; Netlify builds on git push.
-- **ffmpeg.wasm is already in the stack**: `src/lib/mux.js` lazy-loads the single-threaded @ffmpeg/core 0.12.9 from unpkg (~30MB, no SharedArrayBuffer/COOP changes needed) for browser-side remuxing.
-- **Rate-limit pattern exists**: `netlify/functions/geocode.mjs` — `bumpCounter()` on Netlify Blobs, minute+day keys, 429 on limit, plus in-memory dedup cache. `stumble-submissions.mjs` similar.
-- **Error convention**: `{ code, message }` JSON envelope, shared across functions and the Express services.
-- **Secrets**: server-only vars via `process.env` in functions (Netlify UI in prod), documented in `.env.example`. `VITE_`-prefixed vars are baked into the client bundle — provider secrets must never be `VITE_*`. (Moot since the final provider needs no secret.)
-- `services/instagram-downloader` / `x-downloader` are legacy/local Express apps with **no committed production hosting** — not the model to follow here.
+- **Frontend**: React 19 SPA, Vite 8, TS-capable (`tsconfig.json` exists,
+  `noEmit`, `strict`). Routes in `src/App.jsx`, nav in `src/Layout.jsx`
+  (`NAV_GROUPS`). Closest precedent for this feature is `/psilocybin` — a
+  data explorer with a methodology header, `sourceUrl` per record, `asOf`
+  metadata, dependency-free chart primitives (`src/pages/psilocybin/charts.jsx`),
+  and an "unlisted, intentionally not in nav" route comment.
+- **Hosting**: **Netlify** (`netlify.toml`, publish `dist`, NODE_VERSION 20).
+  Not static-only — ~34 serverless functions in `netlify/functions/*.mjs`/`.mts`
+  (Web `Request`/`Response` API) are the real backend. No CI at all; Netlify
+  builds on git push.
+- **DB**: Turso/libSQL via `@libsql/client` (`netlify/functions/_lib/turso.mjs`,
+  falls back to a local file DB when `TURSO_DATABASE_URL` is unset). No
+  migrations directory — schema lives inline, memoized `ensureSchema(db)`
+  plus a versioned seed table, exactly as in `netlify/functions/quotes.mjs`.
+  **This is not Postgres and there is no host for a long-running Fastify
+  server** — the spec's Fastify+Postgres stack doesn't fit this repo.
+- **Error convention**: `{ code, message }` JSON envelope. Rate limiting via
+  Netlify Blobs counters (`geocode.mjs`, `bumpCounter`).
+- **Secrets**: server-only vars via `process.env` in functions (Netlify UI in
+  prod), documented in `.env.example`. `VITE_`-prefixed vars are baked into
+  the client bundle — never a secret.
+- `services/instagram-downloader` / `x-downloader` are legacy/local Express
+  apps with **no committed production hosting** — not the model to follow here.
 
 ## Decisions (user-confirmed)
 
 | Decision | Choice | Why |
 |---|---|---|
-| Extraction | **Client-side (ffmpeg.wasm)** | Netlify functions can't run a native ffmpeg binary (bundle limits, no committed alternative host); the site already ships the lazy ffmpeg.wasm pattern; full video never uploads (function body limit is ~6MB anyway); the ~30MB wasm cost is lazy-loaded and already accepted on other pages. |
-| Provider | **Shazam (unofficial, free)** | AudD was tried first, but its "300 free requests" turned out to be a trial, not a free tier, and it was removed entirely. Recognition uses the unofficial Shazam endpoint via the pure-JS `shazam-api` package — signature generated in-function, no account/key/cost; caveat: no SLA, could break, in which case a paid adapter would be written behind the `RecognitionProvider` interface. AcoustID rejected (exact-recording matching, wrong tool). |
-| Cost ceiling | **$0** — the provider is free. The **global monthly call counter in Netlify Blobs** (`SONG_ID_MONTHLY_CALL_CAP`, default 1000) is kept as a volume guard; when hit → 503 until the month rolls over. | |
-| Language | **TypeScript for all new files** (`.tsx`/`.ts`/`.mts`) — Vite and Netlify compile TS natively; existing JS files untouched. | |
-| Branch | Develop and push on `claude/song-identification-utility-5sumwq` (CLAUDE.md's "work on main" is overridden for this remote session by user choice — pushing main would trigger prod deploys). | |
+| Basket | ~60 jobs × ~25 metros ≈ 1,500 cells | Meets the 50–150 job floor; keeps free-tier API volume and gap counts sane. |
+| Stack | **Netlify Functions + Turso/libSQL**, not Fastify + Postgres | The spec asked for Fastify+Postgres; this repo has neither and no host for a long-running server. `services/*` is the cautionary example. |
+| Ingestion | **Committed Node CLI** (`scripts/pay-index-ingest.ts`), run monthly | ~1,500 cells × 3 source tiers blows past every Netlify function timeout. Resumable + checkpointed. |
+| Tier C sources | **Exhaustive coverage attempt** | User's call, made after being warned these scrapers are brittle. Mitigated by design: a dead adapter produces a logged alert + explicit gap, never a wrong number. |
+| Levels.fyi | Stored + displayed, **excluded from the headline** | Its figures are per-company medians — already averages. `sources.kind='aggregate'` keeps the "never average an average" rule literally true while the data stays visible with required attribution. |
+| First period | Baseline only, **no headline change figure** | Posting data cannot be backfilled. Period one publishes cells, coverage and the basket, and says plainly that the change figure arrives next period. |
+| Chart library | Extend the dependency-free `psilocybin/charts.jsx` primitives, not Recharts | Matches the closest precedent, adds zero dependencies, keeps the retro visual language. |
+| Nav | Unlisted at first | Route works; not in `NAV_GROUPS`, matching the `/psilocybin` precedent. |
+| Language | **TypeScript for all new files** (`.ts`/`.tsx`/`.mts`) | Existing JS untouched. |
+| Branch | `claude/pay-index-sacor-af7me5` (CLAUDE.md's "work on main" is overridden for this remote session — pushing main triggers a prod deploy). | |
 
 ## Architecture
 
-### Client (`src/pages/SongIdPage.tsx` + `src/lib/songid/`)
-
-1. Drag-and-drop / file picker: `mp4 mov webm mp3 m4a wav ogg`, ≤50MB. Validate by **magic bytes** (ftyp/RIFF/ID3/0xFFEx/OggS/EBML), not extension/MIME.
-2. ffmpeg.wasm decodes the audio track to mono 16-bit 44.1kHz PCM WAV: `-i in -vn -ac 1 -ar 44100 -f wav out.wav`. The existing `getFFmpeg()` loader is extracted from `src/lib/mux.js` into a shared `src/lib/ffmpeg.js` (mux.js refactored to import it — only refactor of existing code).
-3. **Window selection**: sliding 12s window over the PCM, 1s hop, pick the window with highest sustained RMS (mean RMS with a floor-percentile guard so one loud transient doesn't win). Pure TS in `src/lib/songid/rms.ts`.
-4. Slice those 12s of PCM and wrap in a WAV header (`src/lib/songid/wav.ts`) — no re-encode. ~1.06MB.
-5. POST raw `audio/wav` body to `/.netlify/functions/song-identify`.
-6. Progress states: `decoding → extracting clip → identifying`. Result card: title, artist, album, release date, cover art, Spotify/Apple links, confidence (nullable — see below), and when `matchedFactor ≠ 1.0`: "matched at 1.25× — this clip is slowed to about 0.8× speed". **No-match is a first-class result** with suggested next steps (try a section with clearer music, longer source, etc.), not an error toast.
-7. Route `/song-id` in `App.jsx`; entry in `DOWNLOAD_TOOLS` grid ("WHAT'S THAT SONG").
-
-### Server (`netlify/functions/song-identify.mts` + `_lib/songid/`)
-
-Pipeline, in order:
-1. **Kill switch**: `SONG_ID_DISABLED=true` → 503.
-2. **Sign-in gate** (added after initial ship): `readSessionCookie` from `_lib/session.mjs` must yield a valid Google session, else 401 `auth_required`; the page shows a `GoogleSignInButton` to anonymous visitors.
-3. Method/body checks; **magic-byte validation** that body is RIFF/WAVE, mono 16-bit PCM, and duration ≤12.5s (computed from header + byte length; hard body cap ~1.5MB). Unsupported → 415 `{ code, message }`, never a stack trace.
-4. **Per-user rate limit**: 10/hour (`SONG_ID_RATE_LIMIT_PER_HOUR`), Netlify Blobs `bumpCounter` pattern copied from `geocode.mjs`, keyed by `userHash(email)` + hour bucket. Over → 429 with when-to-retry message. Blobs is the shared store — survives serverless invocations.
-5. **Cache**: SHA-256 of clip bytes → Blobs lookup; hit returns the cached normalized result (match *and* no-match cached), so a retry costs zero API calls.
-6. **Speed sweep** (`_lib/songid/sweep.ts`): factors `[1.0, 1.25, 1.15, 1.33, 1.10, 0.90, 0.80]`, capped at first `SONG_ID_MAX_SWEEP_ATTEMPTS` (default 4). Sequential, short-circuit on first match. Each attempt first bumps the global monthly counter (cap → stop sweeping, return 503 if no attempt succeeded).
-   - **Resampling trick**: `asetrate` semantics (pitch+tempo shift together) are achieved by **rewriting only the WAV header's sample-rate field** to `round(44100 × factor)` — byte-identical samples, mathematically exactly what `asetrate` does; the provider resamples on ingest. Zero DSP, zero native deps in the function.
-7. **Provider adapter** (`_lib/songid/shazam.ts`): resamples the clip's PCM to 16kHz honoring the *declared* sample rate (so the sweep's header trick flows through), generates the Shazam signature in-process, POSTs to `amp.shazam.com`, and normalizes the response to the provider-agnostic shape; the frontend never sees provider field names.
-8. Response: `{ status: 'match'|'no_match', attemptsUsed, matchedFactor?, result?: { title, artist, album, releaseDate, coverArtUrl, spotifyUrl, appleMusicUrl, confidence } }`.
-   - **Honesty note**: Shazam returns no numeric confidence — any result it returns *is* a confident match, so `confidence` is `null` (UI omits the meter). The field exists in the schema so a scoring provider (e.g. ACRCloud) could fill it later.
-9. **Privacy**: audio processed in memory only, never written or persisted; logs record counts/outcomes/factors only — never audio bytes or filenames.
-
-### Env vars (added to `.env.example`, values in Netlify UI)
+Three pieces sharing one core:
 
 ```
-SONG_ID_DISABLED=          # "true" = kill switch, endpoint returns 503
-SONG_ID_MAX_SWEEP_ATTEMPTS=4
-SONG_ID_MONTHLY_CALL_CAP=1000   # volume guard; provider calls are free
-SONG_ID_RATE_LIMIT_PER_HOUR=10
+scripts/pay-index-ingest.ts        →  writes immutable observations  ─┐
+                                                                      ├→ Turso
+netlify/functions/pay-index-*.mts  →  reads snapshots + cells        ─┘
+src/pages/PayIndexPage.tsx         →  headline, chart, transparency table
 ```
+
+`netlify/functions/_lib/payindex/` is the shared core, imported by both the
+ingest CLI and the read functions, so schema and math exist in exactly one
+place.
+
+### File tree
+
+```
+src/data/payIndex/
+  jobs.ts              # ~60 frozen job rows: title, category, canonicalKeywords[]
+  cities.ts            # ~25 frozen metro rows: name, region, adzunaLocation
+  basket.ts            # BASKET_VERSION, METHODOLOGY_VERSION, BASKET_FINGERPRINT
+  changelog.ts         # dated basket_changelog entries
+  sources.ts           # source registry: name, kind, licenseNote, attributionRequired
+  atsBoards.ts         # Tier B: employer board tokens per ATS platform
+  roleSources.ts       # Tier C: union locals, districts, carriers, nursing, Levels.fyi
+
+netlify/functions/_lib/payindex/
+  types.ts             # Observation, Cell, CellChange, IndexResult, AdapterRun
+  errors.ts            # PayIndexError { code, message, status }
+  schema.ts            # ensureSchema(db) — shared by CLI and read functions
+  normalize.ts         # hourly → annual @2080; raw always retained
+  aggregate.ts         # observations → cell_values, MIN_OBSERVATIONS = 5
+  computeIndex.ts       # pure: (cells, baseline, current) => { mean, median, ... }
+  fingerprint.ts        # canonical hash of the basket
+  http.ts               # polite fetch: rate limit, retry, cache, robots.txt check
+  adapters/
+    index.ts            # registry + fetchObservations contract
+    adzuna.ts                                # Tier A
+    ats/{greenhouse,lever,ashby,workday}.ts  # Tier B — four extractors, not N
+    roles/{levelsfyi,unionScale,districtSchedule,vivian,carrierPay}.ts  # Tier C
+
+netlify/functions/
+  pay-index-current.mts   pay-index-history.mts   pay-index-basket.mts
+  pay-index-cells.mts     pay-index-coverage.mts
+
+scripts/pay-index-ingest.ts         # monthly CLI, resumable
+scripts/make-payindex-fixtures.mjs  # synthetic/recorded fixtures for tests
+
+src/pages/PayIndexPage.tsx
+src/pages/payindex/{charts.tsx,methodology.tsx,changelog.tsx,payindex.css}
+
+tests/payindex/*.test.ts
+```
+
+Endpoint naming follows the `stumble-*` / `stocks-*` grain (many small
+functions, not one router). `netlify.toml` gains redirects from the spec's
+documented paths (`/api/index/current`, etc.) to the actual function paths,
+placed **above** the existing SPA catch-all.
+
+### Schema (SQLite/libSQL)
+
+Adapted from the spec's model. SQLite has no array type, so
+`canonical_keywords` is a JSON-text column. Additions beyond the spec, each
+earning its place under "Enforcement" below: `sources.kind`,
+`pay_observations.supersedes_observation_id`, `cell_values.status`, and an
+`adapter_runs` table.
+
+`ensureSchema(db)` uses the repo's memoized `let readyPromise = null` +
+`CREATE TABLE IF NOT EXISTS` pattern from `quotes.mjs`, and a versioned seed
+table (`pay_index_seed`) that plants `jobs`/`cities`/`sources` from
+`src/data/payIndex/`.
+
+### Adapter contract
+
+```ts
+type Adapter = {
+  id: string
+  tier: 'A' | 'B' | 'C'
+  sourceId: string
+  covers(job: Job, city: City): boolean
+  fetchObservations(job: Job, city: City, period: Period): Promise<Observation[]>
+}
+```
+
+All three tiers implement the same contract. `covers()` lets Tier C adapters
+declare they only speak for, say, electricians in IBEW-local metros, without
+every adapter being invoked for every cell.
+
+## Enforcement — how each methodology rule is made real
+
+| # | Rule | Enforced by |
+|---|---|---|
+| 1 | Fixed basket, versioned changes only | `fingerprint.ts` hashes the canonical sorted basket; a test asserts it equals the checked-in `BASKET_FINGERPRINT`. Editing a job/city fails the test until `BASKET_VERSION` is bumped and a dated `changelog.ts` entry is added. Ingest re-checks the fingerprint against the DB-recorded value for that version and aborts on mismatch. |
+| 2 | No adjustment, ever | The schema has no adjusted columns. `normalize(raw, basis)` takes no period and no price-level argument — inflation adjustment is unrepresentable. A test asserts the signature is basis-conversion only and raw values survive alongside normalized ones. |
+| 3 | Simple unweighted mean | `CellChange` has no weight field — nowhere to put one. `computeIndex` fixtures include a case where a population-weighted mean would give a different answer, so any regression toward weighting fails loudly. |
+| 4 | No silent gaps | `cell_values.status ∈ ('included','gap_no_data','gap_below_threshold')` with a `CHECK` constraint that `status='included'` implies `observation_count >= 5`. Gaps are rows, not absences. `computeIndex` returns `missingCells[]`; a test asserts no path interpolates, carries forward, or substitutes a title. |
+| 5 | Full traceability / immutability | SQLite triggers: `BEFORE UPDATE`/`BEFORE DELETE ON pay_observations` → `RAISE(ABORT, ...)`. Corrections insert a new row carrying `supersedes_observation_id`. Enforced by the database, not convention. |
+| 6 | Publish basket + formula + coverage together | `/api/index/current`'s response type requires `methodologyVersion`, `basketVersion`, `formula`, `cellsIncluded`, `cellsMissing`. A test asserts the headline endpoint cannot omit them; the page renders coverage adjacent to the figure. |
+| 7 | No averaging an average | `sources.kind ∈ ('posting','scale','aggregate')`. The `cell_values` aggregation query filters to `kind IN ('posting','scale')`. Levels.fyi (`kind='aggregate'`) is stored and displayed with attribution but excluded from the headline. |
+| 8 | Zero rows is an alert | Every run writes an `adapter_runs` row (`adapter`, `period`, `rows_returned`, `status`, `error`). Zero rows for an adapter that ran → `status='alert'`, non-zero CLI exit code, red banner via `/api/coverage`. |
+| 9 | No government data | A test asserts no configured `sourceUrl` host matches a government pattern (`.gov`, `.mil`, known BLS/Census/state-agency hosts). |
+
+Source hygiene (`_lib/payindex/http.ts`): robots.txt honored per host,
+per-host rate limiting with backoff, response caching keyed by URL hash, and
+`source`/`source_url`/`fetched_at` recorded on every observation. Sources
+requiring attribution render their notice wherever their figures appear
+("Data source: Levels.fyi").
+
+## Frontend
+
+`/pay-index`, registered with one import + one `<Route>` in `src/App.jsx`.
+Unlisted in nav initially. Sections: headline mean (median beside it),
+coverage counts, trend chart, per-city breakdown, full transparency table of
+every cell with source links and attribution, methodology and changelog
+panels. New `.tsx` pages rely on the existing `src/types/retro-jsx.d.ts`
+augmentation for `<font>`/`bgcolor`.
 
 ## Tooling additions (flagged — new to this repo)
 
-- `typescript` (dev) + minimal strict `tsconfig.json` (noEmit; editor/typecheck only — Vite/Netlify do their own transpile).
-- `vitest` (dev) + `npm test` script — the idiomatic Vite-native test runner, runs TS directly; tests both client libs (RMS window, WAV build/parse, magic bytes) and server libs (sweep, normalization) in one runner. (Root repo currently has no test framework; services use `node --test`, which can't run TS.)
+- **`tsx`** (devDependency) + `"payindex:ingest"` script — the ingest CLI must
+  be TypeScript and import the shared `_lib/payindex/*.ts` core, but plain
+  `node` cannot import `.ts` directly. The alternative (duplicating the core
+  in `.mjs`) breaks the single-source-of-truth guarantee rule 5 depends on.
+- New env vars in `.env.example`: `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`,
+  `PAY_INDEX_MIN_OBSERVATIONS`, `PAY_INDEX_DISABLED`. Missing Adzuna
+  credentials fail loudly at ingest time — never masquerade as a legitimate gap.
 
-## Tests (deliverable 5)
+## Tests (`tests/payindex/`, vitest, TS, relative imports)
 
-- Fixtures: small **synthetic** WAVs (tone sweeps) generated by a checked-in script `scripts/make-songid-fixtures.mjs` and committed — no copyrighted audio in the repo.
-- `sweep.test.ts`: mock provider that only "matches" at declared rate 55125Hz → asserts sweep tries factors in spec order, finds 1.25, short-circuits, respects the attempt cap and monthly-cap stop.
-- `wav.test.ts`: header rewrite math, duration parsing, malformed-header rejection.
-- `rms.test.ts`: synthetic quiet-then-loud PCM → picks the loud window, not t=0.
-- `shazam.test.ts`: recorded Shazam JSON fixtures (match, no-match, missing enrichment blocks) → normalized shape; resampler honors declared sample rate.
-- Real-music acceptance (normal + slowed clip via `ffmpeg -af "asetrate=44100*0.8,aresample=44100"`) needs a real token + real song — documented as a manual smoke check the user runs locally with `netlify dev`.
+- `computeIndex.test.ts` — hand-computed fixtures; mean vs median; a
+  weighting-would-differ case; gaps excluded and counted, never filled.
+- `aggregate.test.ts` — the ≥5 threshold; median-of-midpoints;
+  `kind='aggregate'` observations excluded from cells.
+- `normalize.test.ts` — hourly ×2080; raw retained; signature admits no price input.
+- `fingerprint.test.ts` — basket edit without a version bump + changelog fails.
+- `immutability.test.ts` — UPDATE/DELETE on `pay_observations` abort (real
+  local libSQL file DB).
+- `adapters/*.test.ts` — recorded HTTP fixtures per platform, injected fetch
+  implementation so no test touches the network.
+- `sources.test.ts` — no government hosts; attribution flags present.
+- `handler.test.ts` — endpoints exercised by constructing `Request` objects.
+
+Fixtures are synthetic or recorded, generated by a committed
+`scripts/make-payindex-fixtures.mjs`, following `make-songid-fixtures.mjs`.
 
 ## Verification
 
-1. `npm test` (vitest suite above) and `npm run lint`.
-2. `npm run build` then grep `dist/` for provider strings — nothing provider-related ships in the client bundle (acceptance criterion).
-3. Exercise the function handler directly in a test harness (construct `Request` objects): 429 after 10 hits from one IP; 415 with clean JSON for a PNG body; 503 when `SONG_ID_DISABLED=true`.
-4. Manual end-to-end (user, locally with `netlify dev` + real token): normal-speed clip identifies; 0.8× slowed clip identifies with "matched at 1.25×" message.
+1. `npm test` and `npm run lint` and `npm run typecheck`.
+2. `npm run build`, confirm no Adzuna credential or server-only value in `dist/`.
+3. Run the ingest CLI against recorded fixtures; confirm `adapter_runs` rows
+   and a non-zero exit when an adapter returns nothing.
+4. Prove immutability by hand: `UPDATE pay_observations …` must abort.
+5. `npx netlify dev` on `:8888`; hit each `/api/index/*` endpoint; load
+   `/pay-index` and confirm the headline, coverage counts, gap rows, and
+   per-source attribution all render together.
 
 ## Files & commit sequence (small commits, one concern each)
 
 1. `PLAN.md` (this plan, repo root).
-2. `tsconfig.json` + `typescript`/`vitest` dev deps + `npm test` script.
-3. `src/lib/ffmpeg.js` — extract shared loader; refactor `mux.js` to use it.
-4. `src/lib/songid/` — `magicBytes.ts`, `wav.ts`, `rms.ts`, `extractClip.ts` (+ tests, fixtures script).
-5. `netlify/functions/_lib/songid/` — `types.ts`, `errors.ts`, `sweep.ts`, `shazam.ts` (+ tests).
-6. `netlify/functions/song-identify.mts` — handler wiring (kill switch, validation, rate limit, cache, sweep).
-7. `src/pages/SongIdPage.tsx` + route + `DOWNLOAD_TOOLS` entry (styling follows existing downloader pages).
-8. `.env.example` additions + README section (setup: none; env vars are optional overrides; cost: $0 — the monthly call cap is a volume guard).
+2. `src/data/payIndex/*` — basket config, fingerprint, changelog, sources (+ tests).
+3. `netlify/functions/_lib/payindex/schema.ts` — schema, immutability triggers, seeding (+ tests).
+4. `_lib/payindex/{normalize,aggregate,computeIndex}.ts` (+ hand-computed fixtures).
+5. `_lib/payindex/{adapters/index.ts,http.ts}` — adapter contract + polite HTTP layer.
+6. `_lib/payindex/adapters/adzuna.ts` — Tier A.
+7. `_lib/payindex/adapters/ats/*.ts` — Tier B, four extractors + board config.
+8. `_lib/payindex/adapters/roles/*.ts` — Tier C, one commit per role family.
+9. `scripts/pay-index-ingest.ts` — resumable, checkpointed, alerting; `tsx` devDep.
+10. `netlify/functions/pay-index-*.mts` + `netlify.toml` redirects.
+11. `src/pages/PayIndexPage.tsx` + `src/pages/payindex/*` + route (unlisted).
+12. `.env.example` additions + README section.
 
-Along the way: flag unfamiliar React/TS idioms in chat (e.g. discriminated unions for progress state, `useRef` for the drop zone, generics in the normalizer) rather than using them silently.
+## Non-goals / honest limitations
 
-## Non-goals (unchanged from spec)
-
-No fingerprint database, no accounts/history, no non-music identification, no changes to existing pages beyond the mux.js loader extraction and the two registration touchpoints.
+- No fingerprint of "the" labor market — this is a fixed, small, unweighted
+  basket by design, not a scientific sample.
+- Tier C sources (union locals, district PDFs, carrier pay pages) will break
+  and some may be broken on arrival; the methodology absorbs this as a logged
+  alert + explicit gap, not a wrong number, but expect ongoing maintenance.
+- Coverage will be uneven at launch — many of the ~1,500 cells will miss the
+  ≥5-observation threshold in the first period. That's a visible gap by
+  design, not a bug.
+- The first published period is the baseline: no change figure until a
+  second period is ingested.
+- SQLite/libSQL, not Postgres. Table shapes stay portable.
+- Ingestion is not automatic until a scheduler is wired to the CLI.
