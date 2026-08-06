@@ -39,3 +39,18 @@ export const ANNUALIZATION_HOURS = 2080
 // Checked-in fingerprint of the jobs.ts + cities.ts basket at this version.
 // See the regeneration command in the header comment above.
 export const BASKET_FINGERPRINT = 'fa03ed9485e66c84'
+
+// The literal formula text published alongside every headline number
+// (methodology rule 6 — full traceability). Keep this in sync with what
+// netlify/functions/_lib/payindex/computeIndex.ts actually does.
+export const FORMULA_TEXT =
+  'For every (job x city) cell with at least ' +
+  MIN_OBSERVATIONS +
+  ' raw observations in both the current and baseline period, % change = ' +
+  '(current cell median - baseline cell median) / baseline cell median. ' +
+  'The headline is the simple, unweighted arithmetic mean of every included ' +
+  "cell's % change. No weighting by employment share, population, or " +
+  'posting volume. The median of the same % changes is shown alongside the ' +
+  'mean for comparison, but the mean is the headline. Cells below the ' +
+  'observation threshold are excluded and counted as coverage gaps, never ' +
+  'interpolated or substituted.'

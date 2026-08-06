@@ -5,6 +5,34 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# Pay Index API — documented stable paths per the methodology spec, backed
+# by the netlify/functions/pay-index-*.mts handlers. Must come before the
+# SPA fallback below, since redirects are matched in file order.
+[[redirects]]
+  from = "/api/index/current"
+  to = "/.netlify/functions/pay-index-current"
+  status = 200
+
+[[redirects]]
+  from = "/api/index/history"
+  to = "/.netlify/functions/pay-index-history"
+  status = 200
+
+[[redirects]]
+  from = "/api/basket"
+  to = "/.netlify/functions/pay-index-basket"
+  status = 200
+
+[[redirects]]
+  from = "/api/cells"
+  to = "/.netlify/functions/pay-index-cells"
+  status = 200
+
+[[redirects]]
+  from = "/api/coverage"
+  to = "/.netlify/functions/pay-index-coverage"
+  status = 200
+
 # SPA fallback (safe even without a router)
 [[redirects]]
   from = "/*"

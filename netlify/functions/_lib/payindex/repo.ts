@@ -339,3 +339,212 @@ export async function isTaskAlreadyDone(db: Client, runId: string, adapterId: st
   })
   return result.rows.length > 0
 }
+
+// ---------------------------------------------------------------------
+// Read-side queries for the netlify/functions/pay-index-*.mts handlers.
+// Kept here for the same reason as everything else in this file: one place
+// for SQL, so the handlers only ever shape and return what these return.
+// ---------------------------------------------------------------------
+
+export interface SnapshotRecord {
+  readonly period: string
+  readonly baselinePeriod: string
+  readonly indexMean: number
+  readonly indexMedian: number
+  readonly cellsIncluded: number
+  readonly cellsMissing: number
+  readonly cellsTotal: number
+  readonly basketVersion: string
+  readonly methodologyVersion: string
+  readonly computedAt: string
+}
+
+interface SnapshotRow {
+  readonly period: string
+  readonly baseline_period: string
+  readonly index_mean: number
+  readonly index_median: number
+  readonly cells_included: number
+  readonly cells_missing: number
+  readonly cells_total: number
+  readonly basket_version: string
+  readonly methodology_version: string
+  readonly computed_at: string
+}
+
+function shapeSnapshot(row: SnapshotRow): SnapshotRecord {
+  return {
+    period: row.period,
+    baselinePeriod: row.baseline_period,
+    indexMean: row.index_mean,
+    indexMedian: row.index_median,
+    cellsIncluded: row.cells_included,
+    cellsMissing: row.cells_missing,
+    cellsTotal: row.cells_total,
+    basketVersion: row.basket_version,
+    methodologyVersion: row.methodology_version,
+    computedAt: row.computed_at,
+  }
+}
+
+export async function getLatestSnapshot(db: Client): Promise<SnapshotRecord | null> {
+  const result = await db.execute('SELECT * FROM pay_index_snapshots ORDER BY period DESC LIMIT 1')
+  return result.rows.length > 0 ? shapeSnapshot(result.rows[0] as unknown as SnapshotRow) : null
+}
+
+export async function getSnapshotByPeriod(db: Client, period: string): Promise<SnapshotRecord | null> {
+  const result = await db.execute({ sql: 'SELECT * FROM pay_index_snapshots WHERE period = ?', args: [period] })
+  return result.rows.length > 0 ? shapeSnapshot(result.rows[0] as unknown as SnapshotRow) : null
+}
+
+export async function getSnapshotHistory(db: Client): Promise<SnapshotRecord[]> {
+  const result = await db.execute('SELECT * FROM pay_index_snapshots ORDER BY period ASC')
+  return (result.rows as unknown as SnapshotRow[]).map(shapeSnapshot)
+}
+
+export interface CityBreakdownRecord {
+  readonly cityId: string
+  readonly mean: number
+  readonly median: number
+  readonly cellsIncluded: number
+  readonly cellsMissing: number
+}
+
+export async function getCityBreakdown(db: Client, period: string, baselinePeriod: string): Promise<CityBreakdownRecord[]> {
+  const result = await db.execute({
+    sql: 'SELECT city_id, mean, median, cells_included, cells_missing FROM pay_index_city_breakdown WHERE period = ? AND baseline_period = ?',
+    args: [period, baselinePeriod],
+  })
+  return (
+    result.rows as unknown as {
+      city_id: string
+      mean: number
+      median: number
+      cells_included: number
+      cells_missing: number
+    }[]
+  ).map((row) => ({
+    cityId: row.city_id,
+    mean: row.mean,
+    median: row.median,
+    cellsIncluded: row.cells_included,
+    cellsMissing: row.cells_missing,
+  }))
+}
+
+export interface CoverageBreakdownEntry {
+  readonly status: string
+  readonly count: number
+}
+
+export async function getCoverageBreakdown(db: Client, period: string): Promise<CoverageBreakdownEntry[]> {
+  const result = await db.execute({
+    sql: 'SELECT status, COUNT(*) AS count FROM pay_index_cell_values WHERE period = ? GROUP BY status',
+    args: [period],
+  })
+  return (result.rows as unknown as { status: string; count: number }[]).map((row) => ({
+    status: row.status,
+    count: Number(row.count),
+  }))
+}
+
+export interface AttributionRecord {
+  readonly sourceId: string
+  readonly name: string
+  readonly attributionText: string
+  readonly homepageUrl: string
+}
+
+export async function getAttributionSources(db: Client): Promise<AttributionRecord[]> {
+  const result = await db.execute("SELECT id, name, attribution_text, homepage_url FROM pay_index_sources WHERE attribution_required = 1")
+  return (result.rows as unknown as { id: string; name: string; attribution_text: string; homepage_url: string }[]).map((row) => ({
+    sourceId: row.id,
+    name: row.name,
+    attributionText: row.attribution_text,
+    homepageUrl: row.homepage_url,
+  }))
+}
+
+export interface AdapterHealthRecord {
+  readonly adapterId: string
+  readonly rowsReturned: number
+  readonly status: 'ok' | 'zero_rows' | 'error' | 'mixed'
+  readonly tasksOk: number
+  readonly tasksZeroRows: number
+  readonly tasksError: number
+}
+
+export async function getAdapterHealth(db: Client, period: string): Promise<AdapterHealthRecord[]> {
+  const result = await db.execute({
+    sql: `SELECT adapter_id,
+                 SUM(rows_returned) AS rows_returned,
+                 SUM(CASE WHEN status = 'ok' THEN 1 ELSE 0 END) AS tasks_ok,
+                 SUM(CASE WHEN status = 'zero_rows' THEN 1 ELSE 0 END) AS tasks_zero_rows,
+                 SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) AS tasks_error
+          FROM pay_index_adapter_runs
+          WHERE period = ?
+          GROUP BY adapter_id`,
+    args: [period],
+  })
+  return (
+    result.rows as unknown as {
+      adapter_id: string
+      rows_returned: number
+      tasks_ok: number
+      tasks_zero_rows: number
+      tasks_error: number
+    }[]
+  ).map((row) => {
+    const rowsReturned = Number(row.rows_returned)
+    const tasksError = Number(row.tasks_error)
+    const tasksOk = Number(row.tasks_ok)
+    const status: AdapterHealthRecord['status'] =
+      rowsReturned === 0 && tasksOk === 0 ? (tasksError > 0 ? 'error' : 'zero_rows') : tasksError > 0 ? 'mixed' : 'ok'
+    return {
+      adapterId: row.adapter_id,
+      rowsReturned,
+      status,
+      tasksOk,
+      tasksZeroRows: Number(row.tasks_zero_rows),
+      tasksError,
+    }
+  })
+}
+
+export interface CellRecord {
+  readonly jobId: string
+  readonly cityId: string
+  readonly period: string
+  readonly status: string
+  readonly medianAnnualPay: number | null
+  readonly observationCount: number
+  readonly sourceIds: readonly string[]
+}
+
+export async function getCellsForPeriod(db: Client, period: string, cityId?: string, jobId?: string): Promise<CellRecord[]> {
+  const conditions = ['period = ?']
+  const args: (string | number)[] = [period]
+  if (cityId) {
+    conditions.push('city_id = ?')
+    args.push(cityId)
+  }
+  if (jobId) {
+    conditions.push('job_id = ?')
+    args.push(jobId)
+  }
+  const result = await db.execute({
+    sql: `SELECT job_id, city_id, period, status, median_annual_pay, observation_count, source_ids
+          FROM pay_index_cell_values WHERE ${conditions.join(' AND ')}
+          ORDER BY job_id, city_id`,
+    args,
+  })
+  return (result.rows as unknown as CellValueRow[]).map((row) => ({
+    jobId: row.job_id,
+    cityId: row.city_id,
+    period: row.period,
+    status: row.status,
+    medianAnnualPay: row.median_annual_pay,
+    observationCount: row.observation_count,
+    sourceIds: JSON.parse(row.source_ids) as string[],
+  }))
+}
