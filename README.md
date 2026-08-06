@@ -26,6 +26,8 @@ Most pages are static React (home, blog index/post, contact, guestbook, MTS, web
 - `npm --prefix services/instagram-downloader run dev` - local Instagram downloader API on `http://localhost:8787`.
 - `npm --prefix services/x-downloader run dev` - local X/Twitter downloader API on `http://localhost:8788`.
 
+- `npm run payindex:ingest -- --period=YYYY-MM [--max-calls=200] [--dry-run]` - monthly Pay Index data ingest (see below). Not run by Netlify — a manual/local CLI.
+
 ## Stumble (`/stumble`)
 
 `/stumble` is a StumbleUpon-style discovery loop. Guests can stumble with local seen exclusion; signed-in users get server-side seen/rated exclusion, saved interests, and thumbs feedback.
@@ -186,6 +188,43 @@ None. There is nothing to configure beyond the existing Account env vars (`SESSI
 - kill switch: `SONG_ID_DISABLED=true`
 
 Uploaded audio is processed in memory and never persisted; logs record counts and outcomes only. Tests: `npm test` (vitest) covers the WAV/RMS/sweep/normalization logic against synthetic fixtures (`node scripts/make-songid-fixtures.mjs` regenerates them).
+
+## Pay Index (`/pay-index`)
+
+**Unlisted — not in the nav yet.** A fixed-basket, unadjusted wage-change tracker: the pay analog of the [Chapwood Index](https://www.chapwoodindex.com/). Same 60 job titles, same 25 U.S. metros, same method, every period. No quality adjustment, no substitution, no compositional reweighting, no seasonal adjustment, and no government data anywhere in the pipeline. Full design rationale (and which methodology rule is enforced by which piece of code) is in `PLAN.md`.
+
+**Read side** (deployed, live on the site): five Netlify functions —
+
+- `GET /api/index/current` — the headline mean (with median alongside), basket/methodology version, formula text, and coverage counts, all in one payload.
+- `GET /api/index/history` — every published snapshot.
+- `GET /api/basket` — the job list, city list, source registry, and changelog.
+- `GET /api/cells?period=&city=&job=` — the full transparency table, gap rows included by default.
+- `GET /api/coverage?period=` — per-source adapter health.
+
+These read from Turso the same way every other feature does (`TURSO_DATABASE_URL`/`TURSO_AUTH_TOKEN`, falling back to a local file DB when unset). If the tables don't exist yet, they're created and seeded from `src/data/payIndex/` on first request.
+
+**Write side** (NOT deployed — a local/manual CLI, on purpose): walking ~1,500 basket cells across three source tiers takes far longer than any Netlify function timeout, so ingestion is a monthly command you run yourself:
+
+```
+npm run payindex:ingest -- --period=2026-08 --max-calls=200 [--dry-run]
+```
+
+It's resumable — rerunning the same `--period` picks up any (adapter × job × city) task that hasn't completed yet, rather than refetching everything. That matters in practice: Adzuna's free tier has a daily call budget, so a full month's ingest is expected to span several invocations. The command exits non-zero whenever a source returns zero total rows for the period or fails its credential preflight — a dead or misconfigured source is a build failure, not a quiet gap.
+
+### Sources
+
+- **Tier A — Adzuna** (the backbone): free developer API, broad occupational coverage. Requires `ADZUNA_APP_ID`/`ADZUNA_APP_KEY` (register at [developer.adzuna.com](https://developer.adzuna.com/)) — ingest refuses to run this adapter without both, loudly, rather than silently producing zero rows.
+- **Tier B — public ATS feeds**: Greenhouse, Lever, Ashby, Workday. Four extractors, config-driven employer list (`src/data/payIndex/atsBoards.ts`). No keys needed.
+- **Tier C — role-specific sources**: published union wage scales, union-published teacher salary schedules (deliberately not the district's own site — a school district is a government body), Vivian Health nursing listings, carrier driver-pay pages, and Levels.fyi (`companies/{slug}/salaries.md`, used with required attribution and excluded from the headline calculation since its figures are already medians). No keys needed. Registry: `src/data/payIndex/roleSources.ts`.
+
+### Known limitations
+
+- **Coverage will be uneven, especially at first.** Many of the 1,500 cells will sit below the 5-observation threshold some periods — that's a visible gap by design (rule 4), not a bug.
+- **No headline until a second period exists.** The first ingested period becomes the fixed baseline; `/api/index/current` returns `{ status: 'baseline_only' }` rather than a fake 0.00%.
+- **Vivian Health and Levels.fyi don't have documented public APIs**, so those two adapters target a defensively-parsed generic response shape and are the most likely to need updating if the real shape differs — a mismatch shows up as a zero-rows alert, never fabricated data.
+- Ingestion is not automated — no scheduled trigger is wired up yet. `npm run payindex:ingest` is a manual monthly step.
+
+Tests: `npm test` covers the full pipeline — basket fingerprinting, schema/immutability constraints, normalize/aggregate/computeIndex against hand-computed fixtures (including a "weighting trap" that would fail if a weighted mean ever crept in), every adapter against recorded-shape fixtures with zero network access, the repo layer against an in-memory DB, and all five API handlers via constructed `Request` objects.
 
 ## Account / Google Sign-In
 
