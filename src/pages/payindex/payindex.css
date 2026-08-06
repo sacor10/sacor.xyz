@@ -1,0 +1,355 @@
+/* Scoped, clean/professional styling for the /pay-index data explorer.
+   Everything is nested under .payx-page so it never leaks into the retro
+   GeoCities theme used by the rest of the site — same discipline as
+   /psilocybin's psilocybin.css. */
+
+.payx-page {
+  --payx-bg: #f7f8fa;
+  --payx-surface: #ffffff;
+  --payx-ink: #1c2430;
+  --payx-muted: #5b6675;
+  --payx-border: #e2e6ec;
+  --payx-accent: #1f6f4f; /* wage-growth green */
+  --payx-accent-soft: #e6f3ec;
+  --payx-negative: #b3403a;
+  --payx-negative-soft: #fbeceb;
+  --payx-gap: #9aa7b8;
+
+  min-height: 100vh;
+  margin: 0;
+  background: var(--payx-bg);
+  color: var(--payx-ink);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.55;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.payx-container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.payx-header {
+  border-bottom: 1px solid var(--payx-border);
+  padding-bottom: 24px;
+  margin-bottom: 32px;
+}
+.payx-header h1 {
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+  line-height: 1.15;
+  margin: 0 0 10px;
+  letter-spacing: -0.02em;
+}
+.payx-lede {
+  font-size: 1.05rem;
+  color: var(--payx-muted);
+  margin: 0 0 12px;
+  max-width: 70ch;
+}
+.payx-back-link {
+  display: inline-block;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+  color: var(--payx-muted);
+  text-decoration: none;
+}
+.payx-back-link:hover {
+  color: var(--payx-accent);
+}
+
+.payx-nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.payx-nav-btn {
+  border: 1px solid var(--payx-border);
+  background: var(--payx-surface);
+  color: var(--payx-muted);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.payx-nav-btn.is-active {
+  background: var(--payx-accent);
+  border-color: var(--payx-accent);
+  color: #fff;
+}
+
+.payx-section {
+  margin-bottom: 40px;
+}
+.payx-section h2 {
+  font-size: 1.3rem;
+  margin: 0 0 14px;
+}
+
+/* ---- Headline ---- */
+.payx-headline-card {
+  background: var(--payx-surface);
+  border: 1px solid var(--payx-border);
+  border-radius: 14px;
+  padding: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  align-items: center;
+}
+.payx-headline-figure {
+  min-width: 220px;
+}
+.payx-headline-metric-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--payx-muted);
+  margin-bottom: 4px;
+}
+.payx-headline-value {
+  font-size: clamp(2.2rem, 6vw, 3.2rem);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.payx-headline-value.is-positive {
+  color: var(--payx-accent);
+}
+.payx-headline-value.is-negative {
+  color: var(--payx-negative);
+}
+.payx-headline-sub {
+  color: var(--payx-muted);
+  font-size: 0.95rem;
+  margin-top: 8px;
+}
+.payx-median-chip {
+  font-size: 0.85rem;
+  color: var(--payx-muted);
+  background: var(--payx-bg);
+  border: 1px solid var(--payx-border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: inline-block;
+}
+.payx-median-chip strong {
+  color: var(--payx-ink);
+}
+
+.payx-baseline-notice {
+  background: var(--payx-accent-soft);
+  border: 1px solid var(--payx-accent);
+  border-radius: 10px;
+  padding: 16px 18px;
+  font-size: 0.95rem;
+}
+
+/* ---- Coverage ---- */
+.payx-coverage-meter {
+  margin: 8px 0;
+}
+.payx-coverage-track {
+  background: var(--payx-border);
+  border-radius: 999px;
+  height: 10px;
+  overflow: hidden;
+}
+.payx-coverage-fill {
+  background: var(--payx-accent);
+  height: 100%;
+}
+.payx-coverage-label {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: var(--payx-muted);
+}
+
+.payx-stale-banner {
+  background: var(--payx-negative-soft);
+  border: 1px solid var(--payx-negative);
+  color: #7a2c27;
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+}
+
+.payx-gap-reasons {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: var(--payx-muted);
+}
+
+/* ---- Trend chart ---- */
+.payx-linechart {
+  width: 100%;
+  height: auto;
+  max-height: 260px;
+}
+.payx-zero-line {
+  stroke: var(--payx-border);
+  stroke-width: 1;
+}
+.payx-line-path {
+  stroke: var(--payx-accent);
+  stroke-width: 2.5;
+}
+.payx-line-dot {
+  fill: var(--payx-accent);
+}
+.payx-axis-label {
+  font-size: 9px;
+  fill: var(--payx-muted);
+}
+.payx-chart-empty {
+  color: var(--payx-muted);
+  font-size: 0.9rem;
+  padding: 24px;
+  border: 1px dashed var(--payx-border);
+  border-radius: 10px;
+  text-align: center;
+}
+
+/* ---- Diverging city bars ---- */
+.payx-diffbars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.payx-diffbar-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 70px;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+}
+.payx-diffbar-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.payx-diffbar-track {
+  position: relative;
+  height: 16px;
+  background: var(--payx-bg);
+  border-radius: 4px;
+}
+.payx-diffbar-center {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--payx-border);
+}
+.payx-diffbar-fill {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  border-radius: 3px;
+}
+.payx-diffbar-fill.is-positive {
+  background: var(--payx-accent);
+}
+.payx-diffbar-fill.is-negative {
+  background: var(--payx-negative);
+}
+.payx-diffbar-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Table ---- */
+.payx-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--payx-border);
+  border-radius: 10px;
+}
+.payx-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  background: var(--payx-surface);
+}
+.payx-table th,
+.payx-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--payx-border);
+  text-align: left;
+  white-space: nowrap;
+}
+.payx-table td.is-right,
+.payx-table th.is-right {
+  text-align: right;
+}
+.payx-th-btn {
+  background: none;
+  border: none;
+  font: inherit;
+  color: var(--payx-ink);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+.payx-sort-caret {
+  color: var(--payx-muted);
+  font-size: 0.75em;
+}
+.payx-table tr.is-gap {
+  color: var(--payx-muted);
+  font-style: italic;
+  background: var(--payx-bg);
+}
+
+.payx-filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.payx-filters select {
+  font: inherit;
+  padding: 6px 10px;
+  border: 1px solid var(--payx-border);
+  border-radius: 6px;
+  background: var(--payx-surface);
+}
+
+/* ---- Methodology / changelog ---- */
+.payx-rule-list {
+  padding-left: 20px;
+}
+.payx-rule-list li {
+  margin-bottom: 8px;
+}
+.payx-changelog-entry {
+  border-left: 3px solid var(--payx-accent);
+  padding: 4px 0 4px 14px;
+  margin-bottom: 14px;
+}
+.payx-changelog-date {
+  font-size: 0.8rem;
+  color: var(--payx-muted);
+}
+
+.payx-attribution-list {
+  font-size: 0.85rem;
+  color: var(--payx-muted);
+  margin-top: 10px;
+}
+
+.payx-loading,
+.payx-error {
+  color: var(--payx-muted);
+  padding: 24px;
+  text-align: center;
+}
+.payx-error {
+  color: var(--payx-negative);
+}

@@ -19,6 +19,7 @@ import TravelPlansPage from './pages/TravelPlansPage'
 import TravelPlanPage from './pages/TravelPlanPage'
 import EastonPage from './pages/EastonPage'
 import PsilocybinPage from './pages/PsilocybinPage'
+import PayIndexPage from './pages/PayIndexPage'
 import StumblePage from './pages/StumblePage'
 import StumbleProfilePage from './pages/stumble/StumbleProfilePage'
 import ModerationQueuePage from './pages/stumble/ModerationQueuePage'
@@ -53,6 +54,8 @@ export default function App() {
           <Route path="/easton" element={<EastonPage />} />
           {/* Unlisted, temporary data explorer — intentionally not in the nav. */}
           <Route path="/psilocybin" element={<PsilocybinPage />} />
+          {/* Unlisted data explorer — see PLAN.md; not in the nav yet. */}
+          <Route path="/pay-index" element={<PayIndexPage />} />
           <Route path="/stumble/moderation" element={<ModerationQueuePage />} />
           <Route path="/stumble/u/:username" element={<StumbleProfilePage />} />
           <Route path="/stumble/:siteName?" element={<StumblePage />} />
