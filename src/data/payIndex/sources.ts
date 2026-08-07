@@ -113,7 +113,7 @@ export const sources: Source[] = [
     kind: 'aggregate',
     tier: 'C',
     licenseNote:
-      'Per-company/per-level machine-readable salary pages (/companies/{slug}/salaries.md), used under Levels.fyi\'s data license. Figures are already medians of submitted data points — excluded from the headline cell calculation by design (methodology rule 7), stored and displayed for context only, with required attribution.',
+      'UNVERIFIED SOURCE — Levels.fyi has no official public API; the /companies/{slug}/salaries.md URL this adapter targets is reported third-party as a crawler-facing export, not documented by Levels.fyi itself, and could not be confirmed to resolve from this project\'s environment. Verify the URL and current robots.txt/ToS before relying on this adapter. If usable, figures are already medians of submitted data points — excluded from the headline cell calculation by design (methodology rule 7), stored and displayed for context only, with required attribution.',
     attributionRequired: true,
     attributionText: 'Data source: Levels.fyi',
     homepageUrl: 'https://www.levels.fyi',

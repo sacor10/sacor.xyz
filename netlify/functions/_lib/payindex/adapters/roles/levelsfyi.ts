@@ -1,17 +1,28 @@
-// Tier C: Levels.fyi's per-company machine-readable salary pages
-// (/companies/{slug}/salaries.md), used with attribution under their data
-// license. These figures are already medians of submitted data points —
-// an aggregate, not a raw observation — so every row here is written with
-// sourceKind: 'aggregate' (sources.ts marks the 'levelsfyi' source that
-// way too). aggregate.ts's cell-median step only pools 'posting'/'scale'
-// kinds, so nothing from this adapter can reach the headline no matter what
-// this file does; it exists purely to populate the transparency page with
-// required attribution (methodology rule 7).
+// Tier C: an attempt at Levels.fyi's per-company salary data via
+// /companies/{slug}/salaries.md. IMPORTANT — UNVERIFIED SOURCE: Levels.fyi
+// has no official public API. This URL pattern is reported (in third-party
+// writeups, not Levels.fyi's own documentation) as a markdown export aimed
+// at LLM/crawler consumption, but it could not be fetched from this
+// project's environment to confirm it resolves, is stable, or matches the
+// shape assumed below — treat its existence itself as unconfirmed, not
+// just its response format. Before relying on this adapter for real data,
+// manually verify the URL in a browser and check Levels.fyi's current
+// robots.txt/ToS for whether automated access is even permitted; if it
+// isn't, this adapter should be disabled (remove it from registry.ts)
+// rather than run.
 //
-// The exact markdown table shape isn't publicly documented, so this parses
-// a generic "Level | ... comp column ..." markdown table. Like vivian.ts,
-// this is the adapter most likely to need re-verification against the real
-// current format — a shape mismatch degrades to zero rows (an honest gap
+// If it does resolve: these figures are already medians of submitted data
+// points — an aggregate, not a raw observation — so every row here is
+// written with sourceKind: 'aggregate' (sources.ts marks the 'levelsfyi'
+// source that way too). aggregate.ts's cell-median step only pools
+// 'posting'/'scale' kinds, so nothing from this adapter can reach the
+// headline no matter what this file does; it exists purely to populate the
+// transparency page with required attribution (methodology rule 7), IF the
+// source is confirmed usable at all.
+//
+// The exact markdown table shape isn't documented either, so this parses a
+// generic "Level | ... comp column ..." markdown table. A shape mismatch —
+// or the URL simply not existing — degrades to zero rows (an honest gap
 // and a rule-8 alert), never a fabricated figure.
 
 import type { Job, City } from '../../../../../../src/data/payIndex/types.ts'

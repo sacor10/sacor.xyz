@@ -171,12 +171,20 @@ export interface LevelsFyiEntry {
   readonly lastVerifiedAt: string
 }
 
-// Levels.fyi companies/{slug}/salaries.md figures are per-level medians —
-// already averages. sources.ts marks 'levelsfyi' as kind: 'aggregate', so
-// the aggregation step (rule 7) excludes these from cell medians no matter
-// what this registry contains; they're stored and shown on the transparency
-// page with required attribution only. Reuses the same employer slugs as
-// the ATS board config where the employer publishes on both.
+// UNVERIFIED SOURCE — see the header comment in
+// netlify/functions/_lib/payindex/adapters/roles/levelsfyi.ts. Levels.fyi
+// has no official public API, and this project's environment could not
+// confirm the /companies/{slug}/salaries.md URL below actually resolves.
+// `lastVerifiedAt` on these entries records when the registry row was
+// AUTHORED, not a confirmed live check of the page — do not read it as
+// evidence the source works. Verify manually before relying on it.
+//
+// If it does resolve: these figures are per-level medians — already
+// averages. sources.ts marks 'levelsfyi' as kind: 'aggregate', so the
+// aggregation step (rule 7) excludes these from cell medians no matter what
+// this registry contains; they're stored and shown on the transparency page
+// with required attribution only. Reuses the same employer slugs as the ATS
+// board config where the employer publishes on both.
 export const levelsFyiEntries: LevelsFyiEntry[] = [
   { id: 'levelsfyi-stripe-swe', sourceId: 'levelsfyi', jobId: 'software-developer', companySlug: 'stripe', cityId: 'san-francisco-ca', lastVerifiedAt: '2026-08-06' },
   { id: 'levelsfyi-netflix-swe', sourceId: 'levelsfyi', jobId: 'software-developer', companySlug: 'netflix', cityId: 'los-angeles-ca', lastVerifiedAt: '2026-08-06' },
