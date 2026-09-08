@@ -18,12 +18,20 @@ export interface MatchRule {
   text: string
 }
 
+/**
+ * Which tier produced a verdict. `product` is the trustworthy one: offers
+ * scoped to the watched product. `page` and `phrases` scan the whole document
+ * and cannot tell a product apart from a recommendation carousel.
+ */
+export type DetectionSource = 'product' | 'page' | 'phrases' | 'rule' | 'none'
+
 export interface DetectionResult {
   status: Availability
   /** Human-readable one-liner shown in the UI and in the alert body. */
   reason: string
   /** Every signal that fired, so a surprising verdict can be debugged. */
   signals: string[]
+  source: DetectionSource
 }
 
 export interface Watch {

@@ -98,7 +98,7 @@ export async function checkWatch(watch: Watch, options: CheckOptions = {}): Prom
 
   let detection: DetectionResult
   try {
-    detection = detectAvailability(await fetchHtml(watch.url), watch.match)
+    detection = detectAvailability(await fetchHtml(watch.url), watch.match, watch.url)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     const consecutiveErrors = watch.consecutiveErrors + 1

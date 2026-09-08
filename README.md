@@ -107,19 +107,38 @@ Zelda* 40th Anniversary Edition bundle — with both email and text alerts armed
 ### How a page is judged
 
 Detection ([`netlify/functions/_lib/instock/detect.ts`](netlify/functions/_lib/instock/detect.ts))
-reads the HTML only — no headless browser:
+reads the HTML only — no headless browser — in three tiers, most trustworthy first:
 
-1. **Structured commerce data first.** schema.org `"availability"` values and the
-   `inStock` / `soldOut` booleans that storefronts ship in their hydration JSON
+1. **The page's JSON-LD `Product` offers, scoped to the watched product.** This
+   is the only tier that knows *which* product a signal belongs to, so it is the
+   only one that can ignore a "you may also like" carousel. The product is
+   pinned by matching its `url` against the watched URL (loosely: scheme, `www.`,
+   trailing slash and query are ignored); failing that, every non-related
+   `Product` node is used. Nodes reached through `itemListElement` / `isRelatedTo`
+   are treated as other products and excluded; nodes reached through `@graph` /
+   `hasVariant` are treated as the same product. `AggregateOffer` nesting and
+   object-valued `availability` are both handled.
+2. **A whole-page sweep of commerce JSON** — schema.org `"availability"` values
+   and the `inStock` / `soldOut` booleans storefronts ship for hydration
    (`__NEXT_DATA__`, Apollo caches, and friends). JSON string escaping inside
    `<script>` blocks is unescaped first, so embedded payloads still match.
-2. **Stock phrases as a fallback** ("add to cart" vs. "sold out") when nothing
-   structured is present.
+3. **Stock phrases in the visible copy** ("add to cart" vs. "sold out").
 
-Out-of-stock signals deliberately beat in-stock ones: a sold-out page often still
-carries a hidden "Add to cart" button, while a buyable page almost never says
-"sold out". If a page defeats auto-detection, switch the watch to a custom rule —
-in stock when the page **contains** some text, or when it **lacks** some text.
+Tiers 2 and 3 scan the whole document and cannot tell a product apart from a
+recommendation carousel, so **out-of-stock signals win ties there**: a sold-out
+page often still carries a hidden "Add to cart" button, while a buyable page
+almost never says "sold out". Tier 1 does not need that caution — once offers
+are scoped to the right product, any purchasable offer really does mean you can
+buy it, so in-stock wins.
+
+`PreOrder` counts as buyable (you can complete a purchase); `BackOrder` does
+not (checkout is usually closed until the restock lands).
+
+The status line under each watch says which tier fired — "this product is listed
+as available" is tier 1; "Page copy says available" is tier 3 and deserves more
+suspicion. If a page defeats auto-detection entirely, switch the watch to a
+custom rule — in stock when the page **contains** some text, or when it **lacks**
+some text.
 
 ### Scheduling and delivery
 
