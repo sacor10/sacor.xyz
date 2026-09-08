@@ -20,6 +20,7 @@ const NAV_GROUPS = [
       { label: 'DOWNLOADS',    to: '/downloads' },
       { label: "WHAT'S THAT SONG", to: '/song-id', icon: '🎵' },
       { label: 'LIVE STOCKS',  to: '/stocks' },
+      { label: 'IN-STOCK ALERTS', to: '/in-stock-alerts', icon: '🔔' },
       { label: 'STUMBLE!',     to: '/stumble', icon: '🎲' },
       { label: 'TRAVEL PLANS', to: '/travel-plans', owner: true },
     ],

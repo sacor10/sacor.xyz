@@ -15,6 +15,7 @@ import QuotesPage from './pages/QuotesPage'
 import ContactPage from './pages/ContactPage'
 import GuestbookPage from './pages/GuestbookPage'
 import StocksPage from './pages/StocksPage'
+import InStockAlertsPage from './pages/InStockAlertsPage'
 import TravelPlansPage from './pages/TravelPlansPage'
 import TravelPlanPage from './pages/TravelPlanPage'
 import EastonPage from './pages/EastonPage'
@@ -48,6 +49,7 @@ export default function App() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/guestbook" element={<GuestbookPage />} />
           <Route path="/stocks" element={<StocksPage />} />
+          <Route path="/in-stock-alerts" element={<InStockAlertsPage />} />
           <Route path="/travel-plans" element={<TravelPlansPage />} />
           <Route path="/travel-plans/:id" element={<TravelPlanPage />} />
           <Route path="/easton" element={<EastonPage />} />
