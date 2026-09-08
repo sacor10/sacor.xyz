@@ -7,6 +7,7 @@ Personal homepage with a loud late-90s/GeoCities aesthetic. Built with React 19 
 Most pages are static React (home, blog index/post, contact, guestbook, MTS, webring, YtMp4). A few pages need backend setup to work end-to-end:
 
 - `/stocks` — candlestick chart + live price ticker (see below).
+- `/in-stock-alerts` — signed-in product restock watcher; emails and texts you when a page comes back in stock (see below).
 - `/travel-plans` — private and shared markdown itinerary CRUD (see below).
 
 - `/stumble` - StumbleUpon-style web discovery backed by a curated and moderated corpus (see below).
@@ -93,6 +94,96 @@ The `/stocks` page renders a candlestick chart with hourly OHLC data plus a live
 - `GET /.netlify/functions/stocks-history?symbol=AAPL` &mdash; ~1 month of hourly OHLC bars (5-minute in-memory cache).
 - `GET /.netlify/functions/stocks-quote?symbol=AAPL` &mdash; current price, change, change %, timestamp.
 - `GET|PUT /.netlify/functions/stocks-pins` &mdash; signed-in user's pinned stock symbols, backed by Netlify Blobs.
+
+## In-Stock Alerts (`/in-stock-alerts`)
+
+A signed-in-only restock watcher. You paste product page URLs; a scheduled
+function fetches each one on a **random 2–5 minute interval** and sends an email
+and a text the moment a page flips from sold out to buyable.
+
+Every new account is seeded with one watch — the Nintendo Switch 2 *Legend of
+Zelda* 40th Anniversary Edition bundle — with both email and text alerts armed.
+
+### How a page is judged
+
+Detection ([`netlify/functions/_lib/instock/detect.ts`](netlify/functions/_lib/instock/detect.ts))
+reads the HTML only — no headless browser — in three tiers, most trustworthy first:
+
+1. **The page's JSON-LD `Product` offers, scoped to the watched product.** This
+   is the only tier that knows *which* product a signal belongs to, so it is the
+   only one that can ignore a "you may also like" carousel. The product is
+   pinned by matching its `url` against the watched URL (loosely: scheme, `www.`,
+   trailing slash and query are ignored); failing that, every non-related
+   `Product` node is used. Nodes reached through `itemListElement` / `isRelatedTo`
+   are treated as other products and excluded; nodes reached through `@graph` /
+   `hasVariant` are treated as the same product. `AggregateOffer` nesting and
+   object-valued `availability` are both handled.
+2. **A whole-page sweep of commerce JSON** — schema.org `"availability"` values
+   and the `inStock` / `soldOut` booleans storefronts ship for hydration
+   (`__NEXT_DATA__`, Apollo caches, and friends). JSON string escaping inside
+   `<script>` blocks is unescaped first, so embedded payloads still match.
+3. **Stock phrases in the visible copy** ("add to cart" vs. "sold out").
+
+Tiers 2 and 3 scan the whole document and cannot tell a product apart from a
+recommendation carousel, so **out-of-stock signals win ties there**: a sold-out
+page often still carries a hidden "Add to cart" button, while a buyable page
+almost never says "sold out". Tier 1 does not need that caution — once offers
+are scoped to the right product, any purchasable offer really does mean you can
+buy it, so in-stock wins.
+
+`PreOrder` counts as buyable (you can complete a purchase); `BackOrder` does
+not (checkout is usually closed until the restock lands).
+
+The status line under each watch says which tier fired — "this product is listed
+as available" is tier 1; "Page copy says available" is tier 3 and deserves more
+suspicion. If a page defeats auto-detection entirely, switch the watch to a
+custom rule — in stock when the page **contains** some text, or when it **lacks**
+some text.
+
+### Scheduling and delivery
+
+- `netlify/functions/in-stock-alerts-poll.mts` runs every minute (Netlify
+  scheduled function). Each watch stores its own `nextCheckAt`, re-rolled inside
+  the 2–5 minute window after every check, so watches never march in lockstep and
+  the request pattern doesn't look like a metronome.
+- Failed fetches back off (15 minutes × consecutive failures, capped at an hour)
+  instead of hammering a site that is down.
+- One alert per watch per 6 hours, so a flapping storefront can't spam you.
+- Alerts fire on the *transition* into stock, not on every check.
+- URLs are validated on save and again on every redirect hop: https/http only, no
+  credentials, and no private or internal hosts (so an open redirect can't turn
+  the poller into an SSRF gadget).
+
+### Setup
+
+Email delivery reuses the Resend config from Travel Plans: `RESEND_API_KEY`,
+`RESEND_FROM_EMAIL`, `SITE_URL`.
+
+Texts have two paths:
+
+- **Twilio** — set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`.
+- **Carrier email-to-SMS gateway** (free, no extra account) — leave Twilio unset
+  and pick your carrier on the page. Messages then go out through Resend to e.g.
+  `5551234567@vtext.com`. Gateways are best-effort and some carriers rate-limit
+  or drop them.
+
+Leave the phone blank for email-only alerts.
+
+### Endpoints
+
+- `GET /.netlify/functions/in-stock-alerts` &mdash; the signed-in user's watch list
+  (seeded on first read) plus a `capabilities` block describing what the server
+  can actually deliver.
+- `PUT /.netlify/functions/in-stock-alerts` &mdash; replace the editable half of the
+  config. Poll bookkeeping (status, schedule, alert history) is server-owned and
+  carried across by watch id; re-pointing a watch at a different URL resets it.
+- `POST /.netlify/functions/in-stock-alerts?check=<id>` &mdash; check one page right
+  now (15-second per-watch cooldown).
+- `netlify/functions/in-stock-alerts-poll.mts` &mdash; scheduled, not user-callable.
+
+State lives in the Netlify Blobs `in-stock-alerts` store under
+`users/<sha256(email)>/in-stock-alerts/config`.
+
 
 ## Other Endpoints
 
