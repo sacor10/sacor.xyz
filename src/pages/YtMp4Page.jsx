@@ -239,7 +239,12 @@ export default function YtMp4Page() {
     } catch (error) {
       if (previewWindow && !previewWindow.closed) previewWindow.close()
       setStatus('error')
-      setMessage(error?.message || DEFAULT_ERROR)
+      const msg = error?.message || DEFAULT_ERROR
+      if (msg.includes('403') || msg.includes('Upstream')) {
+        setMessage(`YouTube blocked cloud streaming for this 4K stream (HTTP 403 IP check). Switch to Option 2: Windows Desktop App for direct native 4K downloading!`)
+      } else {
+        setMessage(msg)
+      }
     }
   }
 
