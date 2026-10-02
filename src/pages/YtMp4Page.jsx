@@ -6,6 +6,7 @@ import { useAuth } from '../auth/useAuth'
 import GoogleSignInButton from '../auth/GoogleSignInButton'
 
 const API_ENDPOINT = '/.netlify/functions/youtube-download'
+const RESOLVE_ENDPOINT = '/.netlify/functions/youtube-resolve'
 const DEFAULT_ERROR = 'No downloadable YouTube video or formats were found for that URL.'
 
 async function readJsonError(response) {
@@ -188,7 +189,7 @@ export default function YtMp4Page() {
     }
   }
 
-  // Step 2: Download the chosen quality (and mux audio if needed)
+  // Step 2: Download the chosen quality (resolves pre-muxed 4K/HD stream or falls back to in-browser mux)
   const handleDownload = async () => {
     if (!videoInfo) return
 
@@ -199,8 +200,52 @@ export default function YtMp4Page() {
     setDownloadLink(null)
 
     try {
+      // Primary: High-speed serverless stream resolver (delivers full 4K MP4 with pre-muxed sound)
+      setMessage(`Preparing ${quality.label} native 4K stream... please wait 5-10 seconds...`)
+      
+      let directResolved = null
+      try {
+        const resolveResp = await fetch(RESOLVE_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, height: quality.height }),
+        })
+        if (resolveResp.ok) {
+          const resData = await resolveResp.json()
+          if (resData.downloadUrl) {
+            directResolved = resData
+          }
+        }
+      } catch {
+        // Fall back to direct proxy / ffmpeg if resolver fails
+      }
+
+      if (directResolved) {
+        const outName = directResolved.filename || `${videoInfo.safeFilename}-${quality.height}p.mp4`
+        const finalUrl = directResolved.downloadUrl
+
+        // Trigger native browser download directly to user's computer
+        if (previewWindow && !previewWindow.closed) {
+          previewWindow.location.href = finalUrl
+        } else {
+          const a = document.createElement('a')
+          a.href = finalUrl
+          a.download = outName
+          a.target = '_blank'
+          a.rel = 'noopener'
+          document.body.appendChild(a)
+          a.click()
+          a.remove()
+        }
+
+        setStatus('success')
+        setMessage(`Download ready: ${outName}`)
+        setDownloadLink({ url: finalUrl, filename: outName })
+        return
+      }
+
+      // Secondary fallback: in-browser proxy and client-side mux
       if (quality.needsMux && videoInfo.audio) {
-        // High quality (4K, 1440p, 1080p etc.) requires muxing audio and video
         setMessage(`Downloading ${quality.label} video track...`)
         const videoBlob = await fetchVideoBlob(quality.videoProxyUrl)
 
@@ -212,7 +257,7 @@ export default function YtMp4Page() {
           const { muxVideoAudio } = await import('../lib/mux')
           merged = await muxVideoAudio(videoBlob, audioBlob, (s) =>
             setMessage(`Merging 4K/HD video + audio (${s})... first run loads FFmpeg (~30 MB).`))
-        } catch (mergeError) {
+        } catch {
           if (previewWindow && !previewWindow.closed) previewWindow.close()
           const objectUrl = downloadBlob(videoBlob, `${videoInfo.safeFilename}-${quality.height}p.${quality.ext || 'mp4'}`)
           setStatus('success')
@@ -227,7 +272,6 @@ export default function YtMp4Page() {
         setMessage(`Download ready: ${outName}`)
         setDownloadLink(objectUrl ? { url: objectUrl, filename: outName } : null)
       } else {
-        // Direct progressive video or track
         setMessage(`Downloading ${videoInfo.safeFilename}...`)
         const blob = await fetchVideoBlob(quality.videoProxyUrl || quality.videoUrl)
         const outName = `${videoInfo.safeFilename}-${quality.height}p.${quality.ext || 'mp4'}`

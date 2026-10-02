@@ -16,9 +16,16 @@ function badRequest(message) {
   })
 }
 
-function isGoogleVideoHost(hostname) {
+function isAllowedStreamHost(hostname) {
   const host = hostname.toLowerCase()
-  return host.endsWith('.googlevideo.com') || host === 'googlevideo.com'
+  return (
+    host.endsWith('.googlevideo.com') ||
+    host === 'googlevideo.com' ||
+    host.endsWith('.savenow.to') ||
+    host === 'savenow.to' ||
+    host.endsWith('.lbserver.xyz') ||
+    host === 'lbserver.xyz'
+  )
 }
 
 export default async (req) => {
@@ -40,7 +47,7 @@ export default async (req) => {
     return badRequest('Invalid url parameter.')
   }
 
-  if (parsed.protocol !== 'https:' || !isGoogleVideoHost(parsed.hostname)) {
+  if (parsed.protocol !== 'https:' || !isAllowedStreamHost(parsed.hostname)) {
     return badRequest('Host not allowed.')
   }
 
