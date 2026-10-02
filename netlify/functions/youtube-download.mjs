@@ -4,12 +4,24 @@
  * Gated behind a valid Google Sign-In session cookie.
  * Extracts title, thumbnail, duration, and highest available resolutions
  * (including 4K / 2160p, 1440p, 1080p, 720p, etc.) and matching audio tracks.
+ *
+ * Uses pure HTTP resolver logic with Invidious API instances and YouTube oEmbed
+ * so it runs natively inside serverless Node.js environments (Netlify/AWS Lambda)
+ * without requiring system python3 or external binaries.
  */
-import youtubedl from 'youtube-dl-exec'
 import sanitize from 'sanitize-filename'
 import { readSessionCookie } from './_lib/session.mjs'
 
-const FETCH_TIMEOUT_MS = 25000
+const FETCH_TIMEOUT_MS = 8000
+
+// Reliable Invidious API instances pool for format resolution
+const INVIDIOUS_INSTANCES = [
+  'https://invidious.f5.si',
+  'https://inv.nadeko.net',
+  'https://invidious.nerdvpn.de',
+  'https://invidious.tiekoetter.com',
+  'https://yt.chocolatemoo53.com',
+]
 
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -28,6 +40,59 @@ function cleanFilename(title, fallback = 'youtube-video') {
     .trim()
     .slice(0, 80)
   return (sanitized || fallback).replace(/[^\w.\- ]+/g, '_')
+}
+
+function extractYouTubeId(urlStr) {
+  try {
+    const parsed = new URL(urlStr)
+    const hostname = parsed.hostname.toLowerCase()
+
+    if (hostname === 'youtu.be') {
+      return parsed.pathname.replace(/^\/+/, '').split('/')[0] || null
+    }
+
+    if (
+      hostname === 'youtube.com' ||
+      hostname === 'www.youtube.com' ||
+      hostname === 'm.youtube.com'
+    ) {
+      if (parsed.pathname === '/watch') {
+        return parsed.searchParams.get('v') || null
+      }
+      if (parsed.pathname.startsWith('/shorts/') || parsed.pathname.startsWith('/embed/')) {
+        return parsed.pathname.split('/')[2] || null
+      }
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
+async function fetchFromInvidious(videoId) {
+  for (const instance of INVIDIOUS_INSTANCES) {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+    try {
+      const resp = await fetch(`${instance}/api/v1/videos/${videoId}`, {
+        headers: {
+          Accept: 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        },
+        signal: controller.signal,
+      })
+      clearTimeout(timer)
+      if (resp.ok) {
+        const data = await resp.json()
+        if (data && Array.isArray(data.adaptiveFormats) && data.adaptiveFormats.length > 0) {
+          return data
+        }
+      }
+    } catch {
+      clearTimeout(timer)
+    }
+  }
+  return null
 }
 
 export default async (req) => {
@@ -60,106 +125,99 @@ export default async (req) => {
     return errorBody('invalid_url', 'Enter a valid YouTube video URL.', 400)
   }
 
-  // Validate YouTube URL
-  let parsedUrl
-  try {
-    parsedUrl = new URL(rawUrl)
-  } catch {
-    return errorBody('invalid_url', 'Invalid URL format.', 400)
-  }
-
-  const hostname = parsedUrl.hostname.toLowerCase()
-  const isYoutube =
-    hostname === 'youtube.com' ||
-    hostname === 'www.youtube.com' ||
-    hostname === 'm.youtube.com' ||
-    hostname === 'youtu.be'
-
-  if (!isYoutube) {
-    return errorBody('invalid_url', 'Only YouTube URLs (youtube.com, youtu.be) are supported.', 400)
+  const videoId = extractYouTubeId(rawUrl)
+  if (!videoId) {
+    return errorBody('invalid_url', 'Could not detect a valid YouTube video ID from that link.', 400)
   }
 
   try {
-    // Run yt-dlp to inspect format list
-    const info = await youtubedl(rawUrl, {
-      dumpSingleJson: true,
-      noWarnings: true,
-      noCheckCertificates: true,
-      preferFreeFormats: true,
-      youtubeSkipDashManifest: false,
-    }, {
-      timeout: FETCH_TIMEOUT_MS,
-    })
-
-    if (!info || !Array.isArray(info.formats)) {
-      return errorBody('not_found', 'Could not retrieve video formats for this YouTube URL.', 404)
+    const data = await fetchFromInvidious(videoId)
+    if (!data) {
+      return errorBody(
+        'not_found',
+        'Could not retrieve streaming formats for this video. Please try again or download via Desktop App.',
+        404,
+      )
     }
 
-    const title = info.title || 'YouTube Video'
-    const duration = info.duration || 0
-    const thumbnail = info.thumbnail || ''
+    const title = data.title || 'YouTube Video'
+    const duration = data.lengthSeconds || 0
+    const thumbnail =
+      (Array.isArray(data.videoThumbnails) && data.videoThumbnails[0]?.url) ||
+      `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
     const safeTitle = cleanFilename(title)
 
-    // Separate video formats and audio formats
-    const allFormats = info.formats.filter((f) => f.url && (f.protocol === 'https' || f.protocol === 'http'))
+    const allFormats = data.adaptiveFormats.filter((f) => f.url && f.url.startsWith('http'))
 
-    // Find best audio track (preferably m4a / aac or opus)
-    const audioFormats = allFormats.filter((f) => f.vcodec === 'none' && f.acodec !== 'none')
-    audioFormats.sort((a, b) => (b.abr || b.tbr || 0) - (a.abr || a.tbr || 0))
+    // Audio formats
+    const audioFormats = allFormats.filter(
+      (f) =>
+        f.type?.startsWith('audio') ||
+        f.audioQuality ||
+        (!f.resolution && !f.qualityLabel && f.bitrate),
+    )
+    audioFormats.sort((a, b) => (Number(b.bitrate) || 0) - (Number(a.bitrate) || 0))
     const bestAudio = audioFormats[0] || null
 
-    // Find video streams grouped by resolution
-    const videoFormats = allFormats.filter((f) => f.vcodec !== 'none')
+    // Video formats
+    const videoFormats = allFormats.filter((f) => f.resolution || f.qualityLabel)
 
-    // Find progressive combined format (has video AND audio)
-    const progressiveFormats = videoFormats.filter((f) => f.acodec !== 'none')
-    progressiveFormats.sort((a, b) => (b.height || 0) - (a.height || 0))
-
-    // Build unique quality options (e.g. 2160p (4K), 1440p (2K), 1080p, 720p, 480p, 360p)
+    // Build quality map (2160p (4K), 1440p (2K), 1080p, 720p, etc.)
     const qualityMap = new Map()
 
     for (const f of videoFormats) {
-      const height = f.height || 0
+      const rawRes = f.resolution || f.qualityLabel || ''
+      const heightMatch = String(rawRes).match(/(\d{3,4})p?/)
+      const height = heightMatch ? parseInt(heightMatch[1], 10) : 0
       if (!height) continue
 
-      const label = height >= 2160 ? '2160p (4K)'
-        : height >= 1440 ? '1440p (2K)'
-        : height >= 1080 ? '1080p (Full HD)'
-        : height >= 720 ? '720p (HD)'
-        : `${height}p`
+      const label =
+        height >= 2160
+          ? '2160p (4K)'
+          : height >= 1440
+            ? '1440p (2K)'
+            : height >= 1080
+              ? '1080p (Full HD)'
+              : height >= 720
+                ? '720p (HD)'
+                : `${height}p`
 
-      // If we don't have this resolution yet, or if this stream has a higher bitrate/fps, record it
+      const ext = (f.container || f.type || '').includes('webm') ? 'webm' : 'mp4'
+
       if (!qualityMap.has(height)) {
         qualityMap.set(height, {
           height,
           label,
           fps: f.fps || 30,
-          formatId: f.format_id,
-          ext: f.ext,
-          vcodec: f.vcodec,
-          filesize: f.filesize || f.filesize_approx || null,
+          formatId: f.itag || String(height),
+          ext,
+          vcodec: f.encoding || null,
+          filesize: f.contentLength ? parseInt(f.contentLength, 10) : null,
           videoUrl: f.url,
-          videoProxyUrl: `/.netlify/functions/youtube-video?url=${encodeURIComponent(f.url)}&filename=${encodeURIComponent(`${safeTitle}-${height}p.${f.ext || 'mp4'}`)}`,
-          hasAudio: f.acodec !== 'none',
-          needsMux: f.acodec === 'none',
+          videoProxyUrl: `/.netlify/functions/youtube-video?url=${encodeURIComponent(f.url)}&filename=${encodeURIComponent(`${safeTitle}-${height}p.${ext}`)}`,
+          hasAudio: false,
+          needsMux: true,
         })
       }
     }
 
-    // Sort qualities descending by height
-    const availableQualities = Array.from(qualityMap.values()).sort((a, b) => b.height - a.height)
+    const availableQualities = Array.from(qualityMap.values()).sort(
+      (a, b) => b.height - a.height,
+    )
 
-    const audioOption = bestAudio ? {
-      formatId: bestAudio.format_id,
-      ext: bestAudio.ext || 'm4a',
-      abr: bestAudio.abr || 128,
-      filesize: bestAudio.filesize || bestAudio.filesize_approx || null,
-      audioUrl: bestAudio.url,
-      audioProxyUrl: `/.netlify/functions/youtube-video?url=${encodeURIComponent(bestAudio.url)}&filename=${encodeURIComponent(`${safeTitle}.m4a`)}`,
-    } : null
+    const audioOption = bestAudio
+      ? {
+          formatId: bestAudio.itag || 'audio',
+          ext: (bestAudio.container || bestAudio.type || '').includes('webm') ? 'webm' : 'm4a',
+          abr: bestAudio.bitrate ? Math.round(bestAudio.bitrate / 1000) : 128,
+          filesize: bestAudio.contentLength ? parseInt(bestAudio.contentLength, 10) : null,
+          audioUrl: bestAudio.url,
+          audioProxyUrl: `/.netlify/functions/youtube-video?url=${encodeURIComponent(bestAudio.url)}&filename=${encodeURIComponent(`${safeTitle}.m4a`)}`,
+        }
+      : null
 
     return json({
-      id: info.id,
+      id: videoId,
       title,
       safeFilename: safeTitle,
       duration,
