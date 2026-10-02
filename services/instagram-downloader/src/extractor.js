@@ -26,7 +26,9 @@ function normalizeExt(value) {
 }
 
 function candidateScore(candidate) {
-  const hasAudio = candidate.acodec && candidate.acodec !== 'none'
+  const isExplicitlyNoAudio = candidate.acodec === 'none' || (candidate.audio_ext === 'none' && candidate.format_note?.includes('DASH'))
+  const isExplicitlyNoVideo = candidate.vcodec === 'none' || candidate.video_ext === 'none'
+  const hasAudio = !isExplicitlyNoAudio && !isExplicitlyNoVideo
   const height = Number(candidate.height || 0)
   const tbr = Number(candidate.tbr || candidate.vbr || 0)
   const size = Number(candidate.filesize || candidate.filesize_approx || 0)
@@ -35,6 +37,7 @@ function candidateScore(candidate) {
 
 function isVideoCandidate(candidate) {
   if (!candidate || !isHttpUrl(candidate.url)) return false
+  if (candidate.vcodec === 'none' || candidate.video_ext === 'none') return false
   const ext = cleanExt(candidate.ext)
   const hasVideoCodec = typeof candidate.vcodec === 'string' && candidate.vcodec !== 'none'
   return hasVideoCodec || VIDEO_EXTENSIONS.has(ext)

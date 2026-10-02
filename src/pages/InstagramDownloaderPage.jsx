@@ -1,15 +1,21 @@
 import { useState } from 'react'
+import JSZip from 'jszip'
 import Layout from '../Layout'
 import DownloadsNav from '../components/DownloadsNav'
-import { downloadBlob, openPreviewWindow } from '../lib/download'
+import { downloadBlob, fetchVideoBlob, openPreviewWindow } from '../lib/download'
 
-const API_BASE = (import.meta.env.VITE_INSTAGRAM_DOWNLOADER_API_URL || 'http://localhost:8787')
-  .replace(/\/+$/, '')
+const NETLIFY_ENDPOINT = '/.netlify/functions/instagram-download'
+const API_BASE = (import.meta.env.VITE_INSTAGRAM_DOWNLOADER_API_URL || '').replace(/\/+$/, '')
 
 const DEFAULT_ERROR = 'No downloadable public videos were found for that URL.'
 
+function zipBaseName(filename) {
+  const trimmed = filename.replace(/\.mp4$/i, '').replace(/-\d+$/, '')
+  return `${trimmed || 'instagram-videos'}-videos.zip`
+}
+
 function getDownloadFilename(disposition) {
-  if (!disposition) return 'instagram-download'
+  if (!disposition) return 'instagram-download.mp4'
 
   const utf8 = disposition.match(/filename\*=UTF-8''([^;]+)/i)
   if (utf8?.[1]) {
@@ -24,12 +30,17 @@ function getDownloadFilename(disposition) {
   if (quoted?.[1]) return quoted[1].trim()
 
   const plain = disposition.match(/filename=([^;]+)/i)
-  return plain?.[1]?.trim() || 'instagram-download'
+  return plain?.[1]?.trim() || 'instagram-download.mp4'
 }
 
 async function readDownloadError(response) {
   const body = await response.json().catch(() => null)
-  return body?.message || body?.error || DEFAULT_ERROR
+  if (body?.message) return body.message
+  if (body?.error) return body.error
+  if (response.status === 404) return 'No downloadable public Instagram videos were found for that URL.'
+  if (response.status === 400) return 'Invalid Instagram URL. Please provide a valid public Reel or post link.'
+  if (response.status >= 500) return `Downloader server error (HTTP ${response.status}). Please try again later.`
+  return `${DEFAULT_ERROR} (HTTP ${response.status})`
 }
 
 function Sidebar() {
@@ -129,16 +140,86 @@ export default function InstagramDownloaderPage() {
     setDownloadLink(null)
 
     try {
-      const response = await fetch(`${API_BASE}/download`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: targetUrl }),
-      })
+      let response = null
+      let endpointUsed = NETLIFY_ENDPOINT
 
-      if (!response.ok) {
-        throw new Error(await readDownloadError(response))
+      // First attempt: try the Netlify Function endpoint
+      try {
+        response = await fetch(NETLIFY_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: targetUrl }),
+        })
+      } catch (err) {
+        console.warn(`[InstagramDownloader] ${NETLIFY_ENDPOINT} failed:`, err)
+        // If Netlify function endpoint fails to connect (e.g. running vite standalone) and API_BASE is set
+        if (API_BASE) {
+          endpointUsed = `${API_BASE}/download`
+          response = await fetch(endpointUsed, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: targetUrl }),
+          })
+        } else {
+          throw err
+        }
       }
 
+      // If Netlify function returned 404 (e.g. unhandled locally) and API_BASE is configured, try fallback
+      if (response && response.status === 404 && API_BASE && endpointUsed !== `${API_BASE}/download`) {
+        endpointUsed = `${API_BASE}/download`
+        response = await fetch(endpointUsed, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: targetUrl }),
+        })
+      }
+
+      if (!response.ok) {
+        const errText = await readDownloadError(response)
+        console.error(`[InstagramDownloader] Server responded with error ${response.status} from ${endpointUsed}:`, errText)
+        throw new Error(errText)
+      }
+
+      const contentType = response.headers.get('content-type') || ''
+
+      // Handle JSON response (from Netlify function)
+      if (contentType.includes('application/json')) {
+        const data = await response.json()
+        const videos = data.videos || []
+        if (!Array.isArray(videos) || videos.length === 0) {
+          throw new Error(DEFAULT_ERROR)
+        }
+
+        if (videos.length === 1) {
+          setMessage(`Downloading ${videos[0].filename}...`)
+          const blob = await fetchVideoBlob(videos[0].proxyUrl || videos[0].url)
+          const objectUrl = downloadBlob(blob, videos[0].filename, previewWindow)
+          setStatus('success')
+          setMessage(`Download started: ${videos[0].filename}`)
+          setDownloadLink(objectUrl ? { url: objectUrl, filename: videos[0].filename } : null)
+          return
+        }
+
+        // Multiple videos: zip them client-side
+        if (previewWindow && !previewWindow.closed) previewWindow.close()
+        const zip = new JSZip()
+        for (let i = 0; i < videos.length; i += 1) {
+          setMessage(`Downloading ${i + 1} of ${videos.length}...`)
+          const blob = await fetchVideoBlob(videos[i].proxyUrl || videos[i].url)
+          zip.file(videos[i].filename, blob)
+        }
+        setMessage(`Packing ${videos.length} videos into a ZIP...`)
+        const zipBlob = await zip.generateAsync({ type: 'blob' })
+        const zipName = zipBaseName(videos[0].filename)
+        const objectUrl = downloadBlob(zipBlob, zipName)
+        setStatus('success')
+        setMessage(`Download started: ${zipName}`)
+        setDownloadLink(objectUrl ? { url: objectUrl, filename: zipName } : null)
+        return
+      }
+
+      // Handle direct stream response (e.g. from Express binary stream)
       const filename = getDownloadFilename(response.headers.get('Content-Disposition'))
       const blob = await response.blob()
       const isZip = /\.zip$/i.test(filename) || blob.type === 'application/zip'
@@ -149,8 +230,20 @@ export default function InstagramDownloaderPage() {
       setDownloadLink(objectUrl ? { url: objectUrl, filename } : null)
     } catch (error) {
       if (previewWindow && !previewWindow.closed) previewWindow.close()
+      console.error('[InstagramDownloader] Download operation failed:', error)
       setStatus('error')
-      setMessage(error?.message || DEFAULT_ERROR)
+
+      const isNetworkError =
+        error?.name === 'TypeError' &&
+        (error?.message === 'Failed to fetch' || error?.message?.includes('fetch') || error?.message?.includes('NetworkError'))
+
+      if (isNetworkError) {
+        setMessage(
+          `Unable to connect to the Instagram downloader service. Please check your network connection or verify that the service is running. (${error.message})`
+        )
+      } else {
+        setMessage(error?.message || DEFAULT_ERROR)
+      }
     }
   }
 
