@@ -1,16 +1,17 @@
 /**
- * Resolves a direct high-speed download link for a YouTube video at a specific quality.
+ * Initiates a high-speed pre-muxed video stream resolver job for a YouTube video.
  *
  * Gated behind Google Sign-In session cookie.
- * Supports 4K (2160p), 1440p, 1080p, 720p, 480p, 360p, and mp3 audio.
- * Pre-muxes adaptive audio/video server-side so users get complete 4K MP4 files with sound.
+ * Supports 4K (2160p), 1440p, 1080p, 720p, 480p, 360p.
+ *
+ * Returns a task ID + progress URL so the browser can poll savenow's API directly
+ * (CORS: *) and receive the download URL without routing video bytes through Netlify.
+ * This avoids AWS/datacenter IP blocks on savenow's video CDN.
  */
 import sanitize from 'sanitize-filename'
 import { readSessionCookie } from './_lib/session.mjs'
 
 const RESOLVER_DOMAINS = ['p.savenow.to', 'p.lbserver.xyz']
-const POLL_INTERVAL_MS = 1000
-const MAX_WAIT_MS = 35000
 
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -42,7 +43,7 @@ function mapHeightToFormat(height) {
   return '4k'
 }
 
-async function requestStreamInit(domain, videoUrl, format) {
+async function initStreamJob(domain, videoUrl, format) {
   const target = `https://${domain}/api/v2/download?format=${encodeURIComponent(format)}&url=${encodeURIComponent(videoUrl)}`
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 10000)
@@ -51,6 +52,7 @@ async function requestStreamInit(domain, videoUrl, format) {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36',
         Referer: 'https://loader.to/',
+        Accept: 'application/json',
       },
       signal: controller.signal,
     })
@@ -58,28 +60,6 @@ async function requestStreamInit(domain, videoUrl, format) {
     if (!res.ok) return null
     const data = await res.json()
     if (data && data.id) return data
-  } catch {
-    clearTimeout(timer)
-  }
-  return null
-}
-
-async function pollProgress(domain, taskId) {
-  const progressUrl = `https://${domain}/api/progress?id=${encodeURIComponent(taskId)}`
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), 6000)
-  try {
-    const res = await fetch(progressUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        Referer: 'https://loader.to/',
-      },
-      signal: controller.signal,
-    })
-    clearTimeout(timer)
-    if (res.ok) {
-      return await res.json()
-    }
   } catch {
     clearTimeout(timer)
   }
@@ -119,7 +99,7 @@ export default async (req) => {
   let activeDomain = RESOLVER_DOMAINS[0]
 
   for (const domain of RESOLVER_DOMAINS) {
-    initData = await requestStreamInit(domain, rawUrl, format)
+    initData = await initStreamJob(domain, rawUrl, format)
     if (initData) {
       activeDomain = domain
       break
@@ -130,44 +110,20 @@ export default async (req) => {
     return errorBody('resolver_error', 'Could not initialize stream resolver for this quality.', 502)
   }
 
-  // If download URL is immediately available
-  if (initData.download_url) {
-    const safeTitle = cleanFilename(initData.title || 'youtube-video')
-    return json({
-      success: true,
-      downloadUrl: initData.download_url,
-      filename: `${safeTitle}-${height}p.mp4`,
-      format: initData.format || format,
-      title: initData.title,
-    })
-  }
-
-  // Poll progress
-  const startTime = Date.now()
-  let downloadUrl = null
-
-  while (!downloadUrl && Date.now() - startTime < MAX_WAIT_MS) {
-    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS))
-    const prog = await pollProgress(activeDomain, initData.id)
-    if (prog && prog.success === 1 && prog.download_url) {
-      downloadUrl = prog.download_url
-      break
-    }
-  }
-
-  if (!downloadUrl) {
-    return errorBody('timeout', 'Stream preparation timed out. Please try again or use the Desktop App.', 504)
-  }
-
   const safeTitle = cleanFilename(initData.title || 'youtube-video')
   const filename = `${safeTitle}-${height}p.mp4`
 
+  // Return task info so browser can poll progress directly from savenow (CORS: *)
+  // The browser's residential IP is not blocked by savenow's video CDN; Netlify's AWS IP would be.
   return json({
     success: true,
-    downloadUrl,
-    proxyUrl: `/.netlify/functions/youtube-video?url=${encodeURIComponent(downloadUrl)}&filename=${encodeURIComponent(filename)}`,
+    taskId: initData.id,
+    progressUrl: `https://${activeDomain}/api/progress?id=${encodeURIComponent(initData.id)}`,
     filename,
     format: initData.format || format,
     title: initData.title,
+    thumbnail: initData.info?.image || initData.thumbnail_url || null,
+    // If the download URL is already available immediately, return it too
+    downloadUrl: initData.download_url || initData.url || null,
   })
 }

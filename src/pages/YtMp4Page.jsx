@@ -200,10 +200,11 @@ export default function YtMp4Page() {
     setDownloadLink(null)
 
     try {
-      // Primary: High-speed serverless stream resolver (delivers full 4K MP4 with pre-muxed sound)
-      setMessage(`Preparing ${quality.label} native 4K stream... please wait 5-10 seconds...`)
-      
-      let directResolved = null
+      // Primary: High-speed stream resolver — Netlify initiates the job, browser polls progress
+      // directly from savenow's CORS-enabled API (residential IP), avoiding AWS datacenter IP blocks
+      setMessage(`Preparing ${quality.label} native stream... please wait 5-15 seconds...`)
+
+      let resolveData = null
       try {
         const resolveResp = await fetch(RESOLVE_ENDPOINT, {
           method: 'POST',
@@ -211,38 +212,61 @@ export default function YtMp4Page() {
           body: JSON.stringify({ url, height: quality.height }),
         })
         if (resolveResp.ok) {
-          const resData = await resolveResp.json()
-          if (resData.downloadUrl) {
-            directResolved = resData
-          }
+          resolveData = await resolveResp.json()
         }
       } catch {
-        // Fall back to direct proxy / ffmpeg if resolver fails
+        // Fall through to fallback
       }
 
-      if (directResolved) {
-        const outName = directResolved.filename || `${videoInfo.safeFilename}-${quality.height}p.mp4`
-        const finalUrl = directResolved.downloadUrl
+      if (resolveData && resolveData.success && (resolveData.taskId || resolveData.downloadUrl)) {
+        const outName = resolveData.filename || `${videoInfo.safeFilename}-${quality.height}p.mp4`
 
-        // Trigger native browser download directly to user's computer
-        if (previewWindow && !previewWindow.closed) {
-          previewWindow.location.href = finalUrl
-        } else {
-          const a = document.createElement('a')
-          a.href = finalUrl
-          a.download = outName
-          a.target = '_blank'
-          a.rel = 'noopener'
-          document.body.appendChild(a)
-          a.click()
-          a.remove()
+        let finalUrl = resolveData.downloadUrl || null
+
+        // If no immediate download URL, poll savenow's progress API directly from the browser
+        // (browser uses residential IP — not blocked; CORS: * on progress endpoint)
+        if (!finalUrl && resolveData.progressUrl) {
+          const MAX_POLLS = 40
+          const POLL_MS = 1000
+          setMessage(`Preparing ${quality.label} stream... (polling progress)`)
+          for (let i = 0; i < MAX_POLLS; i++) {
+            await new Promise((r) => setTimeout(r, POLL_MS))
+            try {
+              const prog = await fetch(resolveData.progressUrl).then((r) => r.json())
+              if (prog && prog.success === 1 && prog.download_url) {
+                finalUrl = prog.download_url
+                break
+              }
+              const pct = prog?.progress ? Math.min(Math.round((prog.progress / 1000) * 100), 99) : null
+              if (pct !== null) setMessage(`Preparing ${quality.label} stream... ${pct}%`)
+            } catch {
+              // ignore transient errors, keep polling
+            }
+          }
         }
 
-        setStatus('success')
-        setMessage(`Download ready: ${outName}`)
-        setDownloadLink({ url: finalUrl, filename: outName })
-        return
+        if (finalUrl) {
+          // Trigger native browser download directly (savenow CDN serves Content-Disposition: attachment)
+          if (previewWindow && !previewWindow.closed) {
+            previewWindow.location.href = finalUrl
+          } else {
+            const a = document.createElement('a')
+            a.href = finalUrl
+            a.download = outName
+            a.target = '_blank'
+            a.rel = 'noopener'
+            document.body.appendChild(a)
+            a.click()
+            a.remove()
+          }
+
+          setStatus('success')
+          setMessage(`Download ready: ${outName}`)
+          setDownloadLink({ url: finalUrl, filename: outName })
+          return
+        }
       }
+
 
       // Secondary fallback: in-browser proxy and client-side mux
       if (quality.needsMux && videoInfo.audio) {
