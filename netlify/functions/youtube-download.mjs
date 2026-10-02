@@ -14,13 +14,11 @@ import { readSessionCookie } from './_lib/session.mjs'
 
 const FETCH_TIMEOUT_MS = 8000
 
-// Reliable Invidious API instances pool for format resolution
+// Working Invidious API instances pool with fast timeout
 const INVIDIOUS_INSTANCES = [
   'https://invidious.f5.si',
   'https://inv.nadeko.net',
-  'https://invidious.nerdvpn.de',
   'https://invidious.tiekoetter.com',
-  'https://yt.chocolatemoo53.com',
 ]
 
 const json = (data, status = 200) =>
@@ -70,27 +68,32 @@ function extractYouTubeId(urlStr) {
 }
 
 async function fetchFromInvidious(videoId) {
-  for (const instance of INVIDIOUS_INSTANCES) {
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
-    try {
-      const resp = await fetch(`${instance}/api/v1/videos/${videoId}`, {
-        headers: {
-          Accept: 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        },
-        signal: controller.signal,
-      })
-      clearTimeout(timer)
-      if (resp.ok) {
-        const data = await resp.json()
-        if (data && Array.isArray(data.adaptiveFormats) && data.adaptiveFormats.length > 0) {
-          return data
+  // Try up to 3 attempts with brief backoff for transient 500/rate-limits
+  for (let attempt = 0; attempt < 3; attempt++) {
+    for (const instance of INVIDIOUS_INSTANCES) {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+      try {
+        const resp = await fetch(`${instance}/api/v1/videos/${videoId}`, {
+          headers: {
+            Accept: 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          },
+          signal: controller.signal,
+        })
+        clearTimeout(timer)
+        if (resp.ok) {
+          const data = await resp.json()
+          if (data && Array.isArray(data.adaptiveFormats) && data.adaptiveFormats.length > 0) {
+            return data
+          }
         }
+      } catch {
+        clearTimeout(timer)
       }
-    } catch {
-      clearTimeout(timer)
     }
+    // Brief pause before next retry attempt
+    await new Promise((r) => setTimeout(r, 600))
   }
   return null
 }
