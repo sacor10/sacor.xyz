@@ -142,9 +142,8 @@ export default async (req) => {
 
     const title = data.title || 'YouTube Video'
     const duration = data.lengthSeconds || 0
-    const thumbnail =
-      (Array.isArray(data.videoThumbnails) && data.videoThumbnails[0]?.url) ||
-      `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
+    // Use official direct YouTube CDN image URL with videoId to avoid Invidious Anubis bot blocks
+    const thumbnail = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
     const safeTitle = cleanFilename(title)
 
     const allFormats = data.adaptiveFormats.filter((f) => f.url && f.url.startsWith('http'))

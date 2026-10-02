@@ -399,15 +399,25 @@ export default function YtMp4Page() {
                         <table width="100%" cellPadding="8" cellSpacing="0" border="0" style={{ border: '2px dashed #00FFFF', backgroundColor: '#110022' }}>
                           <tbody>
                             <tr>
-                              {videoInfo.thumbnail && (
-                                <td width="140" align="center" valign="top">
-                                  <img
-                                    src={videoInfo.thumbnail}
-                                    alt={videoInfo.title}
-                                    style={{ width: '130px', border: '2px solid #FF00FF' }}
-                                  />
-                                </td>
-                              )}
+                              <td width="150" align="center" valign="top">
+                                <img
+                                  src={videoInfo.thumbnail || `https://i.ytimg.com/vi/${videoInfo.id}/hqdefault.jpg`}
+                                  alt={videoInfo.title}
+                                  onError={(e) => {
+                                    if (videoInfo.id && !e.currentTarget.src.includes('mqdefault')) {
+                                      e.currentTarget.src = `https://i.ytimg.com/vi/${videoInfo.id}/mqdefault.jpg`
+                                    }
+                                  }}
+                                  style={{
+                                    width: '140px',
+                                    height: 'auto',
+                                    display: 'block',
+                                    border: '2px solid #FF00FF',
+                                    borderRadius: '4px',
+                                    boxShadow: '0 0 8px #FF00FF',
+                                  }}
+                                />
+                              </td>
                               <td valign="top">
                                 <font face="Impact" size="4" color="#FFFF00">
                                   {videoInfo.title}
