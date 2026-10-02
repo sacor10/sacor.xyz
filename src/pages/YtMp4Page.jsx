@@ -399,22 +399,25 @@ export default function YtMp4Page() {
                         <table width="100%" cellPadding="8" cellSpacing="0" border="0" style={{ border: '2px dashed #00FFFF', backgroundColor: '#110022' }}>
                           <tbody>
                             <tr>
-                              <td width="150" align="center" valign="top">
+                              <td width="160" align="center" valign="top">
                                 <img
                                   src={videoInfo.thumbnail || `https://i.ytimg.com/vi/${videoInfo.id}/hqdefault.jpg`}
                                   alt={videoInfo.title}
+                                  referrerPolicy="no-referrer"
+                                  crossOrigin="anonymous"
                                   onError={(e) => {
                                     if (videoInfo.id && !e.currentTarget.src.includes('mqdefault')) {
                                       e.currentTarget.src = `https://i.ytimg.com/vi/${videoInfo.id}/mqdefault.jpg`
                                     }
                                   }}
                                   style={{
-                                    width: '140px',
+                                    width: '150px',
                                     height: 'auto',
                                     display: 'block',
                                     border: '2px solid #FF00FF',
                                     borderRadius: '4px',
                                     boxShadow: '0 0 8px #FF00FF',
+                                    backgroundColor: '#000000',
                                   }}
                                 />
                               </td>
