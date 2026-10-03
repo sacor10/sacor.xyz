@@ -200,11 +200,21 @@ export default function YtMp4Page() {
     setDownloadLink(null)
 
     try {
-      // Primary: High-speed stream resolver — Netlify initiates the job, browser polls progress
-      // directly from savenow's CORS-enabled API (residential IP), avoiding AWS datacenter IP blocks
+      // Primary: High-speed stream resolver
       setMessage(`Preparing ${quality.label} native stream... please wait 5-15 seconds...`)
 
+      const mapHeightToFmt = (h) => {
+        const num = Number(h) || 0
+        if (num >= 2160) return '4k'
+        if (num >= 1440) return '1440'
+        if (num >= 1080) return '1080'
+        if (num >= 720) return '720'
+        if (num >= 480) return '480'
+        return '360'
+      }
+
       let resolveData = null
+      // 1. Try serverless backend resolver first
       try {
         const resolveResp = await fetch(RESOLVE_ENDPOINT, {
           method: 'POST',
@@ -214,19 +224,42 @@ export default function YtMp4Page() {
         if (resolveResp.ok) {
           resolveData = await resolveResp.json()
         }
-      } catch {
-        // Fall through to fallback
+      } catch (err) {
+        console.warn('Backend resolver failed, trying direct resolver...', err)
       }
 
-      if (resolveData && resolveData.success && (resolveData.taskId || resolveData.downloadUrl)) {
-        const outName = resolveData.filename || `${videoInfo.safeFilename}-${quality.height}p.mp4`
+      // 2. If backend resolver was unavailable or returned non-200, try direct browser init (CORS enabled)
+      if (!resolveData?.taskId && !resolveData?.downloadUrl) {
+        const fmt = mapHeightToFmt(quality.height)
+        for (const dom of ['p.savenow.to', 'p.lbserver.xyz']) {
+          try {
+            const directInit = await fetch(`https://${dom}/api/v2/download?format=${fmt}&url=${encodeURIComponent(url)}`)
+            if (directInit.ok) {
+              const d = await directInit.json()
+              if (d && (d.id || d.download_url)) {
+                resolveData = {
+                  success: true,
+                  taskId: d.id,
+                  progressUrl: d.id ? `https://${dom}/api/progress?id=${encodeURIComponent(d.id)}` : null,
+                  downloadUrl: d.download_url || null,
+                  filename: `${videoInfo.safeFilename}-${quality.height}p.mp4`,
+                }
+                break
+              }
+            }
+          } catch (directErr) {
+            console.warn(`Direct resolver on ${dom} failed:`, directErr)
+          }
+        }
+      }
 
+      if (resolveData && (resolveData.taskId || resolveData.downloadUrl)) {
+        const outName = resolveData.filename || `${videoInfo.safeFilename}-${quality.height}p.mp4`
         let finalUrl = resolveData.downloadUrl || null
 
-        // If no immediate download URL, poll savenow's progress API directly from the browser
-        // (browser uses residential IP — not blocked; CORS: * on progress endpoint)
+        // If no immediate download URL, poll progress directly from browser (residential IP)
         if (!finalUrl && resolveData.progressUrl) {
-          const MAX_POLLS = 40
+          const MAX_POLLS = 45
           const POLL_MS = 1000
           setMessage(`Preparing ${quality.label} stream... (polling progress)`)
           for (let i = 0; i < MAX_POLLS; i++) {
@@ -246,7 +279,7 @@ export default function YtMp4Page() {
         }
 
         if (finalUrl) {
-          // Trigger native browser download directly (savenow CDN serves Content-Disposition: attachment)
+          // Trigger native browser download directly
           if (previewWindow && !previewWindow.closed) {
             previewWindow.location.href = finalUrl
           } else {
