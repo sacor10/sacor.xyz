@@ -5,6 +5,7 @@ import { downloadBlob, fetchVideoBlob, openPreviewWindow } from '../lib/download
 import { useAuth } from '../auth/useAuth'
 import GoogleSignInButton from '../auth/GoogleSignInButton'
 
+const SELF_HOSTED_API = (import.meta.env.VITE_YOUTUBE_DOWNLOADER_API_URL || 'http://127.0.0.1:5003').replace(/\/+$/, '')
 const API_ENDPOINT = '/.netlify/functions/youtube-download'
 const RESOLVE_ENDPOINT = '/.netlify/functions/youtube-resolve'
 const DEFAULT_ERROR = 'No downloadable YouTube video or formats were found for that URL.'
@@ -163,17 +164,37 @@ export default function YtMp4Page() {
     setVideoInfo(null)
 
     try {
-      const response = await fetch(API_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: targetUrl }),
-      })
+      let data = null
 
-      if (!response.ok) {
-        throw new Error(await readJsonError(response))
+      // Primary: self-hosted API (local yt-dlp)
+      try {
+        const selfHostedRes = await fetch(`${SELF_HOSTED_API}/info`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: targetUrl }),
+        })
+        if (selfHostedRes.ok) {
+          data = await selfHostedRes.json()
+        }
+      } catch (selfHostedErr) {
+        console.warn('Self-hosted inspect endpoint unreachable, falling back to serverless function:', selfHostedErr)
       }
 
-      const data = await response.json()
+      // Fallback: serverless function
+      if (!data || !data.qualities || data.qualities.length === 0) {
+        const response = await fetch(API_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: targetUrl }),
+        })
+
+        if (!response.ok) {
+          throw new Error(await readJsonError(response))
+        }
+
+        data = await response.json()
+      }
+
       if (!data.qualities || data.qualities.length === 0) {
         throw new Error(DEFAULT_ERROR)
       }
@@ -200,7 +221,27 @@ export default function YtMp4Page() {
     setDownloadLink(null)
 
     try {
-      // Primary: High-speed stream resolver
+      const outName = `${videoInfo.safeFilename}-${quality.height}p.mp4`
+
+      // Primary: Self-hosted local downloader (pure native yt-dlp + ffmpeg)
+      try {
+        setMessage(`Connecting to self-hosted engine for ${quality.label}...`)
+        const selfStreamUrl = `${SELF_HOSTED_API}/stream?url=${encodeURIComponent(url)}&height=${quality.height}&title=${encodeURIComponent(videoInfo.safeFilename)}`
+        const headCheck = await fetch(selfStreamUrl, { signal: AbortSignal.timeout(4000) })
+        if (headCheck.ok) {
+          setMessage(`Downloading ${outName} via self-hosted engine...`)
+          const blob = await headCheck.blob()
+          const objectUrl = downloadBlob(blob, outName, previewWindow)
+          setStatus('success')
+          setMessage(`Download complete: ${outName}`)
+          setDownloadLink(objectUrl ? { url: objectUrl, filename: outName } : null)
+          return
+        }
+      } catch (selfHostedErr) {
+        console.warn('Self-hosted stream endpoint not reachable, trying alternative resolver:', selfHostedErr)
+      }
+
+      // Secondary: High-speed stream resolver
       setMessage(`Preparing ${quality.label} native stream... please wait 5-15 seconds...`)
 
       const mapHeightToFmt = (h) => {
