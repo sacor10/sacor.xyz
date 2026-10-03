@@ -238,11 +238,10 @@ export default function YtMp4Page() {
 
         if (dlRes.ok) {
           const dlData = await dlRes.json()
-          const streamUrl = `${SELF_HOSTED_API}/stream?url=${encodeURIComponent(url)}&height=${quality.height}&title=${encodeURIComponent(videoInfo.safeFilename)}`
           
           setStatus('success')
-          setMessage(`Downloaded to Downloads: ${dlData.filename || outName}`)
-          setDownloadLink({ url: streamUrl, filename: dlData.filename || outName })
+          setMessage(`✅ Saved directly to your Downloads folder: ${dlData.filename || outName}`)
+          setDownloadLink(null)
           return
         }
       } catch (selfHostedErr) {
