@@ -279,24 +279,28 @@ export default function YtMp4Page() {
         }
 
         if (finalUrl) {
-          // Trigger native browser download directly
-          if (previewWindow && !previewWindow.closed) {
-            previewWindow.location.href = finalUrl
-          } else {
-            const a = document.createElement('a')
-            a.href = finalUrl
-            a.download = outName
-            a.target = '_blank'
-            a.rel = 'noopener'
-            document.body.appendChild(a)
-            a.click()
-            a.remove()
-          }
+          setMessage(`Downloading ${outName}...`)
+          try {
+            const blob = await fetchVideoBlob(finalUrl)
+            const objectUrl = downloadBlob(blob, outName, previewWindow)
+            setStatus('success')
+            setMessage(`Download complete: ${outName}`)
+            setDownloadLink(objectUrl ? { url: objectUrl, filename: outName } : null)
+            return
+          } catch (blobErr) {
+            console.warn('Direct blob fetch failed, trying iframe download trigger:', blobErr)
+            // Fallback: trigger download without navigating the main window or opening a new tab
+            const iframe = document.createElement('iframe')
+            iframe.style.display = 'none'
+            iframe.src = finalUrl
+            document.body.appendChild(iframe)
+            setTimeout(() => iframe.remove(), 60000)
 
-          setStatus('success')
-          setMessage(`Download ready: ${outName}`)
-          setDownloadLink({ url: finalUrl, filename: outName })
-          return
+            setStatus('success')
+            setMessage(`Download started: ${outName}`)
+            setDownloadLink({ url: finalUrl, filename: outName })
+            return
+          }
         }
       }
 
