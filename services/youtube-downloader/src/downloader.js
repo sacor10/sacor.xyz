@@ -219,20 +219,13 @@ export function extractRawFormats(url, timeoutMs = 30000) {
  * Falls back to regular downloadFile() on any failure.
  */
 export async function fastDownloadFile(url, height = 2160, customFilename = null, onProgress = null) {
-  const downloadDir = path.resolve(
-    process.env.USERPROFILE || os.homedir(),
-    'Downloads'
-  )
-  if (!fs.existsSync(downloadDir)) {
-    fs.mkdirSync(downloadDir, { recursive: true })
-  }
-
   const baseName = customFilename || 'video'
-  const finalPath = path.join(downloadDir, `${baseName}-${height}p.mp4`)
 
-  // Temp files for the parallel download
+  // Stage in temp directory so it doesn't pre-save in Downloads (preventing duplicate with Chrome tray download)
   const tmpDir = path.join(os.tmpdir(), 'yt-fast-dl')
   if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
+
+  const finalPath = path.join(tmpDir, `${baseName}-${height}p.mp4`)
   const videoTmp = path.join(tmpDir, `${baseName}-${height}p-video.tmp`)
   const audioTmp = path.join(tmpDir, `${baseName}-${height}p-audio.tmp`)
 

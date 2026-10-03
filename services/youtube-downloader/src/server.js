@@ -1,6 +1,7 @@
 import express from 'express'
 import fs from 'node:fs'
 import path from 'node:path'
+import os from 'node:os'
 import { extractInfo, downloadFile, fastDownloadFile, cleanFilename } from './downloader.js'
 
 const DEFAULT_ORIGINS = [
@@ -149,12 +150,16 @@ export function createApp() {
     if (!filename) {
       return res.status(400).send('Filename missing')
     }
+
+    const tmpPath = path.join(os.tmpdir(), 'yt-fast-dl', filename)
     const downloadDir = path.resolve(
       process.env.USERPROFILE || 'C:/Users/sacor.xyz',
       'Downloads'
     )
-    const filePath = path.join(downloadDir, filename)
-    if (!fs.existsSync(filePath)) {
+    const dlPath = path.join(downloadDir, filename)
+
+    const filePath = fs.existsSync(tmpPath) ? tmpPath : (fs.existsSync(dlPath) ? dlPath : null)
+    if (!filePath) {
       return res.status(404).send('File not found')
     }
 

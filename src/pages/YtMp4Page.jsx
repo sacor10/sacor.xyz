@@ -292,7 +292,7 @@ export default function YtMp4Page() {
             downloadTrigger.click()
             setTimeout(() => downloadTrigger.remove(), 2000)
 
-            setDownloadLink({ url: fileUrl, filename: streamResult.filename || outName })
+            setDownloadLink(null)
             return
           }
         }
