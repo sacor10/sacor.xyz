@@ -120,6 +120,8 @@ export function downloadFile(url, height = 2160, customFilename = null) {
   return new Promise((resolve, reject) => {
     const proc = spawn(YTDLP_BIN, [
       '-f', formatSelector,
+      '--concurrent-fragments', '8',
+      '--http-chunk-size', '10M',
       '--merge-output-format', 'mp4',
       '-o', tempTemplate,
       '--no-playlist',
