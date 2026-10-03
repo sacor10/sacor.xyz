@@ -225,17 +225,21 @@ export default function YtMp4Page() {
 
       // Primary: Self-hosted local downloader (pure native yt-dlp + ffmpeg)
       try {
-        setMessage(`Downloading ${outName} via self-hosted engine...`)
+        setMessage(`Starting direct self-hosted download for ${outName}...`)
         const selfStreamUrl = `${SELF_HOSTED_API}/stream?url=${encodeURIComponent(url)}&height=${quality.height}&title=${encodeURIComponent(videoInfo.safeFilename)}`
-        const headCheck = await fetch(selfStreamUrl)
-        if (headCheck.ok) {
-          const blob = await headCheck.blob()
-          const objectUrl = downloadBlob(blob, outName, previewWindow)
-          setStatus('success')
-          setMessage(`Download complete: ${outName}`)
-          setDownloadLink(objectUrl ? { url: objectUrl, filename: outName } : null)
-          return
-        }
+        
+        // Trigger native browser download directly via anchor
+        const a = document.createElement('a')
+        a.href = selfStreamUrl
+        a.download = outName
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+
+        setStatus('success')
+        setMessage(`Download started: ${outName}`)
+        setDownloadLink({ url: selfStreamUrl, filename: outName })
+        return
       } catch (selfHostedErr) {
         console.warn('Self-hosted stream endpoint not reachable, trying alternative resolver:', selfHostedErr)
       }
