@@ -240,14 +240,6 @@ export default function YtMp4Page() {
           const dlData = await dlRes.json()
           const streamUrl = `${SELF_HOSTED_API}/stream?url=${encodeURIComponent(url)}&height=${quality.height}&title=${encodeURIComponent(videoInfo.safeFilename)}`
           
-          // Trigger browser download anchor as well
-          const a = document.createElement('a')
-          a.href = streamUrl
-          a.download = dlData.filename || outName
-          document.body.appendChild(a)
-          a.click()
-          a.remove()
-
           setStatus('success')
           setMessage(`Downloaded to Downloads: ${dlData.filename || outName}`)
           setDownloadLink({ url: streamUrl, filename: dlData.filename || outName })

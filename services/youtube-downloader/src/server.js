@@ -59,29 +59,7 @@ export function createApp() {
     }
   })
 
-  // Direct download endpoint - muxes and saves directly to user's Downloads folder
-  app.post('/download', async (req, res) => {
-    const url = typeof req.body?.url === 'string' ? req.body.url.trim() : ''
-    const height = parseInt(req.body?.height, 10) || 720
-    const rawTitle = typeof req.body?.title === 'string' ? req.body.title.trim() : 'video'
-    const safeTitle = cleanFilename(rawTitle)
-
-    if (!url) {
-      return res.status(400).json({ error: 'Please provide a valid YouTube URL.' })
-    }
-
-    try {
-      console.log(`[youtube-downloader] Downloading ${safeTitle} (${height}p) to Downloads...`)
-      const result = await downloadFile(url, height, safeTitle)
-      console.log(`[youtube-downloader] Download finished: ${result.path} (${result.size} bytes)`)
-      res.json({ ok: true, ...result })
-    } catch (err) {
-      console.error('[youtube-downloader] Download failed:', err.message)
-      res.status(500).json({ error: err.message })
-    }
-  })
-
-  // Stream video directly
+  // Stream video directly to browser download
   app.get('/stream', async (req, res) => {
     const url = typeof req.query?.url === 'string' ? req.query.url.trim() : ''
     const height = parseInt(req.query?.height, 10) || 720
@@ -105,6 +83,28 @@ export function createApp() {
       if (!res.headersSent) {
         res.status(500).json({ error: err.message })
       }
+    }
+  })
+
+  // Direct download endpoint - downloads once directly to user's Downloads folder
+  app.post('/download', async (req, res) => {
+    const url = typeof req.body?.url === 'string' ? req.body.url.trim() : ''
+    const height = parseInt(req.body?.height, 10) || 720
+    const rawTitle = typeof req.body?.title === 'string' ? req.body.title.trim() : 'video'
+    const safeTitle = cleanFilename(rawTitle)
+
+    if (!url) {
+      return res.status(400).json({ error: 'Please provide a valid YouTube URL.' })
+    }
+
+    try {
+      console.log(`[youtube-downloader] Downloading ${safeTitle} (${height}p) directly to Downloads...`)
+      const result = await downloadFile(url, height, safeTitle)
+      console.log(`[youtube-downloader] Download finished: ${result.path} (${result.size} bytes)`)
+      res.json({ ok: true, ...result })
+    } catch (err) {
+      console.error('[youtube-downloader] Download failed:', err.message)
+      res.status(500).json({ error: err.message })
     }
   })
 
