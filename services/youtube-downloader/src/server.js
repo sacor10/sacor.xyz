@@ -1,6 +1,6 @@
 import express from 'express'
 import fs from 'node:fs'
-import { extractInfo, downloadFile, cleanFilename } from './downloader.js'
+import { extractInfo, downloadFile, fastDownloadFile, cleanFilename } from './downloader.js'
 
 const DEFAULT_ORIGINS = [
   'http://localhost:5173',
@@ -92,14 +92,16 @@ export function createApp() {
     const height = parseInt(req.body?.height, 10) || 720
     const rawTitle = typeof req.body?.title === 'string' ? req.body.title.trim() : 'video'
     const safeTitle = cleanFilename(rawTitle)
+    const useFast = req.body?.fast !== false // default to fast parallel download
 
     if (!url) {
       return res.status(400).json({ error: 'Please provide a valid YouTube URL.' })
     }
 
     try {
-      console.log(`[youtube-downloader] Downloading ${safeTitle} (${height}p) directly to Downloads...`)
-      const result = await downloadFile(url, height, safeTitle)
+      const downloader = useFast ? fastDownloadFile : downloadFile
+      console.log(`[youtube-downloader] ${useFast ? 'FAST' : 'Standard'} downloading ${safeTitle} (${height}p) to Downloads...`)
+      const result = await downloader(url, height, safeTitle)
       console.log(`[youtube-downloader] Download finished: ${result.path} (${result.size} bytes)`)
       res.json({ ok: true, ...result })
     } catch (err) {
