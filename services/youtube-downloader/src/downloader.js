@@ -218,7 +218,7 @@ export function extractRawFormats(url, timeoutMs = 30000) {
  * byte-range requests (24 connections per stream), then muxes with ffmpeg.
  * Falls back to regular downloadFile() on any failure.
  */
-export async function fastDownloadFile(url, height = 2160, customFilename = null) {
+export async function fastDownloadFile(url, height = 2160, customFilename = null, onProgress = null) {
   const downloadDir = path.resolve(
     process.env.USERPROFILE || os.homedir(),
     'Downloads'
@@ -237,6 +237,7 @@ export async function fastDownloadFile(url, height = 2160, customFilename = null
   const audioTmp = path.join(tmpDir, `${baseName}-${height}p-audio.tmp`)
 
   try {
+    onProgress?.({ stage: 'inspecting', percent: 5, message: 'Extracting video and audio streams...' })
     console.log('[fast-dl] Extracting format URLs...')
     const raw = await extractRawFormats(url)
     const formats = raw.formats || []
@@ -275,18 +276,38 @@ export async function fastDownloadFile(url, height = 2160, customFilename = null
     console.log(`[fast-dl] Video: ${videoFmt.format_id} (${videoFmt.height}p ${videoFmt.vcodec}) ~${Math.round((videoFmt.filesize || videoFmt.filesize_approx || 0) / 1024 / 1024)}MB`)
     console.log(`[fast-dl] Audio: ${audioFmt.format_id} (${audioFmt.acodec}) ~${Math.round((audioFmt.filesize || audioFmt.filesize_approx || 0) / 1024 / 1024)}MB`)
 
+    let videoDone = 0
+    let videoTotal = videoFmt.filesize || videoFmt.filesize_approx || 0
+    let audioDone = 0
+    let audioTotal = audioFmt.filesize || audioFmt.filesize_approx || 0
+
+    const reportProgress = () => {
+      const combinedDone = videoDone + audioDone
+      const combinedTotal = (videoTotal || 1) + (audioTotal || 1)
+      const pct = Math.min(90, Math.max(10, Math.round(10 + (combinedDone / combinedTotal) * 80)))
+      const mbDone = (combinedDone / 1024 / 1024).toFixed(1)
+      const mbTotal = (combinedTotal / 1024 / 1024).toFixed(1)
+      onProgress?.({
+        stage: 'downloading',
+        percent: pct,
+        downloadedBytes: combinedDone,
+        totalBytes: combinedTotal,
+        message: `Downloading video + audio in parallel (${mbDone} / ${mbTotal} MB)...`
+      })
+    }
+
     // Download both streams in parallel
     const startTime = Date.now()
     const [videoSize, audioSize] = await Promise.all([
       parallelDownload(videoFmt, videoTmp, (done, total) => {
-        if (done % (50 * 1024 * 1024) < 8 * 1024 * 1024) {
-          console.log(`[fast-dl] Video: ${Math.round(done / 1024 / 1024)}/${Math.round(total / 1024 / 1024)} MB`)
-        }
+        videoDone = done
+        if (total) videoTotal = total
+        reportProgress()
       }),
       parallelDownload(audioFmt, audioTmp, (done, total) => {
-        if (done % (20 * 1024 * 1024) < 8 * 1024 * 1024) {
-          console.log(`[fast-dl] Audio: ${Math.round(done / 1024 / 1024)}/${Math.round(total / 1024 / 1024)} MB`)
-        }
+        audioDone = done
+        if (total) audioTotal = total
+        reportProgress()
       }),
     ])
 
@@ -296,6 +317,7 @@ export async function fastDownloadFile(url, height = 2160, customFilename = null
 
     // Mux with ffmpeg stream-copy
     console.log('[fast-dl] Muxing video + audio...')
+    onProgress?.({ stage: 'muxing', percent: 93, message: 'Losslessly muxing video & audio with FFmpeg...' })
     await muxCopy(videoTmp, audioTmp, finalPath)
     console.log(`[fast-dl] Done: ${finalPath}`)
 
@@ -304,6 +326,7 @@ export async function fastDownloadFile(url, height = 2160, customFilename = null
     try { fs.unlinkSync(audioTmp) } catch {}
 
     const stats = fs.statSync(finalPath)
+    onProgress?.({ stage: 'completed', percent: 100, message: 'Complete!' })
     return { path: finalPath, size: stats.size, filename: path.basename(finalPath) }
   } catch (err) {
     console.error('[fast-dl] Parallel download failed, falling back to yt-dlp:', err.message)

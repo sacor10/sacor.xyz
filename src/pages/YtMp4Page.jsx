@@ -146,6 +146,7 @@ export default function YtMp4Page() {
   const [videoInfo, setVideoInfo] = useState(null)
   const [selectedQuality, setSelectedQuality] = useState('')
   const [downloadLink, setDownloadLink] = useState(null)
+  const [downloadProgress, setDownloadProgress] = useState(null)
 
   // Step 1: Query YouTube video metadata and formats
   const handleInspect = async (event) => {
@@ -219,14 +220,15 @@ export default function YtMp4Page() {
 
     setStatus('loading')
     setDownloadLink(null)
+    setDownloadProgress({ percent: 2, message: 'Initiating download...' })
 
     try {
       const outName = `${videoInfo.safeFilename}-${quality.height}p.mp4`
 
-      // Primary: Self-hosted local downloader (pure native yt-dlp + ffmpeg)
+      // Primary: Self-hosted local downloader (pure native yt-dlp + ffmpeg with real-time stream progress)
       try {
-        setMessage(`Self-hosting engine is downloading and muxing ${quality.label}...`)
-        const dlRes = await fetch(`${SELF_HOSTED_API}/download`, {
+        setMessage(`Connecting to self-hosted engine for ${quality.label}...`)
+        const dlRes = await fetch(`${SELF_HOSTED_API}/download-stream`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -236,16 +238,67 @@ export default function YtMp4Page() {
           }),
         })
 
-        if (dlRes.ok) {
-          const dlData = await dlRes.json()
-          
-          setStatus('success')
-          setMessage(`✅ Saved directly to your Downloads folder: ${dlData.filename || outName}`)
-          setDownloadLink(null)
-          return
+        if (dlRes.ok && dlRes.body) {
+          const reader = dlRes.body.getReader()
+          const decoder = new TextDecoder()
+          let buffer = ''
+          let streamResult = null
+
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            buffer += decoder.decode(value, { stream: true })
+            const lines = buffer.split('\n')
+            buffer = lines.pop() // keep incomplete last line
+
+            for (const line of lines) {
+              const trimmed = line.trim()
+              if (!trimmed.startsWith('data:')) continue
+              try {
+                const data = JSON.parse(trimmed.slice(5).trim())
+                if (data.percent !== undefined) {
+                  setDownloadProgress({
+                    percent: data.percent,
+                    message: data.message || `Downloading... ${data.percent}%`,
+                  })
+                }
+                if (data.message) {
+                  setMessage(data.message)
+                }
+                if (data.stage === 'completed' && data.result) {
+                  streamResult = data.result
+                }
+                if (data.stage === 'error') {
+                  throw new Error(data.error || 'Server error occurred during download')
+                }
+              } catch (e) {
+                if (e.message && e.message.includes('Server error')) throw e
+              }
+            }
+          }
+
+          if (streamResult) {
+            setDownloadProgress({ percent: 100, message: 'Completed!' })
+            setStatus('success')
+            setMessage(`✅ Download ready: ${streamResult.filename || outName}`)
+
+            // Trigger Chrome download notification & tray!
+            const fileUrl = `${SELF_HOSTED_API}${streamResult.downloadUrl || `/file?name=${encodeURIComponent(streamResult.filename)}`}`
+            const downloadTrigger = document.createElement('a')
+            downloadTrigger.href = fileUrl
+            downloadTrigger.setAttribute('download', streamResult.filename || outName)
+            downloadTrigger.style.display = 'none'
+            document.body.appendChild(downloadTrigger)
+            downloadTrigger.click()
+            setTimeout(() => downloadTrigger.remove(), 2000)
+
+            setDownloadLink({ url: fileUrl, filename: streamResult.filename || outName })
+            return
+          }
         }
       } catch (selfHostedErr) {
-        console.warn('Self-hosted direct download failed, trying fallback stream:', selfHostedErr)
+        console.warn('Self-hosted streaming download failed, trying standard download/fallback:', selfHostedErr)
+        setDownloadProgress(null)
       }
 
       // Secondary: High-speed stream resolver
@@ -622,6 +675,46 @@ export default function YtMp4Page() {
                             </tr>
                           </tbody>
                         </table>
+                      </>
+                    )}
+
+                    {downloadProgress && status === 'loading' && (
+                      <>
+                        <br />
+                        <div style={{
+                          border: '2px solid #00FF00',
+                          backgroundColor: '#000000',
+                          padding: '10px',
+                          textAlign: 'left',
+                          fontFamily: 'Courier New, monospace'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                            <font color="#00FF00" size="2">
+                              <b>[PROGRESS]</b> {downloadProgress.message}
+                            </font>
+                            <font color="#FFFF00" size="2">
+                              <b>{downloadProgress.percent}%</b>
+                            </font>
+                          </div>
+                          <div style={{
+                            width: '100%',
+                            height: '20px',
+                            backgroundColor: '#222222',
+                            border: '1px solid #00FFFF',
+                            borderRadius: '2px',
+                            overflow: 'hidden',
+                            position: 'relative'
+                          }}>
+                            <div style={{
+                              width: `${downloadProgress.percent}%`,
+                              height: '100%',
+                              backgroundColor: '#00FF00',
+                              backgroundImage: 'linear-gradient(45deg, rgba(0,0,0,0.2) 25%, transparent 25%, transparent 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2) 75%, transparent 75%, transparent)',
+                              backgroundSize: '20px 20px',
+                              transition: 'width 0.2s ease-in-out'
+                            }} />
+                          </div>
+                        </div>
                       </>
                     )}
 

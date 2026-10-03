@@ -1,5 +1,6 @@
 import express from 'express'
 import fs from 'node:fs'
+import path from 'node:path'
 import { extractInfo, downloadFile, fastDownloadFile, cleanFilename } from './downloader.js'
 
 const DEFAULT_ORIGINS = [
@@ -84,6 +85,85 @@ export function createApp() {
         res.status(500).json({ error: err.message })
       }
     }
+  })
+
+  // Streaming download endpoint with realtime progress updates via NDJSON / SSE
+  app.post('/download-stream', async (req, res) => {
+    const url = typeof req.body?.url === 'string' ? req.body.url.trim() : ''
+    const height = parseInt(req.body?.height, 10) || 720
+    const rawTitle = typeof req.body?.title === 'string' ? req.body.title.trim() : 'video'
+    const safeTitle = cleanFilename(rawTitle)
+
+    if (!url) {
+      return res.status(400).json({ error: 'Please provide a valid YouTube URL.' })
+    }
+
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
+    res.setHeader('Cache-Control', 'no-cache, no-transform')
+    res.setHeader('Connection', 'keep-alive')
+    res.flushHeaders?.()
+
+    const sendProgress = (data) => {
+      try {
+        res.write(`data: ${JSON.stringify(data)}\n\n`)
+      } catch {}
+    }
+
+    sendProgress({ stage: 'start', percent: 2, message: 'Initiating download...' })
+
+    try {
+      let lastReport = 0
+      const onProgress = (prog) => {
+        const now = Date.now()
+        if (now - lastReport > 150 || prog.stage !== 'downloading' || prog.percent === 100) {
+          lastReport = now
+          sendProgress(prog)
+        }
+      }
+
+      console.log(`[youtube-downloader] STREAM download ${safeTitle} (${height}p)...`)
+      const result = await fastDownloadFile(url, height, safeTitle, onProgress)
+      
+      sendProgress({
+        stage: 'completed',
+        percent: 100,
+        message: 'Download complete!',
+        result: {
+          path: result.path,
+          size: result.size,
+          filename: result.filename,
+          downloadUrl: `/file?name=${encodeURIComponent(result.filename)}`
+        }
+      })
+      res.end()
+    } catch (err) {
+      console.error('[youtube-downloader] Stream download failed:', err.message)
+      sendProgress({ stage: 'error', error: err.message })
+      res.end()
+    }
+  })
+
+  // Serve completed file to trigger Chrome downloads tray & notification
+  app.get('/file', (req, res) => {
+    const filename = typeof req.query?.name === 'string' ? path.basename(req.query.name) : ''
+    if (!filename) {
+      return res.status(400).send('Filename missing')
+    }
+    const downloadDir = path.resolve(
+      process.env.USERPROFILE || 'C:/Users/sacor.xyz',
+      'Downloads'
+    )
+    const filePath = path.join(downloadDir, filename)
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).send('File not found')
+    }
+
+    const stat = fs.statSync(filePath)
+    res.setHeader('Content-Type', 'video/mp4')
+    res.setHeader('Content-Length', stat.size)
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+    const stream = fs.createReadStream(filePath)
+    stream.pipe(res)
   })
 
   // Direct download endpoint - downloads once directly to user's Downloads folder

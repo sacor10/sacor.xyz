@@ -39,7 +39,8 @@ export async function parallelDownload(fmt, outPath, onProgress) {
   let done = 0
   const worker = async () => {
     while (next < ranges.length) {
-      const [start, end] = ranges[next++]
+      const idx = next++
+      const [start, end] = ranges[idx]
       const buf = await fetchRange(fmt.url, headers, start, end)
       await fd.write(buf, 0, buf.length, start)
       done += buf.length
