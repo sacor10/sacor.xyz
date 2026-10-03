@@ -1,5 +1,6 @@
 import express from 'express'
-import { extractInfo, downloadStream, cleanFilename } from './downloader.js'
+import fs from 'node:fs'
+import { extractInfo, downloadFile, cleanFilename } from './downloader.js'
 
 const DEFAULT_ORIGINS = [
   'http://localhost:5173',
@@ -58,42 +59,49 @@ export function createApp() {
     }
   })
 
+  // Direct download endpoint - muxes and saves directly to user's Downloads folder
+  app.post('/download', async (req, res) => {
+    const url = typeof req.body?.url === 'string' ? req.body.url.trim() : ''
+    const height = parseInt(req.body?.height, 10) || 720
+    const rawTitle = typeof req.body?.title === 'string' ? req.body.title.trim() : 'video'
+    const safeTitle = cleanFilename(rawTitle)
+
+    if (!url) {
+      return res.status(400).json({ error: 'Please provide a valid YouTube URL.' })
+    }
+
+    try {
+      console.log(`[youtube-downloader] Downloading ${safeTitle} (${height}p) to Downloads...`)
+      const result = await downloadFile(url, height, safeTitle)
+      console.log(`[youtube-downloader] Download finished: ${result.path} (${result.size} bytes)`)
+      res.json({ ok: true, ...result })
+    } catch (err) {
+      console.error('[youtube-downloader] Download failed:', err.message)
+      res.status(500).json({ error: err.message })
+    }
+  })
+
   // Stream video directly
   app.get('/stream', async (req, res) => {
     const url = typeof req.query?.url === 'string' ? req.query.url.trim() : ''
-    const height = parseInt(req.query?.height, 10) || 2160
+    const height = parseInt(req.query?.height, 10) || 720
     const rawTitle = typeof req.query?.title === 'string' ? req.query.title.trim() : 'youtube-video'
     const safeTitle = cleanFilename(rawTitle)
-    const filename = `${safeTitle}-${height}p.mp4`
 
     if (!url) {
       return res.status(400).json({ error: 'URL query parameter is required.' })
     }
 
     try {
+      const result = await downloadFile(url, height, safeTitle)
       res.setHeader('Content-Type', 'video/mp4')
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+      res.setHeader('Content-Length', result.size)
+      res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`)
 
-      const proc = downloadStream(url, height)
-
-      proc.stdout.pipe(res)
-
-      proc.stderr.on('data', (d) => {
-        // Log stderr for diagnostics if needed
-      })
-
-      req.on('close', () => {
-        proc.kill()
-      })
-
-      proc.on('error', (err) => {
-        console.error('[youtube-downloader] Process error:', err)
-        if (!res.headersSent) {
-          res.status(500).json({ error: 'Stream extraction error' })
-        }
-      })
+      const stream = fs.createReadStream(result.path)
+      stream.pipe(res)
     } catch (err) {
-      console.error('[youtube-downloader] Stream error:', err)
+      console.error('[youtube-downloader] Stream error:', err.message)
       if (!res.headersSent) {
         res.status(500).json({ error: err.message })
       }

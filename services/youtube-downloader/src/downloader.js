@@ -102,17 +102,55 @@ export function extractInfo(url, timeoutMs = 25000) {
   })
 }
 
-export function downloadStream(url, height = 2160) {
-  // Best video stream matching requested height (preferring av01, mp4/h264, or vp9) + best AAC/m4a audio
-  // merged into mp4 container and piped straight to stdout
+export function downloadFile(url, height = 2160, customFilename = null) {
+  const downloadDir = path.resolve(
+    process.env.USERPROFILE || 'C:/Users/sacor.xyz',
+    'Downloads'
+  )
+  if (!fs.existsSync(downloadDir)) {
+    fs.mkdirSync(downloadDir, { recursive: true })
+  }
+
+  const baseName = customFilename || 'video'
+  const finalPath = path.join(downloadDir, `${baseName}-${height}p.mp4`)
+  const tempTemplate = path.join(downloadDir, `${baseName}-${height}p.%(ext)s`)
+
   const formatSelector = `bestvideo[height<=${height}]+bestaudio[ext=m4a]/bestvideo[height<=${height}]+bestaudio/best[height<=${height}]/best`
 
-  const proc = spawn(YTDLP_BIN, [
-    '-f', formatSelector,
-    '--merge-output-format', 'mp4',
-    '-o', '-',
-    url,
-  ])
+  return new Promise((resolve, reject) => {
+    const proc = spawn(YTDLP_BIN, [
+      '-f', formatSelector,
+      '--merge-output-format', 'mp4',
+      '-o', tempTemplate,
+      '--no-playlist',
+      url,
+    ])
 
-  return proc
+    let stderr = ''
+    proc.stderr.on('data', (d) => {
+      stderr += d.toString()
+    })
+
+    proc.on('close', (code) => {
+      if (code !== 0) {
+        return reject(new Error(stderr || `yt-dlp exited with code ${code}`))
+      }
+      if (fs.existsSync(finalPath)) {
+        const stats = fs.statSync(finalPath)
+        resolve({ path: finalPath, size: stats.size, filename: path.basename(finalPath) })
+      } else {
+        // Find any created mp4 matching baseName
+        const files = fs.readdirSync(downloadDir)
+        const matched = files.find((f) => f.includes(baseName) && f.endsWith('.mp4'))
+        if (matched) {
+          const matchedPath = path.join(downloadDir, matched)
+          resolve({ path: matchedPath, size: fs.statSync(matchedPath).size, filename: matched })
+        } else {
+          reject(new Error('Downloaded file not found after merge.'))
+        }
+      }
+    })
+
+    proc.on('error', reject)
+  })
 }

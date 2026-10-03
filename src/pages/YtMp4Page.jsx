@@ -225,23 +225,36 @@ export default function YtMp4Page() {
 
       // Primary: Self-hosted local downloader (pure native yt-dlp + ffmpeg)
       try {
-        setMessage(`Starting direct self-hosted download for ${outName}...`)
-        const selfStreamUrl = `${SELF_HOSTED_API}/stream?url=${encodeURIComponent(url)}&height=${quality.height}&title=${encodeURIComponent(videoInfo.safeFilename)}`
-        
-        // Trigger native browser download directly via anchor
-        const a = document.createElement('a')
-        a.href = selfStreamUrl
-        a.download = outName
-        document.body.appendChild(a)
-        a.click()
-        a.remove()
+        setMessage(`Self-hosting engine is downloading and muxing ${quality.label}...`)
+        const dlRes = await fetch(`${SELF_HOSTED_API}/download`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            url,
+            height: quality.height,
+            title: videoInfo.safeFilename,
+          }),
+        })
 
-        setStatus('success')
-        setMessage(`Download started: ${outName}`)
-        setDownloadLink({ url: selfStreamUrl, filename: outName })
-        return
+        if (dlRes.ok) {
+          const dlData = await dlRes.json()
+          const streamUrl = `${SELF_HOSTED_API}/stream?url=${encodeURIComponent(url)}&height=${quality.height}&title=${encodeURIComponent(videoInfo.safeFilename)}`
+          
+          // Trigger browser download anchor as well
+          const a = document.createElement('a')
+          a.href = streamUrl
+          a.download = dlData.filename || outName
+          document.body.appendChild(a)
+          a.click()
+          a.remove()
+
+          setStatus('success')
+          setMessage(`Downloaded to Downloads: ${dlData.filename || outName}`)
+          setDownloadLink({ url: streamUrl, filename: dlData.filename || outName })
+          return
+        }
       } catch (selfHostedErr) {
-        console.warn('Self-hosted stream endpoint not reachable, trying alternative resolver:', selfHostedErr)
+        console.warn('Self-hosted direct download failed, trying fallback stream:', selfHostedErr)
       }
 
       // Secondary: High-speed stream resolver
