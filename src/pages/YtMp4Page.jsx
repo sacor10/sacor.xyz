@@ -225,11 +225,10 @@ export default function YtMp4Page() {
 
       // Primary: Self-hosted local downloader (pure native yt-dlp + ffmpeg)
       try {
-        setMessage(`Connecting to self-hosted engine for ${quality.label}...`)
+        setMessage(`Downloading ${outName} via self-hosted engine...`)
         const selfStreamUrl = `${SELF_HOSTED_API}/stream?url=${encodeURIComponent(url)}&height=${quality.height}&title=${encodeURIComponent(videoInfo.safeFilename)}`
-        const headCheck = await fetch(selfStreamUrl, { signal: AbortSignal.timeout(4000) })
+        const headCheck = await fetch(selfStreamUrl)
         if (headCheck.ok) {
-          setMessage(`Downloading ${outName} via self-hosted engine...`)
           const blob = await headCheck.blob()
           const objectUrl = downloadBlob(blob, outName, previewWindow)
           setStatus('success')
