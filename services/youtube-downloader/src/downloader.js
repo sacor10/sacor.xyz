@@ -8,6 +8,11 @@ const YTDLP_BIN = path.resolve(
   'services/instagram-downloader/node_modules/youtube-dl-exec/bin/yt-dlp.exe'
 )
 
+const DENO_BIN = path.resolve(
+  process.env.LOCALAPPDATA || 'C:/Users/sacor.xyz/AppData/Local',
+  'Microsoft/WinGet/Packages/DenoLand.Deno_Microsoft.Winget.Source_8wekyb3d8bbwe/deno.exe'
+)
+
 export function cleanFilename(title, fallback = 'youtube-video') {
   const sanitized = sanitize(title || '')
     .replace(/\s+/g, ' ')
@@ -18,11 +23,13 @@ export function cleanFilename(title, fallback = 'youtube-video') {
 
 export function extractInfo(url, timeoutMs = 25000) {
   return new Promise((resolve, reject) => {
-    const proc = spawn(YTDLP_BIN, [
-      '--dump-single-json',
-      '--no-playlist',
-      url,
-    ])
+    const args = ['--dump-single-json', '--no-playlist']
+    if (fs.existsSync(DENO_BIN)) {
+      args.push('--js-runtimes', `deno:${DENO_BIN}`)
+    }
+    args.push(url)
+
+    const proc = spawn(YTDLP_BIN, args)
 
     let stdout = ''
     let stderr = ''
@@ -115,10 +122,10 @@ export function downloadFile(url, height = 2160, customFilename = null) {
   const finalPath = path.join(downloadDir, `${baseName}-${height}p.mp4`)
   const tempTemplate = path.join(downloadDir, `${baseName}-${height}p.%(ext)s`)
 
-  const formatSelector = `bestvideo[height<=${height}]+bestaudio[ext=m4a]/bestvideo[height<=${height}]+bestaudio/best[height<=${height}]/best`
+  const formatSelector = `bestvideo[height<=${height}][vcodec^=av01]+bestaudio[ext=m4a]/bestvideo[height<=${height}][vcodec^=avc1]+bestaudio[ext=m4a]/bestvideo[height<=${height}]+bestaudio/best[height<=${height}]/best`
 
   return new Promise((resolve, reject) => {
-    const proc = spawn(YTDLP_BIN, [
+    const args = [
       '-f', formatSelector,
       '--concurrent-fragments', '16',
       '--http-chunk-size', '10M',
@@ -131,8 +138,14 @@ export function downloadFile(url, height = 2160, customFilename = null) {
       '--postprocessor-args', 'Merger:-movflags +faststart',
       '-o', tempTemplate,
       '--no-playlist',
-      url,
-    ])
+    ]
+
+    if (fs.existsSync(DENO_BIN)) {
+      args.push('--js-runtimes', `deno:${DENO_BIN}`)
+    }
+    args.push(url)
+
+    const proc = spawn(YTDLP_BIN, args)
 
     let stderr = ''
     proc.stderr.on('data', (d) => {
