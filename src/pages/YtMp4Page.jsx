@@ -564,7 +564,7 @@ export default function YtMp4Page() {
                                   disabled={status === 'loading'}
                                   style={{ fontSize: '18px', padding: '8px 20px' }}
                                 >
-                                  {status === 'loading' ? '~ MERGING &amp; DOWNLOADING ~' : <>&#11015; START 4K / HD DOWNLOAD &#11015;</>}
+                                  {status === 'loading' ? '~ MERGING & DOWNLOADING ~' : <>&#11015; START 4K / HD DOWNLOAD &#11015;</>}
                                 </button>
                               </td>
                             </tr>
