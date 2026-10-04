@@ -303,6 +303,7 @@ export default function YtMp4Page() {
 
       // Secondary: High-speed stream resolver
       setMessage(`Preparing ${quality.label} native stream... please wait 5-15 seconds...`)
+      setDownloadProgress({ percent: 10, message: `Preparing ${quality.label} stream...` })
 
       const mapHeightToFmt = (h) => {
         const num = Number(h) || 0
@@ -363,16 +364,21 @@ export default function YtMp4Page() {
           const MAX_POLLS = 45
           const POLL_MS = 1000
           setMessage(`Preparing ${quality.label} stream... (polling progress)`)
+          setDownloadProgress({ percent: 15, message: `Preparing ${quality.label} stream...` })
           for (let i = 0; i < MAX_POLLS; i++) {
             await new Promise((r) => setTimeout(r, POLL_MS))
             try {
               const prog = await fetch(resolveData.progressUrl).then((r) => r.json())
               if (prog && prog.success === 1 && prog.download_url) {
                 finalUrl = prog.download_url
+                setDownloadProgress({ percent: 90, message: 'Stream ready, initiating download...' })
                 break
               }
-              const pct = prog?.progress ? Math.min(Math.round((prog.progress / 1000) * 100), 99) : null
-              if (pct !== null) setMessage(`Preparing ${quality.label} stream... ${pct}%`)
+              const pct = prog?.progress ? Math.min(Math.round((prog.progress / 1000) * 100), 89) : null
+              if (pct !== null) {
+                setMessage(`Preparing ${quality.label} stream... ${pct}%`)
+                setDownloadProgress({ percent: Math.max(15, pct), message: `Converting stream on server... ${pct}%` })
+              }
             } catch {
               // ignore transient errors, keep polling
             }
@@ -381,9 +387,11 @@ export default function YtMp4Page() {
 
         if (finalUrl) {
           setMessage(`Downloading ${outName}...`)
+          setDownloadProgress({ percent: 95, message: `Receiving ${outName}...` })
           try {
             const blob = await fetchVideoBlob(finalUrl)
             const objectUrl = downloadBlob(blob, outName, previewWindow)
+            setDownloadProgress({ percent: 100, message: 'Complete!' })
             setStatus('success')
             setMessage(`Download complete: ${outName}`)
             setDownloadLink(objectUrl ? { url: objectUrl, filename: outName } : null)
@@ -397,6 +405,7 @@ export default function YtMp4Page() {
             document.body.appendChild(iframe)
             setTimeout(() => iframe.remove(), 60000)
 
+            setDownloadProgress({ percent: 100, message: 'Complete!' })
             setStatus('success')
             setMessage(`Download started: ${outName}`)
             setDownloadLink({ url: finalUrl, filename: outName })
@@ -409,19 +418,25 @@ export default function YtMp4Page() {
       // Secondary fallback: in-browser proxy and client-side mux
       if (quality.needsMux && videoInfo.audio) {
         setMessage(`Downloading ${quality.label} video track...`)
+        setDownloadProgress({ percent: 25, message: `Downloading ${quality.label} video track...` })
         const videoBlob = await fetchVideoBlob(quality.videoProxyUrl)
 
         setMessage(`Downloading highest audio track...`)
+        setDownloadProgress({ percent: 55, message: 'Downloading audio track...' })
         const audioBlob = await fetchVideoBlob(videoInfo.audio.audioProxyUrl, { mime: 'audio/mp4' })
 
         let merged
         try {
           const { muxVideoAudio } = await import('../lib/mux')
-          merged = await muxVideoAudio(videoBlob, audioBlob, (s) =>
-            setMessage(`Merging 4K/HD video + audio (${s})... first run loads FFmpeg (~30 MB).`))
+          merged = await muxVideoAudio(videoBlob, audioBlob, (s) => {
+            const msg = `Merging 4K/HD video + audio (${s})... first run loads FFmpeg (~30 MB).`
+            setMessage(msg)
+            setDownloadProgress({ percent: 80, message: msg })
+          })
         } catch {
           if (previewWindow && !previewWindow.closed) previewWindow.close()
           const objectUrl = downloadBlob(videoBlob, `${videoInfo.safeFilename}-${quality.height}p.${quality.ext || 'mp4'}`)
+          setDownloadProgress({ percent: 100, message: 'Done (video only)' })
           setStatus('success')
           setMessage(`Audio merge failed, downloaded video track without sound: ${videoInfo.safeFilename}`)
           setDownloadLink(objectUrl ? { url: objectUrl, filename: `${videoInfo.safeFilename}-${quality.height}p.${quality.ext || 'mp4'}` } : null)
@@ -430,14 +445,17 @@ export default function YtMp4Page() {
 
         const outName = `${videoInfo.safeFilename}-${quality.height}p.mp4`
         const objectUrl = downloadBlob(merged, outName, previewWindow)
+        setDownloadProgress({ percent: 100, message: 'Complete!' })
         setStatus('success')
         setMessage(`Download ready: ${outName}`)
         setDownloadLink(objectUrl ? { url: objectUrl, filename: outName } : null)
       } else {
         setMessage(`Downloading ${videoInfo.safeFilename}...`)
+        setDownloadProgress({ percent: 50, message: `Downloading ${videoInfo.safeFilename}...` })
         const blob = await fetchVideoBlob(quality.videoProxyUrl || quality.videoUrl)
         const outName = `${videoInfo.safeFilename}-${quality.height}p.${quality.ext || 'mp4'}`
         const objectUrl = downloadBlob(blob, outName, previewWindow)
+        setDownloadProgress({ percent: 100, message: 'Complete!' })
         setStatus('success')
         setMessage(`Download ready: ${outName}`)
         setDownloadLink(objectUrl ? { url: objectUrl, filename: outName } : null)
