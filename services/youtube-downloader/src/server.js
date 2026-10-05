@@ -2,7 +2,7 @@ import express from 'express'
 import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
-import { extractInfo, downloadFile, fastDownloadFile, cleanFilename } from './downloader.js'
+import { extractInfo, downloadFile, fastDownloadFile, downloadMp3, fastDownloadMp3, cleanFilename } from './downloader.js'
 
 const DEFAULT_ORIGINS = [
   'http://localhost:5173',
@@ -91,8 +91,9 @@ export function createApp() {
   // Streaming download endpoint with realtime progress updates via NDJSON / SSE
   app.post('/download-stream', async (req, res) => {
     const url = typeof req.body?.url === 'string' ? req.body.url.trim() : ''
+    const format = req.body?.format === 'mp3' ? 'mp3' : 'mp4'
     const height = parseInt(req.body?.height, 10) || 720
-    const rawTitle = typeof req.body?.title === 'string' ? req.body.title.trim() : 'video'
+    const rawTitle = typeof req.body?.title === 'string' ? req.body.title.trim() : (format === 'mp3' ? 'audio' : 'video')
     const safeTitle = cleanFilename(rawTitle)
 
     if (!url) {
@@ -110,7 +111,7 @@ export function createApp() {
       } catch {}
     }
 
-    sendProgress({ stage: 'start', percent: 2, message: 'Initiating download...' })
+    sendProgress({ stage: 'start', percent: 2, message: format === 'mp3' ? 'Initiating MP3 download...' : 'Initiating download...' })
 
     try {
       let lastReport = 0
@@ -122,8 +123,13 @@ export function createApp() {
         }
       }
 
-      console.log(`[youtube-downloader] STREAM download ${safeTitle} (${height}p)...`)
-      const result = await fastDownloadFile(url, height, safeTitle, onProgress)
+      console.log(`[youtube-downloader] STREAM download ${safeTitle} (${format === 'mp3' ? 'MP3' : `${height}p`})...`)
+      let result
+      if (format === 'mp3') {
+        result = await fastDownloadMp3(url, safeTitle, onProgress)
+      } else {
+        result = await fastDownloadFile(url, height, safeTitle, onProgress)
+      }
       
       sendProgress({
         stage: 'completed',
@@ -164,7 +170,8 @@ export function createApp() {
     }
 
     const stat = fs.statSync(filePath)
-    res.setHeader('Content-Type', 'video/mp4')
+    const isMp3 = filename.endsWith('.mp3')
+    res.setHeader('Content-Type', isMp3 ? 'audio/mpeg' : 'video/mp4')
     res.setHeader('Content-Length', stat.size)
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
     const stream = fs.createReadStream(filePath)
@@ -174,8 +181,9 @@ export function createApp() {
   // Direct download endpoint - downloads once directly to user's Downloads folder
   app.post('/download', async (req, res) => {
     const url = typeof req.body?.url === 'string' ? req.body.url.trim() : ''
+    const format = req.body?.format === 'mp3' ? 'mp3' : 'mp4'
     const height = parseInt(req.body?.height, 10) || 720
-    const rawTitle = typeof req.body?.title === 'string' ? req.body.title.trim() : 'video'
+    const rawTitle = typeof req.body?.title === 'string' ? req.body.title.trim() : (format === 'mp3' ? 'audio' : 'video')
     const safeTitle = cleanFilename(rawTitle)
     const useFast = req.body?.fast !== false // default to fast parallel download
 
@@ -184,9 +192,16 @@ export function createApp() {
     }
 
     try {
-      const downloader = useFast ? fastDownloadFile : downloadFile
-      console.log(`[youtube-downloader] ${useFast ? 'FAST' : 'Standard'} downloading ${safeTitle} (${height}p) to Downloads...`)
-      const result = await downloader(url, height, safeTitle)
+      let result
+      if (format === 'mp3') {
+        const mp3Downloader = useFast ? fastDownloadMp3 : downloadMp3
+        console.log(`[youtube-downloader] ${useFast ? 'FAST' : 'Standard'} downloading MP3 ${safeTitle}...`)
+        result = await mp3Downloader(url, safeTitle)
+      } else {
+        const downloader = useFast ? fastDownloadFile : downloadFile
+        console.log(`[youtube-downloader] ${useFast ? 'FAST' : 'Standard'} downloading ${safeTitle} (${height}p) to Downloads...`)
+        result = await downloader(url, height, safeTitle)
+      }
       console.log(`[youtube-downloader] Download finished: ${result.path} (${result.size} bytes)`)
       res.json({ ok: true, ...result })
     } catch (err) {

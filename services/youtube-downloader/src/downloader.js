@@ -3,7 +3,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { spawn } from 'node:child_process'
 import sanitize from 'sanitize-filename'
-import { parallelDownload, muxCopy } from './fastDownload.js'
+import { parallelDownload, muxCopy, convertToMp3 } from './fastDownload.js'
 
 const YTDLP_BIN = path.resolve(
   process.cwd(),
@@ -327,5 +327,142 @@ export async function fastDownloadFile(url, height = 2160, customFilename = null
     try { fs.unlinkSync(videoTmp) } catch {}
     try { fs.unlinkSync(audioTmp) } catch {}
     return downloadFile(url, height, customFilename)
+  }
+}
+
+/**
+ * Standard MP3 download via yt-dlp fallback.
+ */
+export function downloadMp3(url, customFilename = null) {
+  const downloadDir = path.resolve(
+    process.env.USERPROFILE || 'C:/Users/sacor.xyz',
+    'Downloads'
+  )
+  if (!fs.existsSync(downloadDir)) {
+    fs.mkdirSync(downloadDir, { recursive: true })
+  }
+
+  const baseName = customFilename || 'audio'
+  const finalPath = path.join(downloadDir, `${baseName}.mp3`)
+  const tempTemplate = path.join(downloadDir, `${baseName}.%(ext)s`)
+
+  return new Promise((resolve, reject) => {
+    const args = [
+      '-f', 'bestaudio/best',
+      '--extract-audio',
+      '--audio-format', 'mp3',
+      '--audio-quality', '320k',
+      '--concurrent-fragments', '16',
+      '--http-chunk-size', '10M',
+      '--buffer-size', '16M',
+      '--no-part',
+      '--retries', '10',
+      '--fragment-retries', '10',
+      '--socket-timeout', '15',
+      '-o', tempTemplate,
+      '--no-playlist',
+    ]
+
+    if (fs.existsSync(DENO_BIN)) {
+      args.push('--js-runtimes', `deno:${DENO_BIN}`)
+    }
+    args.push(url)
+
+    const proc = spawn(YTDLP_BIN, args)
+
+    let stderr = ''
+    proc.stderr.on('data', (d) => {
+      stderr += d.toString()
+    })
+
+    proc.on('close', (code) => {
+      if (code !== 0) {
+        return reject(new Error(stderr || `yt-dlp exited with code ${code}`))
+      }
+      if (fs.existsSync(finalPath)) {
+        const stats = fs.statSync(finalPath)
+        resolve({ path: finalPath, size: stats.size, filename: path.basename(finalPath) })
+      } else {
+        const files = fs.readdirSync(downloadDir)
+        const matched = files.find((f) => f.includes(baseName) && f.endsWith('.mp3'))
+        if (matched) {
+          const matchedPath = path.join(downloadDir, matched)
+          resolve({ path: matchedPath, size: fs.statSync(matchedPath).size, filename: matched })
+        } else {
+          reject(new Error('Downloaded MP3 file not found.'))
+        }
+      }
+    })
+
+    proc.on('error', reject)
+  })
+}
+
+/**
+ * Fast parallel MP3 download: fetches the highest fidelity audio stream directly
+ * via parallel byte chunks, then converts to 320 kbps MP3 with libmp3lame.
+ */
+export async function fastDownloadMp3(url, customFilename = null, onProgress = null) {
+  const baseName = customFilename || 'audio'
+
+  const tmpDir = path.join(os.tmpdir(), 'yt-fast-dl')
+  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
+
+  const finalPath = path.join(tmpDir, `${baseName}.mp3`)
+  const audioTmp = path.join(tmpDir, `${baseName}-audio-raw.tmp`)
+
+  try {
+    onProgress?.({ stage: 'inspecting', percent: 5, message: 'Extracting highest fidelity audio stream...' })
+    console.log('[fast-dl-mp3] Extracting format URLs...')
+    const raw = await extractRawFormats(url)
+    const formats = raw.formats || []
+
+    // Pick best audio format strictly by bitrate
+    const audioFmts = formats
+      .filter((f) => f.acodec && f.acodec !== 'none' && (!f.vcodec || f.vcodec === 'none') && f.url)
+      .sort((a, b) => {
+        const bitA = a.abr || a.tbr || 0
+        const bitB = b.abr || b.tbr || 0
+        if (bitB !== bitA) return bitB - bitA
+        const extPrio = (e) => (e === 'm4a' || e === 'mp4') ? 2 : 1
+        return extPrio(b.ext) - extPrio(a.ext)
+      })
+
+    if (!audioFmts.length) {
+      console.log('[fast-dl-mp3] No separate audio stream found, falling back to yt-dlp mp3 extraction...')
+      return downloadMp3(url, customFilename)
+    }
+
+    const audioFmt = audioFmts[0]
+    console.log(`[fast-dl-mp3] Highest fidelity audio: format ${audioFmt.format_id} (${audioFmt.acodec} ${Math.round(audioFmt.abr || audioFmt.tbr || 0)}kbps)`)
+
+    onProgress?.({ stage: 'downloading', percent: 10, message: 'Downloading highest fidelity audio track...' })
+
+    await parallelDownload(audioFmt, audioTmp, (done, total) => {
+      const pct = Math.min(85, Math.max(10, Math.round(10 + (done / (total || 1)) * 75)))
+      const mbDone = (done / 1024 / 1024).toFixed(1)
+      const mbTotal = total ? (total / 1024 / 1024).toFixed(1) : '?'
+      onProgress?.({
+        stage: 'downloading',
+        percent: pct,
+        downloadedBytes: done,
+        totalBytes: total,
+        message: `Downloading highest fidelity audio track (${mbDone} / ${mbTotal} MB)...`
+      })
+    })
+
+    // Convert to 320 kbps MP3 with libmp3lame
+    onProgress?.({ stage: 'converting', percent: 90, message: 'Encoding to 320 kbps High Fidelity MP3...' })
+    await convertToMp3(audioTmp, finalPath, '320k')
+
+    try { fs.unlinkSync(audioTmp) } catch {}
+
+    const stats = fs.statSync(finalPath)
+    onProgress?.({ stage: 'completed', percent: 100, message: 'Complete!' })
+    return { path: finalPath, size: stats.size, filename: path.basename(finalPath) }
+  } catch (err) {
+    console.error('[fast-dl-mp3] Parallel MP3 download failed, falling back to yt-dlp:', err.message)
+    try { fs.unlinkSync(audioTmp) } catch {}
+    return downloadMp3(url, customFilename)
   }
 }

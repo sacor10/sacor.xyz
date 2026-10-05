@@ -71,3 +71,20 @@ export function muxCopy(videoPath, audioPath, outPath) {
     proc.on('close', (code) => (code === 0 ? resolve() : reject(new Error(stderr || `ffmpeg exit ${code}`))))
   })
 }
+
+export function convertToMp3(audioPath, outPath, bitrate = '320k') {
+  return new Promise((resolve, reject) => {
+    const proc = spawn('ffmpeg', [
+      '-y', '-loglevel', 'error',
+      '-i', audioPath,
+      '-vn',
+      '-c:a', 'libmp3lame',
+      '-b:a', bitrate,
+      outPath,
+    ])
+    let stderr = ''
+    proc.stderr.on('data', (d) => { stderr += d })
+    proc.on('error', reject)
+    proc.on('close', (code) => (code === 0 ? resolve() : reject(new Error(stderr || `ffmpeg exit ${code}`))))
+  })
+}

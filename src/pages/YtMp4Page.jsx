@@ -215,25 +215,31 @@ export default function YtMp4Page() {
   const handleDownload = async () => {
     if (!videoInfo) return
 
-    const quality = videoInfo.qualities.find((q) => String(q.height) === String(selectedQuality)) || videoInfo.qualities[0]
+    const isMp3 = selectedQuality === 'mp3'
+    const quality = !isMp3
+      ? (videoInfo.qualities.find((q) => String(q.height) === String(selectedQuality)) || videoInfo.qualities[0])
+      : null
     const previewWindow = openPreviewWindow()
 
     setStatus('loading')
     setDownloadLink(null)
-    setDownloadProgress({ percent: 2, message: 'Initiating download...' })
+    setDownloadProgress({ percent: 2, message: isMp3 ? 'Initiating MP3 download...' : 'Initiating download...' })
 
     try {
-      const outName = `${videoInfo.safeFilename}-${quality.height}p.mp4`
+      const outName = isMp3
+        ? `${videoInfo.safeFilename}.mp3`
+        : `${videoInfo.safeFilename}-${quality.height}p.mp4`
 
       // Primary: Self-hosted local downloader (pure native yt-dlp + ffmpeg with real-time stream progress)
       try {
-        setMessage(`Connecting to self-hosted engine for ${quality.label}...`)
+        setMessage(isMp3 ? 'Connecting to self-hosted engine for 320 kbps MP3...' : `Connecting to self-hosted engine for ${quality.label}...`)
         const dlRes = await fetch(`${SELF_HOSTED_API}/download-stream`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             url,
-            height: quality.height,
+            format: isMp3 ? 'mp3' : 'mp4',
+            height: quality ? quality.height : 720,
             title: videoInfo.safeFilename,
           }),
         })
@@ -299,6 +305,39 @@ export default function YtMp4Page() {
       } catch (selfHostedErr) {
         console.warn('Self-hosted streaming download failed, trying standard download/fallback:', selfHostedErr)
         setDownloadProgress(null)
+      }
+
+      if (isMp3) {
+        // Fallback for MP3 when self-hosted isn't running: download audio stream and convert to 320k MP3 in browser with ffmpeg.wasm
+        if (videoInfo.audio?.audioProxyUrl || videoInfo.audio?.audioUrl) {
+          setMessage('Downloading highest fidelity audio stream...')
+          setDownloadProgress({ percent: 20, message: 'Downloading audio stream...' })
+          const audioBlob = await fetchVideoBlob(videoInfo.audio.audioProxyUrl || videoInfo.audio.audioUrl, { mime: 'audio/mp4' })
+
+          setMessage('Converting to 320 kbps High Fidelity MP3 in browser (FFmpeg)...')
+          setDownloadProgress({ percent: 65, message: 'Encoding 320 kbps MP3 in browser...' })
+          let mp3Blob
+          try {
+            const { convertAudioToMp3 } = await import('../lib/mux')
+            mp3Blob = await convertAudioToMp3(audioBlob, (s) => {
+              const msg = `Encoding 320 kbps MP3 (${s})...`
+              setMessage(msg)
+              setDownloadProgress({ percent: 80, message: msg })
+            })
+          } catch (mp3Err) {
+            console.warn('In-browser MP3 conversion failed, saving raw audio track:', mp3Err)
+            mp3Blob = audioBlob
+          }
+
+          const outMp3Name = `${videoInfo.safeFilename}.mp3`
+          const objectUrl = downloadBlob(mp3Blob, outMp3Name, previewWindow)
+          setDownloadProgress({ percent: 100, message: 'Complete!' })
+          setStatus('success')
+          setMessage(`Download ready: ${outMp3Name}`)
+          setDownloadLink(objectUrl ? { url: objectUrl, filename: outMp3Name } : null)
+          return
+        }
+        throw new Error('No audio track available for MP3 extraction.')
       }
 
       // Secondary: High-speed stream resolver
@@ -670,6 +709,9 @@ export default function YtMp4Page() {
                                       width: '100%',
                                     }}
                                   >
+                                    <option value="mp3" style={{ fontWeight: 'bold', color: '#00FFFF' }}>
+                                      🎵 Audio: MP3 (Highest Fidelity ~320kbps) — Pristine Audio Track
+                                    </option>
                                     {videoInfo.qualities.map((q) => (
                                       <option key={q.height} value={q.height}>
                                         {q.label} {q.fps > 30 ? `(${q.fps}fps)` : ''} {q.needsMux ? '— Lossless High Quality Mux' : '— Progressive'}
@@ -687,7 +729,9 @@ export default function YtMp4Page() {
                                   disabled={status === 'loading'}
                                   style={{ fontSize: '18px', padding: '8px 20px' }}
                                 >
-                                  {status === 'loading' ? '~ MERGING & DOWNLOADING ~' : <>&#11015; START 4K / HD DOWNLOAD &#11015;</>}
+                                  {status === 'loading'
+                                    ? (selectedQuality === 'mp3' ? '~ CONVERTING & DOWNLOADING MP3 ~' : '~ MERGING & DOWNLOADING ~')
+                                    : (selectedQuality === 'mp3' ? <>&#127925; START 320 KBPS MP3 DOWNLOAD &#127925;</> : <>&#11015; START 4K / HD DOWNLOAD &#11015;</>)}
                                 </button>
                               </td>
                             </tr>
